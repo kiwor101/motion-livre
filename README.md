@@ -76,6 +76,7 @@ pnpm dist
 ```
 
 Os artefatos finais são gravados em `dist/`. Binários, caches e dependências locais não são versionados.
+Após cada compilação, a limpeza automática mantém em `dist/` somente o instalador e a versão portátil da versão atual.
 
 ## Privacidade
 

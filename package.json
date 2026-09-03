@@ -10,7 +10,7 @@
     "dev": "electron .",
     "check": "node --check app.js && node --check advanced.js && node --check desktop/main.cjs && node --check desktop/preload.cjs",
     "prepare:runtime": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1",
-    "dist": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1 && electron-builder --projectDir ../motion-livre-runtime-staging --win nsis portable"
+    "dist": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1 && electron-builder --projectDir ../motion-livre-runtime-staging --win nsis portable && powershell -ExecutionPolicy Bypass -File tools/clean-dist.ps1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",

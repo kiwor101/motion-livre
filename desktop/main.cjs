@@ -1,8 +1,10 @@
 const {app,BrowserWindow,dialog,ipcMain,Menu}=require('electron');
 const fs=require('node:fs/promises');
 const path=require('node:path');
+const {spawn}=require('node:child_process');
 
 let mainWindow;
+let exportProcess=null;
 const projectFilter=[{name:'Projeto Motion Livre',extensions:['motion.json','json']}];
 
 function createWindow(){
@@ -43,6 +45,29 @@ ipcMain.handle('project:autosave',async(_event,data)=>{
   const dir=app.getPath('userData');await fs.mkdir(dir,{recursive:true});const file=path.join(dir,'autosave.motion.json');await fs.writeFile(file,data,'utf8');return file;
 });
 ipcMain.handle('project:recover',async()=>{try{return await fs.readFile(path.join(app.getPath('userData'),'autosave.motion.json'),'utf8')}catch{return null}});
+function bundledTool(name){return app.isPackaged?path.join(process.resourcesPath,'ffmpeg',`${name}.exe`):path.join(__dirname,'..','vendor','ffmpeg',`${name}.exe`)}
+ipcMain.handle('export:cancel',()=>{if(exportProcess){exportProcess.kill();exportProcess=null;return true}return false});
+ipcMain.handle('export:media',async(_event,{bytes,format,name})=>{
+  const formats={mp4:{ext:'mp4',label:'Vídeo MP4'},webm:{ext:'webm',label:'Vídeo WebM'},gif:{ext:'gif',label:'GIF animado'},png:{ext:'png',label:'Imagem PNG'}};
+  const selected=formats[format]||formats.mp4;
+  const result=await dialog.showSaveDialog(mainWindow,{title:'Exportar composição',defaultPath:`${name||'projeto'}.${selected.ext}`,filters:[{name:selected.label,extensions:[selected.ext]}]});
+  if(result.canceled||!result.filePath)return null;
+  const tempDir=await fs.mkdtemp(path.join(app.getPath('temp'),'motion-livre-'));
+  const input=path.join(tempDir,'render.webm');
+  await fs.writeFile(input,Buffer.from(bytes));
+  if(format==='webm'){await fs.copyFile(input,result.filePath);await fs.rm(tempDir,{recursive:true,force:true});return result.filePath}
+  const args=format==='gif'
+    ?['-y','-i',input,'-vf','fps=15,scale=960:-1:flags=lanczos','-loop','0',result.filePath]
+    :format==='png'
+      ?['-y','-i',input,'-frames:v','1',result.filePath]
+      :['-y','-i',input,'-c:v','libx264','-preset','medium','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','192k',result.filePath];
+  return await new Promise((resolve,reject)=>{
+    exportProcess=spawn(bundledTool('ffmpeg'),args,{windowsHide:true});
+    exportProcess.stderr.on('data',chunk=>{const message=chunk.toString();const match=message.match(/time=(\d+):(\d+):(\d+(?:\.\d+)?)/);if(match){const seconds=+match[1]*3600+ +match[2]*60+ +match[3];mainWindow.webContents.send('export:progress',seconds)}});
+    exportProcess.on('error',reject);
+    exportProcess.on('close',async code=>{exportProcess=null;await fs.rm(tempDir,{recursive:true,force:true});if(code===0)resolve(result.filePath);else if(code===null)resolve(null);else reject(new Error(`FFmpeg finalizou com código ${code}`))});
+  });
+});
 ipcMain.handle('app:info',()=>({version:app.getVersion(),platform:process.platform,userData:app.getPath('userData')}));
 
 app.whenReady().then(()=>{buildMenu();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow()})});

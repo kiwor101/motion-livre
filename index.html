@@ -6,6 +6,7 @@
   <title>Motion Livre — Protótipo Windows</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="advanced.css">
+  <link rel="stylesheet" href="export.css">
 </head>
 <body>
   <header class="topbar">
@@ -124,6 +125,8 @@
   </section>
   <div id="toast" class="toast"></div>
   <div id="projectMenu" class="popup" hidden><button id="menuExport">Exportar JSON</button><button id="menuImport">Importar JSON</button><button id="menuFeatures">Mapa de recursos</button></div>
+  <div id="exportMenu" class="popup export-popup" hidden><strong>Formato de saída</strong><button data-export-format="mp4">MP4 · H.264</button><button data-export-format="webm">WebM</button><button data-export-format="gif">GIF animado</button><button data-export-format="png">PNG do frame atual</button></div>
+  <div id="exportProgress" class="modal" hidden><div class="progress-card"><h2>Renderizando</h2><p id="exportStatus">Preparando composição…</p><progress id="exportBar" max="100" value="0"></progress><button id="cancelExport" class="wide danger">Cancelar</button></div></div>
   <div id="featureModal" class="modal" hidden><div class="modal-card"><button id="closeFeatures" class="modal-close">×</button><h2>Mapa funcional do APK</h2><div id="featureGrid"></div></div></div>
   <script src="app.js"></script>
   <script src="advanced.js"></script>

@@ -1,6 +1,6 @@
 {
   "name": "motion-livre",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Editor de motion design aberto e offline para Windows",
   "main": "desktop/main.cjs",
   "author": "Motion Livre",
@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "electron .",
     "check": "node --check app.js && node --check advanced.js && node --check desktop/main.cjs && node --check desktop/preload.cjs",
-    "dist": "electron-builder --win nsis portable"
+    "dist": "electron-builder --win nsis portable",
+    "dist:offline": "electron-builder --win nsis portable --config.electronDist=electron-dist"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
@@ -20,17 +21,25 @@
     "appId": "org.motionlivre.editor",
     "productName": "Motion Livre",
     "asar": true,
+    "npmRebuild": false,
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "app": "../motion-livre-runtime-staging"
     },
     "files": [
       "index.html",
       "styles.css",
       "advanced.css",
+      "export.css",
       "app.js",
       "advanced.js",
+      "desktop-integration.js",
       "desktop/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {"from": "vendor/ffmpeg/ffmpeg.exe", "to": "ffmpeg/ffmpeg.exe"},
+      {"from": "vendor/ffmpeg/ffprobe.exe", "to": "ffmpeg/ffprobe.exe"}
     ],
     "win": {
       "target": [

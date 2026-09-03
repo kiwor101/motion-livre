@@ -1,4 +1,7 @@
 node_modules/
 dist/
+vendor/ffmpeg/*.exe
+electron-dist/
+build-app/
 *.log
 .DS_Store

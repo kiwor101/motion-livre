@@ -25,8 +25,10 @@ A versão desktop usa isolamento de contexto, diálogos nativos para abrir/salva
 
 Os pacotes gerados ficam em `dist/`:
 
-- `Motion-Livre-Setup-0.3.0-x64.exe` — instalador;
-- `Motion-Livre-Portable-0.3.0-x64.exe` — execução portátil.
+- `Motion-Livre-Setup-0.4.0-x64.exe` — instalador autônomo;
+- `Motion-Livre-Portable-0.4.0-x64.exe` — execução portátil autônoma.
+
+A versão 0.4.0 incorpora o runtime Electron, FFmpeg e FFprobe. O usuário final não precisa instalar Node.js, Rust, FFmpeg, codecs ou ferramentas de desenvolvimento. A exportação nativa oferece MP4/H.264, WebM, GIF e PNG.
 
 ## Recursos implementados
 

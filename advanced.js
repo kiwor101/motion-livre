@@ -2,10 +2,10 @@
 const featureMap={
   'Projeto e arquivos':['Criar, renomear e salvar projetos','Importar/exportar projeto JSON','Composições 16:9, 9:16, 1:1 e 4:5','Resolução, FPS, duração e fundo','Templates, presets e pacotes de elementos'],
   'Camadas':['Vídeo, imagem, áudio, texto e formas','Desenho vetorial livre','Duplicar, excluir e reordenar','Agrupamento e pré-composição','Entrada, saída e recorte temporal','Máscaras, clipping e parenting'],
-  'Animação':['Keyframes por propriedade','Interpolação linear em tempo real','Posição, escala, rotação e opacidade','Caminhos de movimento e curvas','Easing e gráficos de velocidade','Retiming e velocidade de mídia'],
-  'Visual':['Cor sólida e gradientes','Contorno, cantos e transparência','Modos de mesclagem','Sombras, blur, contraste e matiz','Saturação, brilho, sépia e inversão','Câmera e profundidade simulada'],
+  'Animação':['Keyframes por propriedade','Easing linear, suave, aceleração, desaceleração e rebote','Posição, escala, rotação e opacidade','Caminhos de movimento e gráfico de curva','Parenting, nulos e precomposição','Retiming, reverso e velocidade de mídia'],
+  'Visual':['Cor sólida e gradientes','Contorno, cantos, transparência e máscaras','Modos de mesclagem','Glow, vinheta, blur, nitidez, contraste e matiz','Chroma key, canais RGB, saturação, sépia e inversão','Recorte, âncora e espelhamento'],
   'Texto e vetores':['Família e tamanho de fonte','Alinhamento e cor','Formas retângulo/círculo','Splines e desenho manual','Preenchimento e contorno','Elementos nulos e grupos'],
-  'Mídia e saída':['Navegador de mídia e áudio','Preview sincronizado','Controle de som','Exportação WebM','Exportação com transparência (planejada)','GIF, PNG e codecs via FFmpeg (planejados)'],
+  'Mídia e saída':['Navegador de mídia, waveform e mixer','Preview sincronizado','Canais L/R, pan, solo, mute e fades','MP4, MOV, WebM, GIF, PNG e MP3','Presets 720p, 1080p, 1440p e 4K','Qualidade, FPS, bitrate, faixa e transparência'],
   'APK original removido':['Anúncios e attribution','Paywall, assinatura e licença','Conta, ranking e recompensas','Pesquisas e creator program','Firebase e notificações push','Telemetria e ofertas externas']
 };
 
@@ -14,9 +14,9 @@ state.history=[];state.future=[];state.drawing=false;
 const originalAddLayer=addLayer,originalApplyStyle=applyStyle,originalSetTime=setTime;
 addLayer=function(type,content,name){const l=originalAddLayer(type,content,name);Object.assign(l,{start:0,end:state.duration,sourceIn:0,sourceOut:state.duration,mediaDuration:0,speed:1,volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false,fadeIn:0,fadeOut:0,visible:true,locked:false,anchorX:50,anchorY:50,cropX:0,cropY:0,flipX:false,flipY:false,blend:'normal',radius:0,stroke:0,strokeColor:'#000000',font:'Segoe UI',fontSize:42,mask:false,keyframes:[],group:null,effects:{brightness:100,contrast:100,saturation:100,hue:0,blur:0,grayscale:0,sepia:0,invert:0}});pushHistory();return l};
 applyStyle=function(e,l){originalApplyStyle(e,l);e.style.mixBlendMode=l.blend||'normal';e.style.borderRadius=(l.radius||0)+'%';e.style.webkitTextStroke=`${l.stroke||0}px ${l.strokeColor||'#000'}`;e.style.fontFamily=l.font||'Segoe UI';e.style.fontSize=(l.fontSize||42)+'px';e.classList.toggle('mask',!!l.mask);e.hidden=state.time<(l.start||0)||state.time>(l.end??state.duration)};
-function snapshot(){return JSON.stringify({layers:state.layers.map(l=>({...l,content:['image','video','drawing'].includes(l.type)?'':l.content})),composition:state.composition,duration:state.duration})}
+function snapshot(){return JSON.stringify({layers:state.layers.map(l=>({...l,content:['image','video','audio','drawing'].includes(l.type)?'':l.content})),composition:state.composition,duration:state.duration,markers:state.markers||[]})}
 function pushHistory(){const s=snapshot();if(state.history.at(-1)!==s){state.history.push(s);if(state.history.length>40)state.history.shift()}state.future=[]}
-function restore(raw){const d=JSON.parse(raw);state.layers=d.layers||[];state.composition=d.composition||state.composition;state.duration=d.duration||10;state.selected=null;syncComposition();renderLayers();syncProps();setTime(Math.min(state.time,state.duration))}
+function restore(raw){const d=JSON.parse(raw);state.layers=d.layers||[];state.composition=d.composition||state.composition;state.duration=d.duration||10;state.markers=d.markers||[];state.selected=null;syncComposition();renderLayers();syncProps();setTime(Math.min(state.time,state.duration))}
 $('#undoBtn').onclick=()=>{if(state.history.length<2)return;state.future.push(state.history.pop());restore(state.history.at(-1));toast('Desfeito')};
 $('#redoBtn').onclick=()=>{if(!state.future.length)return;const s=state.future.pop();state.history.push(s);restore(s);toast('Refeito')};
 
@@ -32,7 +32,7 @@ for(const [id,key] of Object.entries(advancedFields)){const el=$('#prop'+id);el.
 function syncAdvancedProps(){const l=selected();if(!l)return;for(const [id,key] of Object.entries(advancedFields)){const el=$('#prop'+id);if(el.type==='checkbox')el.checked=key==='visible'?l[key]!==false:!!l[key];else el.value=l[key]??({end:state.duration,fontSize:42,anchorX:50,anchorY:50}[key]||0);const out=$('#out'+id);if(out)out.value=el.value+(key==='radius'||key==='fontSize'?'px':'') }}
 const oldSyncProps=syncProps;syncProps=function(){oldSyncProps();syncAdvancedProps()};
 
-function requireVideo(){const l=selected();if(!l||l.type!=='video'){toast('Selecione uma camada de vídeo');return null}return l}
+function requireVideo(){const l=selected();if(!l||!['video','audio'].includes(l.type)){toast('Selecione uma camada de vídeo ou áudio');return null}return l}
 function clampTrim(l){l.start=Math.max(0,Math.min(l.start||0,state.duration-.01));l.end=Math.max(l.start+.01,Math.min(l.end??state.duration,state.duration));l.sourceIn=Math.max(0,l.sourceIn||0);l.sourceOut=Math.min(l.mediaDuration||Infinity,l.sourceOut??l.mediaDuration??state.duration)}
 $('#setInPoint').onclick=()=>{const l=requireVideo();if(!l)return;const old=l.start||0;l.sourceIn=(l.sourceIn||0)+Math.max(0,state.time-old)*(l.speed||1);l.start=state.time;clampTrim(l);renderLayers();selectLayer(l.id);pushHistory();toast('Entrada definida')};
 $('#setOutPoint').onclick=()=>{const l=requireVideo();if(!l)return;l.sourceOut=(l.sourceIn||0)+Math.max(0,state.time-(l.start||0))*(l.speed||1);l.end=state.time;clampTrim(l);renderLayers();selectLayer(l.id);pushHistory();toast('Saída definida')};
@@ -63,7 +63,7 @@ $('#clearDrawing').onclick=()=>{const l=selected();if(l?.type==='drawing'){$('#d
 
 const oldRenderLayers=renderLayers;renderLayers=function(){oldRenderLayers();state.layers.forEach(l=>{if(l.type==='drawing'){const e=$(`.layer[data-id="${l.id}"]`);if(e&&l.content){e.innerHTML=`<img src="${l.content}" style="width:640px;height:360px">`;applyStyle(e,l)}}})};
 
-function projectData(){return{format:'motion-livre',version:3,name:$('#projectName').value,aspect:$('#aspect').value,duration:state.duration,composition:state.composition,layers:state.layers.map(l=>({...l,content:['image','video','audio'].includes(l.type)?'':l.content}))}}
+function projectData(){return{format:'motion-livre',version:4,name:$('#projectName').value,aspect:$('#aspect').value,duration:state.duration,composition:state.composition,markers:state.markers||[],layers:state.layers.map(l=>({...l,content:['image','video','audio'].includes(l.type)?'':l.content}))}}
 function downloadJson(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(projectData(),null,2)],{type:'application/json'}));a.download=($('#projectName').value||'projeto')+'.motion.json';a.click();toast('Projeto JSON exportado')}
 $('#exportProject').onclick=downloadJson;$('#menuExport').onclick=downloadJson;
 $('#importProject').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());$('#projectName').value=d.name||'Projeto importado';$('#aspect').value=d.aspect||'16/9';state.duration=d.duration||10;state.composition=d.composition||state.composition;state.layers=(d.layers||[]).map(l=>({...l,id:uid++,keyframes:l.keyframes||[]}));syncComposition();renderLayers();pushHistory();toast('Projeto importado')}catch{toast('Arquivo de projeto inválido')}};

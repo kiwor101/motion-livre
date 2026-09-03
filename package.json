@@ -1,6 +1,6 @@
 {
   "name": "motion-livre",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Editor de motion design aberto e offline para Windows",
   "main": "desktop/main.cjs",
   "author": "Motion Livre",
@@ -8,7 +8,7 @@
   "private": true,
   "scripts": {
     "dev": "electron .",
-    "check": "node --check app.js && node --check advanced.js && node --check desktop/main.cjs && node --check desktop/preload.cjs",
+    "check": "node --check app.js && node --check advanced.js && node --check desktop-integration.js && node --check pro-editor.js && node --check desktop/main.cjs && node --check desktop/preload.cjs && node tools/validate-ui.cjs",
     "prepare:runtime": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1",
     "dist": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1 && electron-builder --projectDir ../motion-livre-runtime-staging --win nsis portable && powershell -ExecutionPolicy Bypass -File tools/clean-dist.ps1"
   },
@@ -32,8 +32,11 @@
       "advanced.css",
       "export.css",
       "mixer.css",
+      "pro-editor.css",
+      "pro-mask.css",
       "app.js",
       "advanced.js",
+      "pro-editor.js",
       "desktop-integration.js",
       "desktop/**/*",
       "package.json"

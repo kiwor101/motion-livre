@@ -1,0 +1,3 @@
+.mask-path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:12}.mask-path polygon{fill:#7758ff22;stroke:#ffdb66;stroke-width:.7;stroke-dasharray:2 1}.mask-path circle{fill:#fff;stroke:#7758ff;stroke-width:.7}
+.camera-layer{width:64px;height:42px;border:2px solid #59d8ff;clip-path:polygon(0 0,72% 0,72% 25%,100% 8%,100% 92%,72% 75%,72% 100%,0 100%);background:#59d8ff33!important}.camera-layer::after{content:'CAM';position:absolute;inset:0;display:grid;place-items:center;color:#9eeaff;font-size:10px;font-weight:700}
+.path-layer{width:100%;height:100%;pointer-events:none}.path-layer svg{width:100%;height:100%;overflow:visible}.path-layer path{vector-effect:non-scaling-stroke}

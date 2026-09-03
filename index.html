@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="advanced.css">
   <link rel="stylesheet" href="export.css">
   <link rel="stylesheet" href="mixer.css">
+  <link rel="stylesheet" href="pro-editor.css">
+  <link rel="stylesheet" href="pro-mask.css">
 </head>
 <body>
   <header class="topbar">
@@ -32,6 +34,7 @@
       <button class="tool" data-panel="effects"><span>✦</span>Efeitos</button>
       <button class="tool" data-panel="cut"><span>✂</span>Corte</button>
       <button class="tool" data-panel="audio"><span>♫</span>Áudio</button>
+      <button class="tool" data-panel="animation"><span>◆</span>Animação</button>
       <button class="tool" data-panel="project"><span>⚙</span>Projeto</button>
     </aside>
 
@@ -49,6 +52,7 @@
       <div class="panel" id="panel-shape">
         <h2>Formas</h2><p>Elementos vetoriais básicos.</p>
         <div class="shape-grid"><button data-shape="rect">▰ Retângulo</button><button data-shape="circle">● Círculo</button></div>
+        <button id="startBezierPath" class="wide">Caneta Bézier</button>
       </div>
       <div class="panel" id="panel-draw">
         <h2>Desenho vetorial</h2><p>Crie traços livres sobre a composição.</p>
@@ -75,6 +79,17 @@
         <label>Escala de cinza <output id="outGrayscale">0%</output><input id="fxGrayscale" type="range" min="0" max="100" value="0"></label>
         <label>Sépia <output id="outSepia">0%</output><input id="fxSepia" type="range" min="0" max="100" value="0"></label>
         <label>Inverter <output id="outInvert">0%</output><input id="fxInvert" type="range" min="0" max="100" value="0"></label>
+        <label>Glow <output id="outGlow">0%</output><input id="fxGlow" type="range" min="0" max="100" value="0"></label>
+        <label>Cor do glow<input id="fxGlowColor" type="color" value="#ffffff"></label>
+        <label>Vinheta <output id="outVignette">0%</output><input id="fxVignette" type="range" min="0" max="100" value="0"></label>
+        <label>Nitidez <output id="outSharpen">0%</output><input id="fxSharpen" type="range" min="0" max="100" value="0"></label>
+        <label>Cor do chroma key<input id="fxChromaColor" type="color" value="#00ff00"></label>
+        <label>Tolerância chroma <output id="outChromaTolerance">0%</output><input id="fxChromaTolerance" type="range" min="0" max="100" value="0"></label>
+        <label>Motion blur <output id="outMotionBlur">0px</output><input id="fxMotionBlur" type="range" min="0" max="30" value="0"></label>
+        <label>Canal vermelho <output id="outRedGain">100%</output><input id="fxRedGain" type="range" min="0" max="200" value="100"></label>
+        <label>Canal verde <output id="outGreenGain">100%</output><input id="fxGreenGain" type="range" min="0" max="200" value="100"></label>
+        <label>Canal azul <output id="outBlueGain">100%</output><input id="fxBlueGain" type="range" min="0" max="200" value="100"></label>
+        <div id="effectStack" class="effect-stack"></div>
         <button id="resetEffects" class="wide">Restaurar efeitos</button>
         <hr>
         <button id="saveEffectXml" class="wide">Salvar preset de efeitos XML</button>
@@ -92,12 +107,28 @@
         <label>Fade de entrada (s)<input id="propFadeIn" type="number" min="0" max="30" step="0.1" value="0"></label>
         <label>Fade de saída (s)<input id="propFadeOut" type="number" min="0" max="30" step="0.1" value="0"></label>
         <label><input id="propMuted" type="checkbox"> Silenciar esta camada</label>
+        <label><input id="propReverse" type="checkbox"> Reproduzir ao contrário</label>
+        <label>Transição de entrada<select id="propTransitionIn"><option value="none">Nenhuma</option><option value="fade">Fade</option><option value="slide-left">Deslizar da esquerda</option><option value="slide-right">Deslizar da direita</option><option value="zoom">Zoom</option></select></label>
+        <label>Transição de saída<select id="propTransitionOut"><option value="none">Nenhuma</option><option value="fade">Fade</option><option value="slide-left">Deslizar à esquerda</option><option value="slide-right">Deslizar à direita</option><option value="zoom">Zoom</option></select></label>
+        <label>Duração da transição (s)<input id="propTransitionDuration" type="number" min="0.1" max="10" step="0.1" value="0.5"></label>
       </div>
       <div class="panel" id="panel-audio">
         <h2>Mixer de áudio</h2><p>Cada arquivo vira um canal independente.</p>
         <label class="upload">+ Importar áudio<input id="audioInput" type="file" accept="audio/*"></label>
         <div id="audioMixer" class="asset-list"><div class="empty">Importe áudio ou um vídeo com som</div></div>
+        <button id="detachAudio" class="wide">Separar áudio do vídeo</button>
         <audio id="audioPreview"></audio>
+      </div>
+      <div class="panel" id="panel-animation">
+        <h2>Animação</h2><p>Keyframes, curvas e relações entre camadas.</p>
+        <label>Propriedade<select id="keyframeProperty"><option value="all">Todas as transformações</option><option value="x">Posição X</option><option value="y">Posição Y</option><option value="depth">Profundidade Z</option><option value="scale">Escala</option><option value="rotation">Rotação</option><option value="opacity">Opacidade</option></select></label>
+        <label>Interpolação<select id="propEasing"><option value="linear">Linear</option><option value="ease-in">Acelerar</option><option value="ease-out">Desacelerar</option><option value="ease-in-out">Suave</option><option value="bounce">Rebote</option></select></label>
+        <canvas id="easingGraph" width="220" height="110"></canvas>
+        <label>Camada pai<select id="propParent"><option value="">Nenhuma</option></select></label>
+        <button id="addNullLayer" class="wide">Adicionar objeto nulo</button>
+        <button id="addCameraLayer" class="wide">Adicionar câmera 2.5D</button>
+        <button id="precomposeLayers" class="wide">Precompor camadas marcadas</button>
+        <button id="showMotionPath" class="wide">Exibir caminho de movimento</button>
       </div>
       <div class="panel" id="panel-project">
         <h2>Composição</h2><p>Configurações do projeto e fundo.</p>
@@ -127,6 +158,8 @@
         <label>Posição Y<input id="propY" type="range" min="0" max="100"><output id="outY"></output></label>
         <label>Escala<input id="propScale" type="range" min="10" max="200"><output id="outScale"></output></label>
         <label>Rotação<input id="propRotation" type="range" min="-180" max="180"><output id="outRotation"></output></label>
+        <label>Profundidade Z<input id="propDepth" type="range" min="-1000" max="1000"><output id="outDepth"></output></label>
+        <label>Perspectiva da câmera<input id="propPerspective" type="range" min="300" max="3000"><output id="outPerspective"></output></label>
         <label>Opacidade<input id="propOpacity" type="range" min="0" max="100"><output id="outOpacity"></output></label>
         <label>Âncora X<input id="propAnchorX" type="range" min="0" max="100"><output id="outAnchorX"></output></label>
         <label>Âncora Y<input id="propAnchorY" type="range" min="0" max="100"><output id="outAnchorY"></output></label>
@@ -137,6 +170,9 @@
         <label><input id="propFlipX" type="checkbox"> Espelhar horizontalmente</label>
         <label><input id="propFlipY" type="checkbox"> Espelhar verticalmente</label>
         <label>Cor<input id="propColor" type="color" value="#ffffff"></label>
+        <label>Preenchimento<select id="propFillType"><option value="solid">Cor sólida</option><option value="linear">Gradiente linear</option><option value="radial">Gradiente radial</option></select></label>
+        <label>Cor final do gradiente<input id="propGradientColor" type="color" value="#7758ff"></label>
+        <label>Ângulo do gradiente<input id="propGradientAngle" type="range" min="0" max="360"><output id="outGradientAngle"></output></label>
         <label>Entrada na composição (s)<input id="propStart" type="number" min="0" step="0.1"></label>
         <label>Saída na composição (s)<input id="propEnd" type="number" min="0" step="0.1"></label>
         <label>Modo de mesclagem<select id="propBlend"><option value="normal">Normal</option><option value="multiply">Multiplicar</option><option value="screen">Tela</option><option value="overlay">Sobrepor</option><option value="lighten">Clarear</option><option value="darken">Escurecer</option><option value="difference">Diferença</option></select></label>
@@ -145,7 +181,10 @@
         <label>Cor do contorno<input id="propStrokeColor" type="color" value="#000000"></label>
         <label>Fonte<select id="propFont"><option>Segoe UI</option><option>Arial</option><option>Georgia</option><option>Impact</option><option>Courier New</option></select></label>
         <label>Tamanho da fonte<input id="propFontSize" type="range" min="8" max="180"><output id="outFontSize"></output></label>
-        <label><input id="propMask" type="checkbox"> Usar como máscara da camada abaixo</label>
+        <label>Máscara<select id="propMaskMode"><option value="none">Nenhuma</option><option value="inset">Retangular</option><option value="circle">Circular</option><option value="ellipse">Elíptica</option><option value="polygon">Polígono personalizado</option></select></label>
+        <button id="editMaskPoints" class="wide">Editar máscara no palco</button>
+        <button id="clearMaskPoints" class="wide">Limpar pontos da máscara</button>
+        <input id="propMask" type="checkbox" hidden>
         <button id="addKeyframe" class="wide">◆ Keyframe na posição atual</button>
         <button id="groupLayer" class="wide">Agrupar selecionada</button>
         <button id="moveLayerUp" class="wide">Mover para cima</button>
@@ -157,16 +196,19 @@
   </main>
 
   <section class="timeline-section">
-    <div class="timeline-head"><strong>Camadas</strong><span>0s</span><span>2s</span><span>4s</span><span>6s</span><span>8s</span><span>10s</span></div>
+    <div class="timeline-controls"><strong>Timeline</strong><button id="addMarker">+ Marcador</button><button id="clearMarkers">Limpar marcadores</button><label><input id="snapTimeline" type="checkbox" checked> Encaixe</label><label>Zoom <input id="timelineZoom" type="range" min="1" max="5" step="0.25" value="1"></label></div>
+    <div class="timeline-head"><strong>Camadas</strong><span>0%</span><span>20%</span><span>40%</span><span>60%</span><span>80%</span><span>100%</span></div>
     <div id="timeline" class="timeline"><div class="timeline-empty">Adicione uma camada para começar</div><div id="playhead" class="playhead"></div></div>
   </section>
   <div id="toast" class="toast"></div>
   <div id="projectMenu" class="popup" hidden><button id="menuExport">Exportar JSON</button><button id="menuImport">Importar JSON</button><button id="menuFeatures">Mapa de recursos</button></div>
-  <div id="exportMenu" class="popup export-popup" hidden><strong>Formato de saída</strong><button data-export-format="mp4">MP4 · H.264 + AAC (recomendado)</button><button data-export-format="webm">WebM</button><button data-export-format="gif">GIF animado</button><button data-export-format="png">PNG do frame atual</button></div>
+  <div id="exportMenu" class="popup export-popup" hidden><strong>Formato de saída</strong><button data-export-format="mp4">MP4 · H.264 + AAC (recomendado)</button><button data-export-format="mov">MOV · H.264 + AAC</button><button data-export-format="webm">WebM / transparência</button><button data-export-format="gif">GIF animado</button><button data-export-format="png">PNG do frame atual</button><button data-export-format="mp3">Somente áudio MP3</button></div>
   <div id="exportProgress" class="modal" hidden><div class="progress-card"><h2>Renderizando</h2><p id="exportStatus">Preparando composição…</p><progress id="exportBar" max="100" value="0"></progress><button id="cancelExport" class="wide danger">Cancelar</button></div></div>
   <div id="featureModal" class="modal" hidden><div class="modal-card"><button id="closeFeatures" class="modal-close">×</button><h2>Mapa funcional do APK</h2><div id="featureGrid"></div></div></div>
+  <div id="exportSettings" class="modal" hidden><div class="modal-card export-settings-card"><button id="closeExportSettings" class="modal-close">×</button><h2>Configurações de exportação</h2><div class="settings-grid"><label>Formato<input id="exportFormatLabel" readonly></label><label>Preset<select id="exportPreset"><option value="source">Da composição</option><option value="720">HD 720p</option><option value="1080" selected>Full HD 1080p</option><option value="1440">QHD 1440p</option><option value="2160">4K UHD</option></select></label><label>Largura<input id="exportWidth" type="number" min="64" max="7680" value="1920"></label><label>Altura<input id="exportHeight" type="number" min="64" max="4320" value="1080"></label><label>FPS<select id="exportFps"><option>24</option><option selected>30</option><option>60</option></select></label><label>Qualidade<select id="exportQuality"><option value="16">Máxima</option><option value="18" selected>Alta</option><option value="23">Equilibrada</option><option value="28">Compacta</option></select></label><label>Bitrate de áudio<select id="exportAudioBitrate"><option value="128k">128 kbps</option><option value="192k" selected>192 kbps</option><option value="320k">320 kbps</option></select></label><label>Início (s)<input id="exportStart" type="number" min="0" step="0.01" value="0"></label><label>Fim (s)<input id="exportEnd" type="number" min="0" step="0.01" value="10"></label><label><input id="exportTransparent" type="checkbox"> Fundo transparente (WebM/PNG)</label></div><button id="startConfiguredExport" class="wide primary">Iniciar exportação</button></div></div>
   <script src="app.js"></script>
   <script src="advanced.js"></script>
   <script src="desktop-integration.js"></script>
+  <script src="pro-editor.js"></script>
 </body>
 </html>

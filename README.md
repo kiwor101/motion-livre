@@ -6,9 +6,9 @@ Editor de motion design aberto, offline e sem anúncios para Windows.
 
 Downloads oficiais:
 
-- [Baixar instalador 0.7.0 para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.7.0/Motion-Livre-Setup-0.7.0-x64.exe)
-- [Baixar versão portátil 0.7.0](https://github.com/kiwor101/motion-livre/releases/download/v0.7.0/Motion-Livre-Portable-0.7.0-x64.exe)
-- [Ver notas da versão 0.7.0](https://github.com/kiwor101/motion-livre/releases/tag/v0.7.0)
+- [Baixar instalador 0.8.0 para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.8.0/Motion-Livre-Setup-0.8.0-x64.exe)
+- [Baixar versão portátil 0.8.0](https://github.com/kiwor101/motion-livre/releases/download/v0.8.0/Motion-Livre-Portable-0.8.0-x64.exe)
+- [Ver notas da versão 0.8.0](https://github.com/kiwor101/motion-livre/releases/tag/v0.8.0)
 
 O arquivo [BAIXAR_MOTION_LIVRE.md](BAIXAR_MOTION_LIVRE.md), visível na raiz do projeto, também leva diretamente aos executáveis.
 
@@ -56,6 +56,12 @@ Atalhos:
 - máscaras simples, grupos, ordem e blending;
 - presets e controles ajustáveis de brilho, contraste, saturação, matiz, blur, escala de cinza, sépia e inversão;
 - salvar e importar presets de efeitos em arquivos `.motion-effect.xml`;
+- timeline arrastável com alças de corte, zoom, encaixe, marcadores e waveform;
+- easing por propriedade, gráfico de curva, caminho de movimento e transições;
+- parenting, objetos nulos, precomposições e câmera 2.5D;
+- máscaras geométricas/poligonais, gradientes e caneta Bézier;
+- glow, vinheta, nitidez, chroma key, motion blur e ajuste RGB;
+- exportação MP4, MOV, WebM, GIF, PNG e MP3 com presets até 4K;
 - autosave, undo/redo e projetos JSON;
 - exportação MP4/H.264, WebM, GIF e PNG com FFmpeg incorporado.
 

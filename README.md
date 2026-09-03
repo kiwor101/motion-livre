@@ -2,9 +2,31 @@
 
 Protótipo offline inspirado no conjunto funcional mapeado do APK fornecido.
 
-## Executar
+## Executar no navegador
 
 Dê dois cliques em `INICIAR_PROTOTIPO.cmd` ou abra `index.html` no Microsoft Edge/Google Chrome.
+
+## Aplicativo Windows
+
+Com Node.js e pnpm instalados:
+
+```powershell
+pnpm install
+pnpm dev
+```
+
+Para gerar instalador e executável portátil:
+
+```powershell
+pnpm dist
+```
+
+A versão desktop usa isolamento de contexto, diálogos nativos para abrir/salvar projetos, menu do Windows e autosave na pasta de dados do usuário.
+
+Os pacotes gerados ficam em `dist/`:
+
+- `Motion-Livre-Setup-0.3.0-x64.exe` — instalador;
+- `Motion-Livre-Portable-0.3.0-x64.exe` — execução portátil.
 
 ## Recursos implementados
 

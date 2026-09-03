@@ -1,0 +1,49 @@
+{
+  "name": "motion-livre",
+  "version": "0.3.0",
+  "description": "Editor de motion design aberto e offline para Windows",
+  "main": "desktop/main.cjs",
+  "author": "Motion Livre",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "electron .",
+    "check": "node --check app.js && node --check advanced.js && node --check desktop/main.cjs && node --check desktop/preload.cjs",
+    "dist": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "org.motionlivre.editor",
+    "productName": "Motion Livre",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.html",
+      "styles.css",
+      "advanced.css",
+      "app.js",
+      "advanced.js",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "artifactName": "Motion-Livre-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "artifactName": "Motion-Livre-Setup-${version}-${arch}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "Motion-Livre-Portable-${version}-${arch}.${ext}"
+    }
+  }
+}

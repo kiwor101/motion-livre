@@ -3,6 +3,8 @@ const {pathToFileURL}=require('node:url');
 contextBridge.exposeInMainWorld('motionDesktop',{
   saveProject:(data,suggestedName)=>ipcRenderer.invoke('project:save',{data,suggestedName}),
   openProject:()=>ipcRenderer.invoke('project:open'),
+  saveEffect:(data,suggestedName)=>ipcRenderer.invoke('effect:save',{data,suggestedName}),
+  openEffect:()=>ipcRenderer.invoke('effect:open'),
   autosave:data=>ipcRenderer.invoke('project:autosave',data),
   recover:()=>ipcRenderer.invoke('project:recover'),
   getPathForFile:file=>webUtils.getPathForFile(file),

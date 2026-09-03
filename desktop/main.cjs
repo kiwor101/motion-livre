@@ -6,6 +6,7 @@ const {spawn}=require('node:child_process');
 let mainWindow;
 let exportProcess=null;
 const projectFilter=[{name:'Projeto Motion Livre',extensions:['motion.json','json']}];
+const effectFilter=[{name:'Preset de efeitos Motion Livre',extensions:['motion-effect.xml','xml']}];
 
 function createWindow(){
   mainWindow=new BrowserWindow({
@@ -38,6 +39,17 @@ ipcMain.handle('project:save',async(_event,{data,suggestedName})=>{
 });
 ipcMain.handle('project:open',async()=>{
   const result=await dialog.showOpenDialog(mainWindow,{title:'Abrir projeto',properties:['openFile'],filters:projectFilter});
+  if(result.canceled||!result.filePaths[0])return null;
+  return{path:result.filePaths[0],data:await fs.readFile(result.filePaths[0],'utf8')};
+});
+ipcMain.handle('effect:save',async(_event,{data,suggestedName})=>{
+  const clean=(suggestedName||'meu-efeito').replace(/[<>:"/\\|?*]+/g,'-');
+  const result=await dialog.showSaveDialog(mainWindow,{title:'Salvar preset de efeitos',defaultPath:`${clean}.motion-effect.xml`,filters:effectFilter});
+  if(result.canceled||!result.filePath)return null;
+  await fs.writeFile(result.filePath,data,'utf8');return result.filePath;
+});
+ipcMain.handle('effect:open',async()=>{
+  const result=await dialog.showOpenDialog(mainWindow,{title:'Importar preset de efeitos',properties:['openFile'],filters:effectFilter});
   if(result.canceled||!result.filePaths[0])return null;
   return{path:result.filePaths[0],data:await fs.readFile(result.filePaths[0],'utf8')};
 });

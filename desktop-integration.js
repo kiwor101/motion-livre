@@ -6,6 +6,23 @@
   const nativeSave=async()=>{const path=await motionDesktop.saveProject(serialize(),$('#projectName').value);if(path){$('#saveState').textContent='Salvo em arquivo';toast('Projeto salvo no Windows')}};
   const loadData=data=>{const d=JSON.parse(data);$('#projectName').value=d.name||'Projeto';$('#aspect').value=d.aspect||'16/9';state.duration=d.duration||10;state.composition=d.composition||state.composition;state.layers=(d.layers||[]).map(l=>({...l,id:uid++,content:l.content||(l.sourcePath?motionDesktop.fileUrl(l.sourcePath):''),visible:l.visible!==false,keyframes:l.keyframes||[]}));syncComposition();renderLayers();pushHistory();toast('Projeto aberto')};
   const nativeOpen=async()=>{const result=await motionDesktop.openProject();if(result)try{loadData(result.data)}catch{toast('Projeto inválido')}};
+  const presetNumber=(value,fallback,min,max)=>{const n=Number(value);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback};
+  function effectPresetXml(layer){
+    const doc=document.implementation.createDocument('','motion-livre-effect');const root=doc.documentElement;root.setAttribute('version','1');
+    const meta=doc.createElement('metadata');meta.setAttribute('name',layer.name||'Efeito');meta.setAttribute('created-at',new Date().toISOString());root.append(meta);
+    const visual=doc.createElement('visual');const fx=layer.effects||{};for(const key of ['brightness','contrast','saturation','hue','blur','grayscale','sepia','invert'])visual.setAttribute(key,String(fx[key]??({brightness:100,contrast:100,saturation:100}[key]??0)));root.append(visual);
+    const appearance=doc.createElement('appearance');for(const key of ['opacity','blend','radius','stroke','strokeColor','cropX','cropY','flipX','flipY'])appearance.setAttribute(key,String(layer[key]??({opacity:100,blend:'normal',strokeColor:'#000000'}[key]??0)));root.append(appearance);
+    return '<?xml version="1.0" encoding="UTF-8"?>\n'+new XMLSerializer().serializeToString(doc)+'\n';
+  }
+  function applyEffectPreset(xml){
+    const layer=selected();if(!layer)throw new Error('Selecione uma camada antes de importar');const doc=new DOMParser().parseFromString(xml,'application/xml');if(doc.querySelector('parsererror'))throw new Error('XML inválido');const root=doc.documentElement;if(root.tagName!=='motion-livre-effect')throw new Error('Este XML não é um preset do Motion Livre');
+    const visual=root.querySelector('visual'),appearance=root.querySelector('appearance');if(!visual)throw new Error('Preset sem parâmetros visuais');layer.effects=layer.effects||{};
+    const ranges={brightness:[0,250,100],contrast:[0,250,100],saturation:[0,300,100],hue:[-180,180,0],blur:[0,30,0],grayscale:[0,100,0],sepia:[0,100,0],invert:[0,100,0]};for(const [key,[min,max,fallback]] of Object.entries(ranges))layer.effects[key]=presetNumber(visual.getAttribute(key),fallback,min,max);
+    if(appearance){layer.opacity=presetNumber(appearance.getAttribute('opacity'),layer.opacity??100,0,100);layer.radius=presetNumber(appearance.getAttribute('radius'),layer.radius||0,0,100);layer.stroke=presetNumber(appearance.getAttribute('stroke'),layer.stroke||0,0,20);layer.cropX=presetNumber(appearance.getAttribute('cropX'),layer.cropX||0,0,49);layer.cropY=presetNumber(appearance.getAttribute('cropY'),layer.cropY||0,0,49);const blend=appearance.getAttribute('blend');if(['normal','multiply','screen','overlay','lighten','darken','difference'].includes(blend))layer.blend=blend;const color=appearance.getAttribute('strokeColor');if(/^#[0-9a-f]{6}$/i.test(color))layer.strokeColor=color;layer.flipX=appearance.getAttribute('flipX')==='true';layer.flipY=appearance.getAttribute('flipY')==='true'}
+    layer.filter=buildFilter(layer);updateSelected();syncProps();renderLayers();selectLayer(layer.id);pushHistory();markDirty();
+  }
+  $('#saveEffectXml').onclick=async()=>{const layer=selected();if(!layer)return toast('Selecione uma camada');const path=await motionDesktop.saveEffect(effectPresetXml(layer),layer.name);if(path)toast('Preset XML salvo')};
+  $('#openEffectXml').onclick=async()=>{const result=await motionDesktop.openEffect();if(!result)return;try{applyEffectPreset(result.data);toast('Preset XML aplicado à camada')}catch(error){toast(error.message)}};
   $('#saveProject').onclick=nativeSave;
   $('#exportProject').onclick=nativeSave;
   $('#menuExport').onclick=nativeSave;

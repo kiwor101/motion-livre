@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="advanced.css">
   <link rel="stylesheet" href="export.css">
+  <link rel="stylesheet" href="mixer.css">
 </head>
 <body>
   <header class="topbar">
@@ -18,7 +19,7 @@
       <button id="newProject" class="ghost">Novo</button>
       <button id="saveProject" class="ghost">Salvar projeto</button>
       <button id="projectFile" class="ghost">Projeto ▾</button>
-      <button id="exportBtn" class="primary">Exportar WebM</button>
+      <button id="exportBtn" class="primary">Exportar MP4</button>
     </div>
   </header>
 
@@ -90,9 +91,10 @@
         <label><input id="propMuted" type="checkbox"> Silenciar esta camada</label>
       </div>
       <div class="panel" id="panel-audio">
-        <h2>Áudio</h2><p>Trilha para pré-visualização.</p>
+        <h2>Mixer de áudio</h2><p>Cada arquivo vira um canal independente.</p>
         <label class="upload">+ Importar áudio<input id="audioInput" type="file" accept="audio/*"></label>
-        <audio id="audioPreview" controls></audio>
+        <div id="audioMixer" class="asset-list"><div class="empty">Importe áudio ou um vídeo com som</div></div>
+        <audio id="audioPreview"></audio>
       </div>
       <div class="panel" id="panel-project">
         <h2>Composição</h2><p>Configurações do projeto e fundo.</p>
@@ -123,6 +125,14 @@
         <label>Escala<input id="propScale" type="range" min="10" max="200"><output id="outScale"></output></label>
         <label>Rotação<input id="propRotation" type="range" min="-180" max="180"><output id="outRotation"></output></label>
         <label>Opacidade<input id="propOpacity" type="range" min="0" max="100"><output id="outOpacity"></output></label>
+        <label>Âncora X<input id="propAnchorX" type="range" min="0" max="100"><output id="outAnchorX"></output></label>
+        <label>Âncora Y<input id="propAnchorY" type="range" min="0" max="100"><output id="outAnchorY"></output></label>
+        <label>Recorte horizontal<input id="propCropX" type="range" min="0" max="49"><output id="outCropX"></output></label>
+        <label>Recorte vertical<input id="propCropY" type="range" min="0" max="49"><output id="outCropY"></output></label>
+        <label><input id="propVisible" type="checkbox" checked> Camada visível</label>
+        <label><input id="propLocked" type="checkbox"> Bloquear edição</label>
+        <label><input id="propFlipX" type="checkbox"> Espelhar horizontalmente</label>
+        <label><input id="propFlipY" type="checkbox"> Espelhar verticalmente</label>
         <label>Cor<input id="propColor" type="color" value="#ffffff"></label>
         <label>Entrada na composição (s)<input id="propStart" type="number" min="0" step="0.1"></label>
         <label>Saída na composição (s)<input id="propEnd" type="number" min="0" step="0.1"></label>
@@ -149,7 +159,7 @@
   </section>
   <div id="toast" class="toast"></div>
   <div id="projectMenu" class="popup" hidden><button id="menuExport">Exportar JSON</button><button id="menuImport">Importar JSON</button><button id="menuFeatures">Mapa de recursos</button></div>
-  <div id="exportMenu" class="popup export-popup" hidden><strong>Formato de saída</strong><button data-export-format="mp4">MP4 · H.264</button><button data-export-format="webm">WebM</button><button data-export-format="gif">GIF animado</button><button data-export-format="png">PNG do frame atual</button></div>
+  <div id="exportMenu" class="popup export-popup" hidden><strong>Formato de saída</strong><button data-export-format="mp4">MP4 · H.264 + AAC (recomendado)</button><button data-export-format="webm">WebM</button><button data-export-format="gif">GIF animado</button><button data-export-format="png">PNG do frame atual</button></div>
   <div id="exportProgress" class="modal" hidden><div class="progress-card"><h2>Renderizando</h2><p id="exportStatus">Preparando composição…</p><progress id="exportBar" max="100" value="0"></progress><button id="cancelExport" class="wide danger">Cancelar</button></div></div>
   <div id="featureModal" class="modal" hidden><div class="modal-card"><button id="closeFeatures" class="modal-close">×</button><h2>Mapa funcional do APK</h2><div id="featureGrid"></div></div></div>
   <script src="app.js"></script>

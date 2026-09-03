@@ -1,6 +1,6 @@
 {
   "name": "motion-livre",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Editor de motion design aberto e offline para Windows",
   "main": "desktop/main.cjs",
   "author": "Motion Livre",
@@ -31,6 +31,7 @@
       "styles.css",
       "advanced.css",
       "export.css",
+      "mixer.css",
       "app.js",
       "advanced.js",
       "desktop-integration.js",

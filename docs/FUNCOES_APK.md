@@ -16,9 +16,9 @@ Este inventário foi produzido por análise estática do APK fornecido: manifest
 | Texto | navegador de fontes, estilo, tamanho, cor e animação | cinco famílias, tamanho, cor, contorno e animação por transform implementados |
 | Cor | color picker, ranges, filtros e ajustes | seletor de cor e dez filtros implementados |
 | Efeitos | effect browser, visual effects, parâmetros, presets e preview | catálogo e filtros CSS implementados; motor completo de efeitos depende de shaders/WebGPU |
-| Áudio | navegador, camada de áudio, preview e sincronização | importação, player e sincronização básica implementados |
+| Áudio | navegador, camada de áudio, preview e sincronização | mixer por camada com solo, mute, volume, panorama, seleção L/R, fades e sincronização implementados |
 | Mídia | navegadores de imagem/vídeo, thumbnails, cache e compartilhamento | importação local e preview implementados |
-| Exportação | preview, formatos, parâmetros, progresso, salvar/compartilhar | WebM experimental implementado; MP4/GIF/PNG/alpha dependem de FFmpeg |
+| Exportação | preview, formatos, parâmetros, progresso, salvar/compartilhar | MP4/H.264 + AAC como saída principal; WebM, GIF e PNG com FFmpeg incorporado |
 | Interface | onboarding, tutorial, settings, about e novidades | mapa de recursos e configurações de projeto implementados; onboarding dispensável |
 | Online/social | conta, perfil, ranking, creator program, recompensas, feed e backup | removidos por decisão da versão aberta/offline |
 | Monetização | paywall, assinatura, ofertas, billing e licença | removidos por decisão da versão aberta |

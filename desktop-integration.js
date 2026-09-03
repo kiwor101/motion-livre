@@ -4,7 +4,7 @@
   let autosaveTimer;
   const serialize=()=>JSON.stringify(projectData(),null,2);
   const nativeSave=async()=>{const path=await motionDesktop.saveProject(serialize(),$('#projectName').value);if(path){$('#saveState').textContent='Salvo em arquivo';toast('Projeto salvo no Windows')}};
-  const loadData=data=>{const d=JSON.parse(data);$('#projectName').value=d.name||'Projeto';$('#aspect').value=d.aspect||'16/9';state.duration=d.duration||10;state.composition=d.composition||state.composition;state.layers=(d.layers||[]).map(l=>({...l,id:uid++,keyframes:l.keyframes||[]}));syncComposition();renderLayers();pushHistory();toast('Projeto aberto')};
+  const loadData=data=>{const d=JSON.parse(data);$('#projectName').value=d.name||'Projeto';$('#aspect').value=d.aspect||'16/9';state.duration=d.duration||10;state.composition=d.composition||state.composition;state.layers=(d.layers||[]).map(l=>({...l,id:uid++,content:l.content||(l.sourcePath?motionDesktop.fileUrl(l.sourcePath):''),visible:l.visible!==false,keyframes:l.keyframes||[]}));syncComposition();renderLayers();pushHistory();toast('Projeto aberto')};
   const nativeOpen=async()=>{const result=await motionDesktop.openProject();if(result)try{loadData(result.data)}catch{toast('Projeto inválido')}};
   $('#saveProject').onclick=nativeSave;
   $('#exportProject').onclick=nativeSave;
@@ -18,9 +18,9 @@
     ctx.save();ctx.fillStyle=state.composition?.background||'#08090b';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.restore();
     const stageRect=$('#stage').getBoundingClientRect(),sx=canvas.width/stageRect.width,sy=canvas.height/stageRect.height;
     for(const source of state.layers){
-      if(time<(source.start||0)||time>(source.end??state.duration))continue;
+      if(source.visible===false||source.type==='audio'||time<(source.start||0)||time>(source.end??state.duration))continue;
       const l=typeof interpolate==='function'?interpolate(source,time):source;
-      ctx.save();ctx.globalAlpha=(l.opacity??100)/100;ctx.globalCompositeOperation=l.blend==='normal'?'source-over':(l.blend||'source-over');ctx.filter=l.filter==='none'?'none':(l.filter||'none');ctx.translate(l.x/100*canvas.width,l.y/100*canvas.height);ctx.rotate((l.rotation||0)*Math.PI/180);ctx.scale((l.scale||100)/100,(l.scale||100)/100);
+      ctx.save();ctx.globalAlpha=(l.opacity??100)/100;ctx.globalCompositeOperation=l.blend==='normal'?'source-over':(l.blend||'source-over');ctx.filter=l.filter==='none'?'none':(l.filter||'none');ctx.translate(l.x/100*canvas.width,l.y/100*canvas.height);ctx.rotate((l.rotation||0)*Math.PI/180);ctx.scale((l.flipX?-1:1)*(l.scale||100)/100,(l.flipY?-1:1)*(l.scale||100)/100);
       ctx.fillStyle=l.color||'#fff';ctx.strokeStyle=l.strokeColor||'#000';ctx.lineWidth=(l.stroke||0)*Math.max(sx,sy);
       if(l.type==='text'){ctx.font=`700 ${(l.fontSize||42)*sy}px ${l.font||'Segoe UI'}`;ctx.textAlign='center';ctx.textBaseline='middle';if(l.stroke)ctx.strokeText(l.content||'',0,0);ctx.fillText(l.content||'',0,0)}
       else if(l.type==='rect'){const w=160*sx,h=100*sy,r=Math.min(l.radius||0,50)/100*Math.min(w,h);ctx.beginPath();ctx.roundRect(-w/2,-h/2,w,h,r);ctx.fill();if(l.stroke)ctx.stroke()}
@@ -40,7 +40,7 @@
   }
   async function nativeExport(format){
     exportCancelled=false;$('#exportMenu').hidden=true;$('#exportProgress').hidden=false;$('#exportBar').value=0;
-    try{const blob=await captureWebM(format);if(exportCancelled)return;$('#exportStatus').textContent='Codificando vídeo e áudio com FFmpeg…';const bytes=new Uint8Array(await blob.arrayBuffer());const audioTracks=state.layers.filter(l=>l.type==='video'&&l.sourcePath&&!l.muted&&l.volume>0).map(l=>({path:l.sourcePath,start:l.start||0,end:l.end??state.duration,sourceIn:l.sourceIn||0,sourceOut:l.sourceOut??l.mediaDuration,speed:l.speed||1,volume:(l.volume??100)/100,fadeIn:l.fadeIn||0,fadeOut:l.fadeOut||0}));const path=await motionDesktop.exportMedia(bytes,format,$('#projectName').value,audioTracks);if(path)toast(`Exportado com áudio: ${path}`)}catch(error){console.error(error);toast('Falha na exportação');}finally{$('#exportProgress').hidden=true;setTime(0)}
+    try{const blob=await captureWebM(format);if(exportCancelled)return;$('#exportStatus').textContent='Codificando MP4 e mixando canais…';const bytes=new Uint8Array(await blob.arrayBuffer());const candidates=state.layers.filter(l=>(l.type==='video'||l.type==='audio')&&l.sourcePath),hasSolo=candidates.some(l=>l.solo);const audioTracks=candidates.filter(l=>!l.muted&&l.volume>0&&(!hasSolo||l.solo)).map(l=>({path:l.sourcePath,start:l.start||0,end:l.end??state.duration,sourceIn:l.sourceIn||0,sourceOut:l.sourceOut??l.mediaDuration,speed:l.speed||1,volume:(l.volume??100)/100,pan:(l.pan||0)/100,audioChannel:l.audioChannel||'stereo',fadeIn:l.fadeIn||0,fadeOut:l.fadeOut||0}));const path=await motionDesktop.exportMedia(bytes,format,$('#projectName').value,audioTracks);if(path)toast(`MP4 exportado: ${path}`)}catch(error){console.error(error);toast(`Falha na exportação: ${error.message}`)}finally{$('#exportProgress').hidden=true;setTime(0)}
   }
   $('#exportBtn').onclick=()=>$('#exportMenu').hidden=!$('#exportMenu').hidden;
   $$('[data-export-format]').forEach(button=>button.onclick=()=>nativeExport(button.dataset.exportFormat));

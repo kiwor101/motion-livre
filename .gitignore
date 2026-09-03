@@ -3,5 +3,6 @@ dist/
 vendor/ffmpeg/*.exe
 electron-dist/
 build-app/
+tmp-*
 *.log
 .DS_Store

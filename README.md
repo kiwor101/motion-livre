@@ -1,60 +1,74 @@
-# Motion Livre — protótipo Windows
+# Motion Livre
 
-Protótipo offline inspirado no conjunto funcional mapeado do APK fornecido.
+Editor de motion design aberto, offline e sem anúncios para Windows.
 
-## Executar no navegador
+## Instalação
 
-Dê dois cliques em `INICIAR_PROTOTIPO.cmd` ou abra `index.html` no Microsoft Edge/Google Chrome.
+Execute `Motion-Livre-Setup-0.4.0-x64.exe`. O instalador permite escolher a pasta e cria atalhos. A versão `Motion-Livre-Portable-0.4.0-x64.exe` funciona diretamente, sem instalação.
 
-## Aplicativo Windows
+### Requisitos do usuário final
 
-Com Node.js e pnpm instalados:
+- Windows 10 ou Windows 11, 64 bits;
+- aproximadamente 500 MB livres.
+
+Não é necessário instalar Node.js, Rust, Electron, FFmpeg, codecs ou Visual Studio. O runtime e o motor de mídia estão incorporados.
+
+O Windows SmartScreen pode exibir um aviso porque o projeto ainda não possui certificado comercial. Confira a origem e o hash do arquivo antes de executar.
+
+## Como usar
+
+1. Abra o Motion Livre e defina o nome do projeto.
+2. Em **Mídia**, importe imagens ou vídeos.
+3. Use **Texto**, **Forma** ou **Desenho** para criar camadas.
+4. Arraste os elementos no palco e ajuste suas propriedades.
+5. Posicione o cursor da timeline e adicione **Keyframes**.
+6. Configure resolução, FPS, duração e fundo em **Projeto**.
+7. Use **Salvar projeto** para gravar um `.motion.json`.
+8. Clique em **Exportar** e escolha MP4, WebM, GIF ou PNG.
+
+Atalhos:
+
+- `Ctrl+S`: salvar;
+- `Ctrl+O`: abrir;
+- `Ctrl+N`: novo projeto;
+- `Ctrl+Z` / `Ctrl+Y`: desfazer/refazer;
+- `Espaço`: reproduzir/pausar;
+- `Delete`: excluir a camada selecionada.
+
+## Recursos atuais
+
+- imagem, vídeo, áudio, texto, formas e desenho;
+- timeline, entrada/saída e keyframes lineares;
+- transformações, cor, contorno e cantos;
+- máscaras simples, grupos, ordem e blending;
+- filtros e preview sincronizado;
+- autosave, undo/redo e projetos JSON;
+- exportação MP4/H.264, WebM, GIF e PNG com FFmpeg incorporado.
+
+Consulte [docs/FUNCOES_APK.md](docs/FUNCOES_APK.md) e [docs/ROADMAP_DESKTOP.md](docs/ROADMAP_DESKTOP.md).
+
+## Desenvolvimento
+
+Pré-requisitos: Node.js 20+, pnpm e Visual Studio Build Tools/Windows SDK.
 
 ```powershell
 pnpm install
+powershell -ExecutionPolicy Bypass -File tools/setup-ffmpeg.ps1
 pnpm dev
 ```
 
-Para gerar instalador e executável portátil:
+Gerar os executáveis autônomos:
 
 ```powershell
 pnpm dist
 ```
 
-A versão desktop usa isolamento de contexto, diálogos nativos para abrir/salvar projetos, menu do Windows e autosave na pasta de dados do usuário.
+Os artefatos finais são gravados em `dist/`. Binários, caches e dependências locais não são versionados.
 
-Os pacotes gerados ficam em `dist/`:
+## Privacidade
 
-- `Motion-Livre-Setup-0.4.0-x64.exe` — instalador autônomo;
-- `Motion-Livre-Portable-0.4.0-x64.exe` — execução portátil autônoma.
+O editor funciona offline. A versão aberta não inclui anúncios, pagamentos, contas, analytics ou telemetria.
 
-A versão 0.4.0 incorpora o runtime Electron, FFmpeg e FFprobe. O usuário final não precisa instalar Node.js, Rust, FFmpeg, codecs ou ferramentas de desenvolvimento. A exportação nativa oferece MP4/H.264, WebM, GIF e PNG.
+## Licença
 
-## Recursos implementados
-
-- importação de vídeo, imagem e áudio;
-- camadas de texto e formas;
-- posicionamento por arraste;
-- escala, rotação, opacidade e cor;
-- filtros visuais;
-- timeline e preview;
-- proporções 16:9, 9:16, 1:1 e 4:5;
-- salvamento local;
-- exportação experimental em WebM.
-
-## Recursos avançados
-
-- keyframes com interpolação de posição, escala, rotação e opacidade;
-- entrada/saída temporal por camada;
-- modos de mesclagem e máscara simples;
-- desenho vetorial livre;
-- contorno, cantos, fontes e tamanho de texto;
-- agrupamento e reordenação de camadas;
-- undo/redo e atalhos de teclado;
-- resolução, FPS, duração e cor de fundo;
-- importação e exportação de projeto JSON;
-- mapa de paridade acessível no menu **Projeto ▾**.
-
-Consulte `FUNCOES_APK.md` para o inventário completo e os limites de equivalência.
-
-Os arquivos importados permanecem locais e não são enviados à internet.
+Motion Livre sob licença MIT. FFmpeg e demais componentes mantêm suas respectivas licenças.

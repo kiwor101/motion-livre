@@ -12,6 +12,7 @@
     "dist": "electron-builder --win nsis portable"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12"
   },
@@ -32,7 +33,10 @@
       "package.json"
     ],
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "artifactName": "Motion-Livre-${version}-${arch}.${ext}"
     },
     "nsis": {
@@ -45,5 +49,8 @@
     "portable": {
       "artifactName": "Motion-Livre-Portable-${version}-${arch}.${ext}"
     }
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1"
   }
 }

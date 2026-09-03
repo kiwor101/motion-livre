@@ -18,4 +18,19 @@ Dê dois cliques em `INICIAR_PROTOTIPO.cmd` ou abra `index.html` no Microsoft Ed
 - salvamento local;
 - exportação experimental em WebM.
 
+## Recursos avançados
+
+- keyframes com interpolação de posição, escala, rotação e opacidade;
+- entrada/saída temporal por camada;
+- modos de mesclagem e máscara simples;
+- desenho vetorial livre;
+- contorno, cantos, fontes e tamanho de texto;
+- agrupamento e reordenação de camadas;
+- undo/redo e atalhos de teclado;
+- resolução, FPS, duração e cor de fundo;
+- importação e exportação de projeto JSON;
+- mapa de paridade acessível no menu **Projeto ▾**.
+
+Consulte `FUNCOES_APK.md` para o inventário completo e os limites de equivalência.
+
 Os arquivos importados permanecem locais e não são enviados à internet.

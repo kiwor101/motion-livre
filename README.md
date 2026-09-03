@@ -6,9 +6,11 @@ Editor de motion design aberto, offline e sem anúncios para Windows.
 
 Downloads oficiais:
 
-- [Baixar instalador para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.4.0/Motion-Livre-Setup-0.4.0-x64.exe)
-- [Baixar versão portátil](https://github.com/kiwor101/motion-livre/releases/download/v0.4.0/Motion-Livre-Portable-0.4.0-x64.exe)
-- [Ver notas da versão](https://github.com/kiwor101/motion-livre/releases/tag/v0.4.0)
+- [Baixar instalador 0.5.0 para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.5.0/Motion-Livre-Setup-0.5.0-x64.exe)
+- [Baixar versão portátil 0.5.0](https://github.com/kiwor101/motion-livre/releases/download/v0.5.0/Motion-Livre-Portable-0.5.0-x64.exe)
+- [Ver notas da versão 0.5.0](https://github.com/kiwor101/motion-livre/releases/tag/v0.5.0)
+
+O arquivo [BAIXAR_MOTION_LIVRE.md](BAIXAR_MOTION_LIVRE.md), visível na raiz do projeto, também leva diretamente aos executáveis.
 
 O instalador permite escolher a pasta e cria atalhos. A versão portátil funciona diretamente, sem instalação.
 

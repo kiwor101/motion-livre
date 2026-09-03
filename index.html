@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Motion Livre — Protótipo Windows</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">M</span><div><strong>Motion Livre</strong><small>protótipo desktop</small></div></div>
+    <div class="project-name"><input id="projectName" value="Meu projeto"><span id="saveState">Salvo localmente</span></div>
+    <div class="top-actions">
+      <button id="newProject" class="ghost">Novo</button>
+      <button id="saveProject" class="ghost">Salvar projeto</button>
+      <button id="exportBtn" class="primary">Exportar WebM</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="tools">
+      <button class="tool active" data-panel="media"><span>▣</span>Mídia</button>
+      <button class="tool" data-panel="text"><span>T</span>Texto</button>
+      <button class="tool" data-panel="shape"><span>◆</span>Forma</button>
+      <button class="tool" data-panel="effects"><span>✦</span>Efeitos</button>
+      <button class="tool" data-panel="audio"><span>♫</span>Áudio</button>
+    </aside>
+
+    <section class="library">
+      <div class="panel active" id="panel-media">
+        <h2>Mídia</h2><p>Importe vídeo ou imagem para a composição.</p>
+        <label class="upload">+ Importar mídia<input id="mediaInput" type="file" accept="video/*,image/*"></label>
+        <div id="mediaList" class="asset-list"><div class="empty">Seus arquivos aparecerão aqui</div></div>
+      </div>
+      <div class="panel" id="panel-text">
+        <h2>Texto</h2><p>Adicione um título editável.</p>
+        <input id="textValue" value="Seu texto" maxlength="100">
+        <button id="addText" class="wide">Adicionar texto</button>
+      </div>
+      <div class="panel" id="panel-shape">
+        <h2>Formas</h2><p>Elementos vetoriais básicos.</p>
+        <div class="shape-grid"><button data-shape="rect">▰ Retângulo</button><button data-shape="circle">● Círculo</button></div>
+      </div>
+      <div class="panel" id="panel-effects">
+        <h2>Efeitos</h2><p>Aplicados à camada selecionada.</p>
+        <div class="effect-list">
+          <button data-effect="none">Original</button><button data-effect="grayscale(1)">P&B</button>
+          <button data-effect="sepia(.8)">Sépia</button><button data-effect="blur(3px)">Desfoque</button>
+          <button data-effect="contrast(1.5)">Contraste</button><button data-effect="saturate(1.8)">Vibrante</button>
+        </div>
+      </div>
+      <div class="panel" id="panel-audio">
+        <h2>Áudio</h2><p>Trilha para pré-visualização.</p>
+        <label class="upload">+ Importar áudio<input id="audioInput" type="file" accept="audio/*"></label>
+        <audio id="audioPreview" controls></audio>
+      </div>
+    </section>
+
+    <section class="stage-area">
+      <div class="stage-toolbar"><span>Composição</span><select id="aspect"><option value="16/9">16:9</option><option value="9/16">9:16</option><option value="1/1">1:1</option><option value="4/5">4:5</option></select><button id="fitStage">Ajustar</button></div>
+      <div class="stage-wrap"><div id="stage" class="stage"><div class="stage-hint">Importe uma mídia ou adicione texto</div></div></div>
+      <div class="transport"><button id="toStart">|◀</button><button id="playBtn" class="play">▶</button><span id="timeLabel">00:00.00 / 00:10.00</span><input id="timeSlider" type="range" min="0" max="10" step="0.01" value="0"><button id="muteBtn">🔊</button></div>
+    </section>
+
+    <aside class="inspector">
+      <h2>Propriedades</h2>
+      <div id="noSelection" class="empty">Selecione uma camada</div>
+      <div id="properties" hidden>
+        <label>Nome<input id="propName"></label>
+        <label>Posição X<input id="propX" type="range" min="0" max="100"><output id="outX"></output></label>
+        <label>Posição Y<input id="propY" type="range" min="0" max="100"><output id="outY"></output></label>
+        <label>Escala<input id="propScale" type="range" min="10" max="200"><output id="outScale"></output></label>
+        <label>Rotação<input id="propRotation" type="range" min="-180" max="180"><output id="outRotation"></output></label>
+        <label>Opacidade<input id="propOpacity" type="range" min="0" max="100"><output id="outOpacity"></output></label>
+        <label>Cor<input id="propColor" type="color" value="#ffffff"></label>
+        <button id="duplicateLayer" class="wide">Duplicar camada</button>
+        <button id="deleteLayer" class="wide danger">Excluir camada</button>
+      </div>
+    </aside>
+  </main>
+
+  <section class="timeline-section">
+    <div class="timeline-head"><strong>Camadas</strong><span>0s</span><span>2s</span><span>4s</span><span>6s</span><span>8s</span><span>10s</span></div>
+    <div id="timeline" class="timeline"><div class="timeline-empty">Adicione uma camada para começar</div><div id="playhead" class="playhead"></div></div>
+  </section>
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

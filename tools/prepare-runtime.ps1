@@ -10,7 +10,7 @@ Copy-Item -LiteralPath (Join-Path $project 'desktop\main.cjs'),(Join-Path $proje
 Copy-Item -LiteralPath (Join-Path $project 'vendor\ffmpeg\ffmpeg.exe'),(Join-Path $project 'vendor\ffmpeg\ffprobe.exe') -Destination (Join-Path $target 'vendor\ffmpeg') -Force
 $runtimePackage = @{
   name = 'motion-livre-runtime'
-  version = '0.4.0'
+  version = '0.5.0'
   description = 'Editor de motion design aberto e offline para Windows'
   author = 'Motion Livre'
   main = 'desktop/main.cjs'

@@ -26,11 +26,13 @@ O Windows SmartScreen pode exibir um aviso porque o projeto ainda não possui ce
 1. Abra o Motion Livre e defina o nome do projeto.
 2. Em **Mídia**, importe imagens ou vídeos.
 3. Use **Texto**, **Forma** ou **Desenho** para criar camadas.
-4. Arraste os elementos no palco e ajuste suas propriedades.
-5. Posicione o cursor da timeline e adicione **Keyframes**.
-6. Configure resolução, FPS, duração e fundo em **Projeto**.
-7. Use **Salvar projeto** para gravar um `.motion.json`.
-8. Clique em **Exportar** e escolha MP4, WebM, GIF ou PNG.
+4. Em **Corte**, defina entrada/saída ou divida o clipe no cursor; ajuste velocidade, volume e fades.
+5. Em **Efeitos**, use presets ou controles de brilho, contraste, saturação, matiz, blur, sépia e outros.
+6. Arraste os elementos no palco e ajuste suas propriedades.
+7. Posicione o cursor da timeline e adicione **Keyframes**.
+8. Configure resolução, FPS, duração e fundo em **Projeto**.
+9. Use **Salvar projeto** para gravar um `.motion.json`.
+10. Clique em **Exportar** e escolha MP4, WebM, GIF ou PNG.
 
 Atalhos:
 
@@ -44,10 +46,12 @@ Atalhos:
 ## Recursos atuais
 
 - imagem, vídeo, áudio, texto, formas e desenho;
-- timeline, entrada/saída e keyframes lineares;
+- timeline, corte por entrada/saída, divisão de clipes e keyframes lineares;
+- áudio original dos vídeos na exportação, volume, silêncio e fades;
+- velocidade de vídeo de 0,5× a 2× com áudio sincronizado;
 - transformações, cor, contorno e cantos;
 - máscaras simples, grupos, ordem e blending;
-- filtros e preview sincronizado;
+- presets e controles ajustáveis de brilho, contraste, saturação, matiz, blur, escala de cinza, sépia e inversão;
 - autosave, undo/redo e projetos JSON;
 - exportação MP4/H.264, WebM, GIF e PNG com FFmpeg incorporado.
 

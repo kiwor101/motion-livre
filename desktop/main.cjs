@@ -47,7 +47,7 @@ ipcMain.handle('project:autosave',async(_event,data)=>{
 ipcMain.handle('project:recover',async()=>{try{return await fs.readFile(path.join(app.getPath('userData'),'autosave.motion.json'),'utf8')}catch{return null}});
 function bundledTool(name){return app.isPackaged?path.join(process.resourcesPath,'ffmpeg',`${name}.exe`):path.join(__dirname,'..','vendor','ffmpeg',`${name}.exe`)}
 ipcMain.handle('export:cancel',()=>{if(exportProcess){exportProcess.kill();exportProcess=null;return true}return false});
-ipcMain.handle('export:media',async(_event,{bytes,format,name})=>{
+ipcMain.handle('export:media',async(_event,{bytes,format,name,audioTracks=[]})=>{
   const formats={mp4:{ext:'mp4',label:'Vídeo MP4'},webm:{ext:'webm',label:'Vídeo WebM'},gif:{ext:'gif',label:'GIF animado'},png:{ext:'png',label:'Imagem PNG'}};
   const selected=formats[format]||formats.mp4;
   const result=await dialog.showSaveDialog(mainWindow,{title:'Exportar composição',defaultPath:`${name||'projeto'}.${selected.ext}`,filters:[{name:selected.label,extensions:[selected.ext]}]});
@@ -55,12 +55,17 @@ ipcMain.handle('export:media',async(_event,{bytes,format,name})=>{
   const tempDir=await fs.mkdtemp(path.join(app.getPath('temp'),'motion-livre-'));
   const input=path.join(tempDir,'render.webm');
   await fs.writeFile(input,Buffer.from(bytes));
-  if(format==='webm'){await fs.copyFile(input,result.filePath);await fs.rm(tempDir,{recursive:true,force:true});return result.filePath}
+  const validAudio=[];for(const track of audioTracks){try{if(track.path&&path.isAbsolute(track.path)){await fs.access(track.path);validAudio.push(track)}}catch{}}
+  const audioInputs=validAudio.flatMap(track=>['-i',track.path]);
+  const filters=validAudio.map((track,index)=>{const duration=Math.max(.01,(track.end-track.start));const sourceEnd=Math.max(track.sourceIn+.01,Math.min(Number.isFinite(track.sourceOut)?track.sourceOut:track.sourceIn+duration*track.speed,track.sourceIn+duration*track.speed));const fadeOutStart=Math.max(0,duration-(track.fadeOut||0));return `[${index+1}:a:0]atrim=start=${track.sourceIn}:end=${sourceEnd},asetpts=PTS-STARTPTS,atempo=${Math.max(.5,Math.min(2,track.speed))},volume=${Math.max(0,Math.min(2,track.volume))},afade=t=in:st=0:d=${Math.min(duration,track.fadeIn||0)},afade=t=out:st=${fadeOutStart}:d=${Math.min(duration,track.fadeOut||0)},adelay=${Math.round(track.start*1000)}|${Math.round(track.start*1000)}[a${index}]`});
+  const mix=validAudio.length?`${filters.join(';')};${validAudio.map((_,i)=>`[a${i}]`).join('')}amix=inputs=${validAudio.length}:normalize=0:dropout_transition=0[aout]`:'';
   const args=format==='gif'
     ?['-y','-i',input,'-vf','fps=15,scale=960:-1:flags=lanczos','-loop','0',result.filePath]
     :format==='png'
       ?['-y','-i',input,'-frames:v','1',result.filePath]
-      :['-y','-i',input,'-c:v','libx264','-preset','medium','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','192k',result.filePath];
+      :format==='webm'
+        ?['-y','-i',input,...audioInputs,...(mix?['-filter_complex',mix,'-map','0:v:0','-map','[aout]']:['-map','0:v:0']),'-c:v','libvpx-vp9','-crf','28','-b:v','0','-c:a','libopus','-shortest',result.filePath]
+        :['-y','-i',input,...audioInputs,...(mix?['-filter_complex',mix,'-map','0:v:0','-map','[aout]']:['-map','0:v:0']),'-c:v','libx264','-preset','medium','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a','192k','-shortest',result.filePath];
   return await new Promise((resolve,reject)=>{
     exportProcess=spawn(bundledTool('ffmpeg'),args,{windowsHide:true});
     exportProcess.stderr.on('data',chunk=>{const message=chunk.toString();const match=message.match(/time=(\d+):(\d+):(\d+(?:\.\d+)?)/);if(match){const seconds=+match[1]*3600+ +match[2]*60+ +match[3];mainWindow.webContents.send('export:progress',seconds)}});

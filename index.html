@@ -29,6 +29,7 @@
       <button class="tool" data-panel="shape"><span>◆</span>Forma</button>
       <button class="tool" data-panel="draw"><span>✎</span>Desenho</button>
       <button class="tool" data-panel="effects"><span>✦</span>Efeitos</button>
+      <button class="tool" data-panel="cut"><span>✂</span>Corte</button>
       <button class="tool" data-panel="audio"><span>♫</span>Áudio</button>
       <button class="tool" data-panel="project"><span>⚙</span>Projeto</button>
     </aside>
@@ -64,6 +65,29 @@
           <button data-effect="brightness(1.35)">Luz</button><button data-effect="hue-rotate(90deg)">Matiz</button>
           <button data-effect="invert(1)">Inverter</button><button data-effect="drop-shadow(8px 8px 8px #000)">Sombra</button>
         </div>
+        <hr>
+        <label>Brilho <output id="outBrightness">100%</output><input id="fxBrightness" type="range" min="0" max="250" value="100"></label>
+        <label>Contraste <output id="outContrast">100%</output><input id="fxContrast" type="range" min="0" max="250" value="100"></label>
+        <label>Saturação <output id="outSaturation">100%</output><input id="fxSaturation" type="range" min="0" max="300" value="100"></label>
+        <label>Matiz <output id="outHue">0°</output><input id="fxHue" type="range" min="-180" max="180" value="0"></label>
+        <label>Desfoque <output id="outBlur">0px</output><input id="fxBlur" type="range" min="0" max="30" value="0"></label>
+        <label>Escala de cinza <output id="outGrayscale">0%</output><input id="fxGrayscale" type="range" min="0" max="100" value="0"></label>
+        <label>Sépia <output id="outSepia">0%</output><input id="fxSepia" type="range" min="0" max="100" value="0"></label>
+        <label>Inverter <output id="outInvert">0%</output><input id="fxInvert" type="range" min="0" max="100" value="0"></label>
+        <button id="resetEffects" class="wide">Restaurar efeitos</button>
+      </div>
+      <div class="panel" id="panel-cut">
+        <h2>Corte e tempo</h2><p>Selecione um vídeo e posicione o cursor na linha do tempo.</p>
+        <button id="setInPoint" class="wide">Definir entrada no cursor</button>
+        <button id="setOutPoint" class="wide">Definir saída no cursor</button>
+        <button id="splitAtPlayhead" class="wide">✂ Dividir no cursor</button>
+        <button id="resetTrim" class="wide">Restaurar vídeo inteiro</button>
+        <hr>
+        <label>Velocidade <output id="outSpeed">1.00×</output><input id="propSpeed" type="range" min="0.5" max="2" step="0.05" value="1"></label>
+        <label>Volume <output id="outVolume">100%</output><input id="propVolume" type="range" min="0" max="200" value="100"></label>
+        <label>Fade de entrada (s)<input id="propFadeIn" type="number" min="0" max="30" step="0.1" value="0"></label>
+        <label>Fade de saída (s)<input id="propFadeOut" type="number" min="0" max="30" step="0.1" value="0"></label>
+        <label><input id="propMuted" type="checkbox"> Silenciar esta camada</label>
       </div>
       <div class="panel" id="panel-audio">
         <h2>Áudio</h2><p>Trilha para pré-visualização.</p>
@@ -100,8 +124,8 @@
         <label>Rotação<input id="propRotation" type="range" min="-180" max="180"><output id="outRotation"></output></label>
         <label>Opacidade<input id="propOpacity" type="range" min="0" max="100"><output id="outOpacity"></output></label>
         <label>Cor<input id="propColor" type="color" value="#ffffff"></label>
-        <label>Entrada (s)<input id="propStart" type="number" min="0" step="0.1"></label>
-        <label>Saída (s)<input id="propEnd" type="number" min="0" step="0.1"></label>
+        <label>Entrada na composição (s)<input id="propStart" type="number" min="0" step="0.1"></label>
+        <label>Saída na composição (s)<input id="propEnd" type="number" min="0" step="0.1"></label>
         <label>Modo de mesclagem<select id="propBlend"><option value="normal">Normal</option><option value="multiply">Multiplicar</option><option value="screen">Tela</option><option value="overlay">Sobrepor</option><option value="lighten">Clarear</option><option value="darken">Escurecer</option><option value="difference">Diferença</option></select></label>
         <label>Raio do canto<input id="propRadius" type="range" min="0" max="100"><output id="outRadius"></output></label>
         <label>Contorno<input id="propStroke" type="range" min="0" max="20"><output id="outStroke"></output></label>

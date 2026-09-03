@@ -40,7 +40,7 @@
   }
   async function nativeExport(format){
     exportCancelled=false;$('#exportMenu').hidden=true;$('#exportProgress').hidden=false;$('#exportBar').value=0;
-    try{const blob=await captureWebM(format);if(exportCancelled)return;$('#exportStatus').textContent='Codificando com FFmpeg…';const bytes=new Uint8Array(await blob.arrayBuffer());const path=await motionDesktop.exportMedia(bytes,format,$('#projectName').value);if(path)toast(`Exportado: ${path}`)}catch(error){console.error(error);toast('Falha na exportação');}finally{$('#exportProgress').hidden=true;setTime(0)}
+    try{const blob=await captureWebM(format);if(exportCancelled)return;$('#exportStatus').textContent='Codificando vídeo e áudio com FFmpeg…';const bytes=new Uint8Array(await blob.arrayBuffer());const audioTracks=state.layers.filter(l=>l.type==='video'&&l.sourcePath&&!l.muted&&l.volume>0).map(l=>({path:l.sourcePath,start:l.start||0,end:l.end??state.duration,sourceIn:l.sourceIn||0,sourceOut:l.sourceOut??l.mediaDuration,speed:l.speed||1,volume:(l.volume??100)/100,fadeIn:l.fadeIn||0,fadeOut:l.fadeOut||0}));const path=await motionDesktop.exportMedia(bytes,format,$('#projectName').value,audioTracks);if(path)toast(`Exportado com áudio: ${path}`)}catch(error){console.error(error);toast('Falha na exportação');}finally{$('#exportProgress').hidden=true;setTime(0)}
   }
   $('#exportBtn').onclick=()=>$('#exportMenu').hidden=!$('#exportMenu').hidden;
   $$('[data-export-format]').forEach(button=>button.onclick=()=>nativeExport(button.dataset.exportFormat));

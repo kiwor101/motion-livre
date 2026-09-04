@@ -6,9 +6,9 @@ Editor de motion design aberto, offline e sem anúncios para Windows.
 
 Downloads oficiais:
 
-- [Baixar instalador 0.9.0 para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.9.0/Motion-Livre-Setup-0.9.0-x64.exe)
-- [Baixar versão portátil 0.9.0](https://github.com/kiwor101/motion-livre/releases/download/v0.9.0/Motion-Livre-Portable-0.9.0-x64.exe)
-- [Ver notas da versão 0.9.0](https://github.com/kiwor101/motion-livre/releases/tag/v0.9.0)
+- [Baixar instalador 0.0.0.1 para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.1/Motion-Livre-Setup-0.0.0.1-x64.exe)
+- [Baixar versão portátil 0.0.0.1](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.1/Motion-Livre-Portable-0.0.0.1-x64.exe)
+- [Ver notas da versão 0.0.0.1](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.0.1)
 
 O arquivo [BAIXAR_MOTION_LIVRE.md](BAIXAR_MOTION_LIVRE.md), visível na raiz do projeto, também leva diretamente aos executáveis.
 
@@ -52,6 +52,7 @@ Atalhos:
 - timeline, corte por entrada/saída, divisão de clipes e keyframes lineares;
 - mixer com canais separados para vídeos e áudios, solo, mute, volume, panorama, canal esquerdo/direito e fades;
 - camadas com visibilidade, bloqueio, âncora, recorte, espelhamento, ordem e edição temporal;
+- importação de mídia com leitura de resolução, duração, rotação e áudio, usando **Ajustar inteira** por padrão para impedir zoom/corte involuntário;
 - velocidade de vídeo de 0,5× a 2× com áudio sincronizado;
 - transformações, cor, contorno e cantos;
 - máscaras simples, grupos, ordem e blending;

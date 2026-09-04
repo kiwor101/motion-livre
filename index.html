@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="mixer.css">
   <link rel="stylesheet" href="pro-editor.css">
   <link rel="stylesheet" href="pro-mask.css">
+  <link rel="stylesheet" href="media-fit.css">
 </head>
 <body>
   <header class="topbar">
@@ -168,6 +169,7 @@
         <label>Âncora Y<input id="propAnchorY" type="range" min="0" max="100"><output id="outAnchorY"></output></label>
         <label>Recorte horizontal<input id="propCropX" type="range" min="0" max="49"><output id="outCropX"></output></label>
         <label>Recorte vertical<input id="propCropY" type="range" min="0" max="49"><output id="outCropY"></output></label>
+        <label>Ajuste da mídia<select id="propFitMode"><option value="contain">Ajustar inteira (sem corte)</option><option value="cover">Preencher quadro (pode cortar)</option><option value="fill">Esticar ao quadro</option></select></label>
         <label><input id="propVisible" type="checkbox" checked> Camada visível</label>
         <label><input id="propLocked" type="checkbox"> Bloquear edição</label>
         <label><input id="propFlipX" type="checkbox"> Espelhar horizontalmente</label>

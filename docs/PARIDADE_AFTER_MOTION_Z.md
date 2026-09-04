@@ -1,6 +1,6 @@
 # Paridade com After Motion Z
 
-A versão 0.9.0 foi orientada pela análise estática do APK fornecido, pela referência pública do formato de cenas XML e pelas funções descritas em `https://aftermotionz.com/`.
+A versão 0.0.0.1 foi orientada pela análise estática do APK fornecido, pela referência pública do formato de cenas XML e pelas funções descritas em `https://aftermotionz.com/`.
 
 ## Implementado
 

@@ -1,6 +1,6 @@
 # Compatibilidade Alight Motion XML
 
-O Motion Livre 0.9.0 adiciona uma implementação independente do formato de cenas XML usado pelo Alight Motion. Ela foi desenvolvida para interoperabilidade a partir de documentação pública, sem copiar o APK, código-fonte, shaders, chaves, anúncios ou recursos proprietários.
+O Motion Livre 0.0.0.1 inclui uma implementação independente do formato de cenas XML usado pelo Alight Motion. Ela foi desenvolvida para interoperabilidade a partir de documentação pública, sem copiar o APK, código-fonte, shaders, chaves, anúncios ou recursos proprietários.
 
 Referência técnica utilizada: [alight-motion-xml-schema](https://github.com/boiniArun2006/alight-motion-xml-schema), disponibilizada sob licença MIT.
 

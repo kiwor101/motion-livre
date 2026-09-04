@@ -2,12 +2,25 @@ const {app,BrowserWindow,dialog,ipcMain,Menu}=require('electron');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {spawn}=require('node:child_process');
+const {pathToFileURL}=require('node:url');
 
 let mainWindow;
 let exportProcess=null;
+const DISPLAY_VERSION='0.0.0.1';
 const projectFilter=[{name:'Projeto Motion Livre',extensions:['motion.json','json']}];
 const effectFilter=[{name:'Preset de efeitos Motion Livre',extensions:['motion-effect.xml','xml']}];
 const alightFilter=[{name:'Cena XML compatível com Alight Motion',extensions:['xml']}];
+
+function bundledTool(name){return app.isPackaged?path.join(process.resourcesPath,'ffmpeg',`${name}.exe`):path.join(__dirname,'..','vendor','ffmpeg',`${name}.exe`)}
+async function probeMediaFile(filePath){
+  if(typeof filePath!=='string'||!path.isAbsolute(filePath))throw new Error('Caminho de mídia inválido');
+  await fs.access(filePath);
+  return await new Promise((resolve,reject)=>{
+    const process=spawn(bundledTool('ffprobe'),['-v','error','-show_streams','-show_format','-of','json',filePath],{windowsHide:true});let stdout='',stderr='';
+    process.stdout.on('data',chunk=>{stdout+=chunk;if(stdout.length>4*1024*1024)process.kill()});process.stderr.on('data',chunk=>stderr+=chunk);
+    process.on('error',reject);process.on('close',code=>{if(code!==0)return reject(new Error(stderr.trim()||`FFprobe finalizou com código ${code}`));try{const data=JSON.parse(stdout),video=(data.streams||[]).find(stream=>stream.codec_type==='video'),rotation=Number(video?.tags?.rotate??video?.side_data_list?.find(item=>Number.isFinite(Number(item.rotation)))?.rotation??0);resolve({duration:Number(data.format?.duration||video?.duration||0)||0,width:Number(video?.width||0)||0,height:Number(video?.height||0)||0,rotation:Number.isFinite(rotation)?rotation:0,hasAudio:(data.streams||[]).some(stream=>stream.codec_type==='audio')})}catch(error){reject(new Error(`Metadados de mídia inválidos: ${error.message}`))}});
+  });
+}
 
 async function runSmokeTest(){
   try{
@@ -28,6 +41,22 @@ async function runSmokeTest(){
   }catch(error){console.error('MOTION_SMOKE_ERROR',error);app.exit(3)}
 }
 
+async function runMediaSmokeTest(folder){
+  try{
+    if(!path.isAbsolute(folder))throw new Error('A pasta de teste deve usar caminho absoluto');
+    const supported=/\.(mp4|mov|mkv|webm|avi|m4v)$/i,entries=(await fs.readdir(folder,{withFileTypes:true})).filter(entry=>entry.isFile()&&supported.test(entry.name));
+    if(!entries.length)throw new Error('Nenhum vídeo compatível encontrado');
+    const results=[];
+    for(const entry of entries){
+      const file=path.join(folder,entry.name),metadata=await probeMediaFile(file),descriptor={type:'video',url:pathToFileURL(file).href,name:entry.name,sourcePath:file,...metadata};
+      const result=await mainWindow.webContents.executeJavaScript(`(()=>new Promise(resolve=>{const layer=window.motionImportDescriptor(${JSON.stringify(descriptor)},{addToLibrary:false}),finish=()=>{const stage=document.querySelector('#stage').getBoundingClientRect(),element=document.querySelector('.layer[data-id="'+layer.id+'"]'),media=element?.querySelector('video'),rect=element?.getBoundingClientRect(),fit=window.motionMediaFit(layer.mediaWidth,layer.mediaHeight,state.composition.width,state.composition.height,layer.fitMode);const value={name:layer.name,width:layer.mediaWidth,height:layer.mediaHeight,duration:layer.mediaDuration,hasAudio:layer.hasAudio,fitMode:layer.fitMode,fitWidth:fit.width,fitHeight:fit.height,previewWidthRatio:rect?.width/stage.width,previewHeightRatio:rect?.height/stage.height,readyState:media?.readyState||0};state.layers=state.layers.filter(item=>item.id!==layer.id);state.selected=null;renderLayers();resolve(value)};const media=document.querySelector('.layer[data-id="'+layer.id+'"] video');if(media?.readyState>=1)finish();else{media?.addEventListener('loadedmetadata',finish,{once:true});setTimeout(finish,4000)}}))()`);
+      results.push(result);
+    }
+    const okay=results.every(result=>result.width>0&&result.height>0&&result.duration>0&&result.fitMode==='contain'&&result.fitWidth<=1920.5&&result.fitHeight<=1080.5&&Math.abs(result.previewWidthRatio-1)<.03&&Math.abs(result.previewHeightRatio-1)<.03&&result.readyState>=1);
+    console.log('MOTION_MEDIA_SMOKE_RESULT='+JSON.stringify({folder,count:results.length,okay,results}));app.exit(okay?0:4);
+  }catch(error){console.error('MOTION_MEDIA_SMOKE_ERROR',error);app.exit(5)}
+}
+
 function createWindow(){
   mainWindow=new BrowserWindow({
     width:1500,height:920,minWidth:1050,minHeight:700,
@@ -36,7 +65,9 @@ function createWindow(){
   });
   mainWindow.loadFile(path.join(__dirname,'..','index.html'));
   mainWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
-  if(process.argv.includes('--smoke-test'))mainWindow.webContents.once('did-finish-load',runSmokeTest);
+  const mediaSmoke=process.argv.find(argument=>argument.startsWith('--media-smoke-dir='));
+  if(mediaSmoke)mainWindow.webContents.once('did-finish-load',()=>runMediaSmokeTest(mediaSmoke.slice('--media-smoke-dir='.length)));
+  else if(process.argv.includes('--smoke-test'))mainWindow.webContents.once('did-finish-load',runSmokeTest);
 }
 
 function buildMenu(){
@@ -51,7 +82,7 @@ function buildMenu(){
     ]},
     {label:'Editar',submenu:[{role:'undo',label:'Desfazer'},{role:'redo',label:'Refazer'},{type:'separator'},{role:'cut',label:'Recortar'},{role:'copy',label:'Copiar'},{role:'paste',label:'Colar'}]},
     {label:'Exibir',submenu:[{role:'reload',label:'Recarregar'},{role:'togglefullscreen',label:'Tela cheia'},{role:'toggleDevTools',label:'Ferramentas de desenvolvimento'}]},
-    {label:'Ajuda',submenu:[{label:'Mapa de recursos',click:()=>mainWindow.webContents.send('menu:features')},{label:'Sobre',click:()=>dialog.showMessageBox(mainWindow,{type:'info',title:'Motion Livre',message:`Motion Livre ${app.getVersion()}`,detail:'Editor aberto, offline e sem anúncios.'})}]}
+    {label:'Ajuda',submenu:[{label:'Mapa de recursos',click:()=>mainWindow.webContents.send('menu:features')},{label:'Sobre',click:()=>dialog.showMessageBox(mainWindow,{type:'info',title:'Motion Livre',message:`Motion Livre ${DISPLAY_VERSION}`,detail:'Editor aberto, offline e sem anúncios.'})}]}
   ]));
 }
 
@@ -92,7 +123,7 @@ ipcMain.handle('project:autosave',async(_event,data)=>{
   const dir=app.getPath('userData');await fs.mkdir(dir,{recursive:true});const file=path.join(dir,'autosave.motion.json');await fs.writeFile(file,data,'utf8');return file;
 });
 ipcMain.handle('project:recover',async()=>{try{return await fs.readFile(path.join(app.getPath('userData'),'autosave.motion.json'),'utf8')}catch{return null}});
-function bundledTool(name){return app.isPackaged?path.join(process.resourcesPath,'ffmpeg',`${name}.exe`):path.join(__dirname,'..','vendor','ffmpeg',`${name}.exe`)}
+ipcMain.handle('media:probe',async(_event,filePath)=>await probeMediaFile(filePath));
 ipcMain.handle('export:cancel',()=>{if(exportProcess){exportProcess.kill();exportProcess=null;return true}return false});
 ipcMain.handle('export:media',async(_event,{bytes,format,name,audioTracks=[],settings={}})=>{
   const formats={mp4:{ext:'mp4',label:'Vídeo MP4'},mov:{ext:'mov',label:'Vídeo MOV'},webm:{ext:'webm',label:'Vídeo WebM'},gif:{ext:'gif',label:'GIF animado'},png:{ext:'png',label:'Imagem PNG'},mp3:{ext:'mp3',label:'Áudio MP3'}};
@@ -124,7 +155,7 @@ ipcMain.handle('export:media',async(_event,{bytes,format,name,audioTracks=[],set
     exportProcess.on('close',async code=>{exportProcess=null;await fs.rm(tempDir,{recursive:true,force:true});if(code===0)resolve(result.filePath);else if(code===null)resolve(null);else reject(new Error(`FFmpeg finalizou com código ${code}`))});
   });
 });
-ipcMain.handle('app:info',()=>({version:app.getVersion(),platform:process.platform,userData:app.getPath('userData')}));
+ipcMain.handle('app:info',()=>({version:DISPLAY_VERSION,platform:process.platform,userData:app.getPath('userData')}));
 
 app.whenReady().then(()=>{buildMenu();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow()})});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit()});

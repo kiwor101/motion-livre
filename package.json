@@ -1,6 +1,6 @@
 {
   "name": "motion-livre",
-  "version": "0.9.0",
+  "version": "0.0.1",
   "description": "Editor de motion design aberto e offline para Windows",
   "main": "desktop/main.cjs",
   "author": "Motion Livre",
@@ -34,6 +34,7 @@
       "mixer.css",
       "pro-editor.css",
       "pro-mask.css",
+      "media-fit.css",
       "app.js",
       "advanced.js",
       "pro-editor.js",
@@ -53,17 +54,17 @@
         "nsis",
         "portable"
       ],
-      "artifactName": "Motion-Livre-${version}-${arch}.${ext}"
+      "artifactName": "Motion-Livre-0.0.0.1-${arch}.${ext}"
     },
     "nsis": {
-      "artifactName": "Motion-Livre-Setup-${version}-${arch}.${ext}",
+      "artifactName": "Motion-Livre-Setup-0.0.0.1-${arch}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
     "portable": {
-      "artifactName": "Motion-Livre-Portable-${version}-${arch}.${ext}"
+      "artifactName": "Motion-Livre-Portable-0.0.0.1-${arch}.${ext}"
     }
   },
   "dependencies": {

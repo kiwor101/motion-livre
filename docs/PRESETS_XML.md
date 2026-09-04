@@ -1,6 +1,6 @@
 # Presets de efeitos XML
 
-O Motion Livre 0.9.0 salva ajustes reutilizáveis no formato aberto `.motion-effect.xml`.
+O Motion Livre 0.0.0.1 salva ajustes reutilizáveis no formato aberto `.motion-effect.xml`.
 
 O preset inclui brilho, contraste, saturação, matiz, desfoque, escala de cinza, sépia, inversão, RGB, glow, vinheta, nitidez, chroma key, motion blur, opacidade, mesclagem, gradiente, transições, máscaras, contorno, recorte e espelhamento. Para usar, selecione uma camada, abra **Efeitos** e escolha **Salvar preset de efeitos XML** ou **Importar preset XML**.
 

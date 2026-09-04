@@ -10,7 +10,8 @@ Copy-Item -LiteralPath (Join-Path $project 'desktop\main.cjs'),(Join-Path $proje
 Copy-Item -LiteralPath (Join-Path $project 'vendor\ffmpeg\ffmpeg.exe'),(Join-Path $project 'vendor\ffmpeg\ffprobe.exe') -Destination (Join-Path $target 'vendor\ffmpeg') -Force
 $runtimePackage = @{
   name = 'motion-livre-runtime'
-  version = '0.0.1'
+  version = '0.0.0'
+  shortVersionWindows = '0.0.0.1'
   description = 'Editor de motion design aberto e offline para Windows'
   author = 'Motion Livre'
   main = 'desktop/main.cjs'
@@ -18,6 +19,7 @@ $runtimePackage = @{
   build = @{
     appId = 'org.motionlivre.editor'
     productName = 'Motion Livre'
+    buildNumber = '1'
     electronVersion = '37.10.3'
     asar = $true
     npmRebuild = $false

@@ -1,6 +1,7 @@
 {
   "name": "motion-livre",
-  "version": "0.0.1",
+  "version": "0.0.0",
+  "shortVersionWindows": "0.0.0.1",
   "description": "Editor de motion design aberto e offline para Windows",
   "main": "desktop/main.cjs",
   "author": "Motion Livre",
@@ -20,6 +21,7 @@
   "build": {
     "appId": "org.motionlivre.editor",
     "productName": "Motion Livre",
+    "buildNumber": "1",
     "asar": true,
     "npmRebuild": false,
     "directories": {

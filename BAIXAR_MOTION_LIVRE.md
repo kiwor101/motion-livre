@@ -1,10 +1,10 @@
-# ⬇️ Baixar Motion Livre 0.8.0
+# ⬇️ Baixar Motion Livre 0.9.0
 
-## [BAIXAR INSTALADOR PARA WINDOWS](https://github.com/kiwor101/motion-livre/releases/download/v0.8.0/Motion-Livre-Setup-0.8.0-x64.exe)
+## [BAIXAR INSTALADOR PARA WINDOWS](https://github.com/kiwor101/motion-livre/releases/download/v0.9.0/Motion-Livre-Setup-0.9.0-x64.exe)
 
 Instala o programa, permite escolher a pasta e cria atalhos no Windows.
 
-## [BAIXAR VERSÃO PORTÁTIL](https://github.com/kiwor101/motion-livre/releases/download/v0.8.0/Motion-Livre-Portable-0.8.0-x64.exe)
+## [BAIXAR VERSÃO PORTÁTIL](https://github.com/kiwor101/motion-livre/releases/download/v0.9.0/Motion-Livre-Portable-0.9.0-x64.exe)
 
 Pode ser executada diretamente, sem instalação.
 

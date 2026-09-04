@@ -7,6 +7,26 @@ let mainWindow;
 let exportProcess=null;
 const projectFilter=[{name:'Projeto Motion Livre',extensions:['motion.json','json']}];
 const effectFilter=[{name:'Preset de efeitos Motion Livre',extensions:['motion-effect.xml','xml']}];
+const alightFilter=[{name:'Cena XML compatível com Alight Motion',extensions:['xml']}];
+
+async function runSmokeTest(){
+  try{
+    const result=await mainWindow.webContents.executeJavaScript(`(()=>{
+      const a=addLayer('text','Teste','Título de teste'),b=addLayer('rect','','Forma de teste');
+      state.selectedIds.add(a.id);state.selectedIds.add(b.id);$('#precomposeLayers').click();
+      const controller=selected();$('#propEasing').value='ease-in-out';$('#propEasing').dispatchEvent(new Event('input',{bubbles:true}));
+      $('#fxGlow').value='35';$('#fxGlow').dispatchEvent(new Event('input',{bubbles:true}));$('#addKeyframe').click();setTime(1);
+      document.querySelector('[data-export-format="mp4"]').click();
+      const roundtripXml=window.alightCompat.exportScene(),roundtrip=window.alightCompat.importScene(roundtripXml,{silent:true}),roundtripTimeline=document.querySelectorAll('.track').length;
+      const sample='<?xml version="1.0" encoding="UTF-8"?><scene title="Teste XML" width="1080" height="1920" bgcolor="#FF08090B" totalTime="2000" fps="30" amver="106" ffver="101"><shape id="1" label="Retângulo XML" startTime="0" endTime="2000" fillType="color" s=".rect"><transform><location type="vec2"><kf t="0" v="270,960" e="cubicBezier 0.42 0 0.58 1"/><kf t="1" v="810,960"/></location><scale value="1,1"/><rotation value="0"/><opacity value="1"/></transform><fillColor value="#FFFF8800"/><effect id="com.alightcreative.effects.gaussianblur" locallyApplied="true"><property name="strength" type="float" value="0.1"/></effect></shape></scene>';
+      const imported=window.alightCompat.importScene(sample,{silent:true}),sampleLayer=state.layers[0],sampleExport=window.alightCompat.exportScene();
+      return{precomposition:!!controller.precomposition,easing:controller.easing,glow:controller.effects.glow,exportDialog:!$('#exportSettings').hidden,roundtripLayers:roundtrip.layers,roundtripTimeline,xmlScene:/<scene[\\s>]/.test(roundtripXml),sampleLayers:imported.layers,sampleKeys:imported.keyframes,sampleX:sampleLayer.x,sampleBlur:sampleLayer.effects.blur,customEasing:/cubicBezier 0.42 0 0.58 1/.test(sampleExport)};
+    })()`);
+    console.log('MOTION_SMOKE_RESULT='+JSON.stringify(result));
+    const okay=result.precomposition&&result.exportDialog&&result.roundtripLayers===3&&result.roundtripTimeline===3&&result.xmlScene&&result.sampleLayers===1&&result.sampleKeys===2&&Math.round(result.sampleX)===25&&result.sampleBlur===10&&result.customEasing;
+    app.exit(okay?0:2);
+  }catch(error){console.error('MOTION_SMOKE_ERROR',error);app.exit(3)}
+}
 
 function createWindow(){
   mainWindow=new BrowserWindow({
@@ -16,7 +36,7 @@ function createWindow(){
   });
   mainWindow.loadFile(path.join(__dirname,'..','index.html'));
   mainWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
-  if(process.argv.includes('--smoke-test'))mainWindow.webContents.once('did-finish-load',async()=>{try{const result=await mainWindow.webContents.executeJavaScript(`(()=>{const a=addLayer('text','Teste','Título de teste'),b=addLayer('rect','','Forma de teste');state.selectedIds.add(a.id);state.selectedIds.add(b.id);$('#precomposeLayers').click();const controller=selected();$('#propEasing').value='ease-in-out';$('#propEasing').dispatchEvent(new Event('input',{bubbles:true}));$('#fxGlow').value='35';$('#fxGlow').dispatchEvent(new Event('input',{bubbles:true}));$('#addKeyframe').click();setTime(1);document.querySelector('[data-export-format="mp4"]').click();return{layers:state.layers.length,precomposition:!!controller.precomposition,easing:controller.easing,glow:controller.effects.glow,exportDialog:!$('#exportSettings').hidden,timeline:document.querySelectorAll('.track').length}})()`);console.log('MOTION_SMOKE_RESULT='+JSON.stringify(result));app.exit(result.precomposition&&result.exportDialog&&result.timeline===3?0:2)}catch(error){console.error('MOTION_SMOKE_ERROR',error);app.exit(3)}});
+  if(process.argv.includes('--smoke-test'))mainWindow.webContents.once('did-finish-load',runSmokeTest);
 }
 
 function buildMenu(){
@@ -25,6 +45,8 @@ function buildMenu(){
       {label:'Novo projeto',accelerator:'CmdOrCtrl+N',click:()=>mainWindow.webContents.send('menu:new')},
       {label:'Abrir projeto…',accelerator:'CmdOrCtrl+O',click:()=>mainWindow.webContents.send('menu:open')},
       {label:'Salvar projeto',accelerator:'CmdOrCtrl+S',click:()=>mainWindow.webContents.send('menu:save')},
+      {type:'separator'},{label:'Importar cena Alight XML…',click:()=>mainWindow.webContents.send('menu:alight-open')},
+      {label:'Exportar cena Alight XML…',click:()=>mainWindow.webContents.send('menu:alight-save')},
       {type:'separator'},{label:'Sair',role:'quit'}
     ]},
     {label:'Editar',submenu:[{role:'undo',label:'Desfazer'},{role:'redo',label:'Refazer'},{type:'separator'},{role:'cut',label:'Recortar'},{role:'copy',label:'Copiar'},{role:'paste',label:'Colar'}]},
@@ -52,6 +74,18 @@ ipcMain.handle('effect:save',async(_event,{data,suggestedName})=>{
 ipcMain.handle('effect:open',async()=>{
   const result=await dialog.showOpenDialog(mainWindow,{title:'Importar preset de efeitos',properties:['openFile'],filters:effectFilter});
   if(result.canceled||!result.filePaths[0])return null;
+  return{path:result.filePaths[0],data:await fs.readFile(result.filePaths[0],'utf8')};
+});
+ipcMain.handle('alight:save',async(_event,{data,suggestedName})=>{
+  const clean=(suggestedName||'cena').replace(/[<>:"/\\|?*]+/g,'-');
+  const result=await dialog.showSaveDialog(mainWindow,{title:'Exportar cena XML compatível',defaultPath:`${clean}.xml`,filters:alightFilter});
+  if(result.canceled||!result.filePath)return null;
+  await fs.writeFile(result.filePath,data,'utf8');return result.filePath;
+});
+ipcMain.handle('alight:open',async()=>{
+  const result=await dialog.showOpenDialog(mainWindow,{title:'Importar cena XML',properties:['openFile'],filters:alightFilter});
+  if(result.canceled||!result.filePaths[0])return null;
+  const stat=await fs.stat(result.filePaths[0]);if(stat.size>10*1024*1024)throw new Error('O XML excede o limite de 10 MB');
   return{path:result.filePaths[0],data:await fs.readFile(result.filePaths[0],'utf8')};
 });
 ipcMain.handle('project:autosave',async(_event,data)=>{

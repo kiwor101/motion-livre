@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('motionDesktop',{
   openProject:()=>ipcRenderer.invoke('project:open'),
   saveEffect:(data,suggestedName)=>ipcRenderer.invoke('effect:save',{data,suggestedName}),
   openEffect:()=>ipcRenderer.invoke('effect:open'),
+  saveAlight:(data,suggestedName)=>ipcRenderer.invoke('alight:save',{data,suggestedName}),
+  openAlight:()=>ipcRenderer.invoke('alight:open'),
   autosave:data=>ipcRenderer.invoke('project:autosave',data),
   recover:()=>ipcRenderer.invoke('project:recover'),
   getPathForFile:file=>webUtils.getPathForFile(file),

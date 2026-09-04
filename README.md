@@ -6,9 +6,9 @@ Editor de motion design aberto, offline e sem anúncios para Windows.
 
 Downloads oficiais:
 
-- [Baixar instalador 0.8.0 para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.8.0/Motion-Livre-Setup-0.8.0-x64.exe)
-- [Baixar versão portátil 0.8.0](https://github.com/kiwor101/motion-livre/releases/download/v0.8.0/Motion-Livre-Portable-0.8.0-x64.exe)
-- [Ver notas da versão 0.8.0](https://github.com/kiwor101/motion-livre/releases/tag/v0.8.0)
+- [Baixar instalador 0.9.0 para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.9.0/Motion-Livre-Setup-0.9.0-x64.exe)
+- [Baixar versão portátil 0.9.0](https://github.com/kiwor101/motion-livre/releases/download/v0.9.0/Motion-Livre-Portable-0.9.0-x64.exe)
+- [Ver notas da versão 0.9.0](https://github.com/kiwor101/motion-livre/releases/tag/v0.9.0)
 
 O arquivo [BAIXAR_MOTION_LIVRE.md](BAIXAR_MOTION_LIVRE.md), visível na raiz do projeto, também leva diretamente aos executáveis.
 
@@ -34,7 +34,8 @@ O Windows SmartScreen pode exibir um aviso porque o projeto ainda não possui ce
 7. Posicione o cursor da timeline e adicione **Keyframes**.
 8. Configure resolução, FPS, duração e fundo em **Projeto**.
 9. Use **Salvar projeto** para gravar um `.motion.json`.
-10. Clique em **Exportar** e escolha MP4, WebM, GIF ou PNG.
+10. Em **Projeto**, use o XML compatível para trocar cenas e presets com ferramentas do ecossistema Alight Motion.
+11. Clique em **Exportar** e escolha MP4, MOV, WebM, GIF, PNG ou MP3.
 
 Atalhos:
 
@@ -56,6 +57,8 @@ Atalhos:
 - máscaras simples, grupos, ordem e blending;
 - presets e controles ajustáveis de brilho, contraste, saturação, matiz, blur, escala de cinza, sépia e inversão;
 - salvar e importar presets de efeitos em arquivos `.motion-effect.xml`;
+- importar e exportar cenas Alight Motion XML com composição, formas, textos, gradientes, marcadores, transformações, keyframes, curvas Bézier, blending e efeitos reconhecidos;
+- preservar metadados e efeitos XML ainda não renderizados pelo Motion Livre para reduzir perdas ao reexportar;
 - timeline arrastável com alças de corte, zoom, encaixe, marcadores e waveform;
 - easing por propriedade, gráfico de curva, caminho de movimento e transições;
 - parenting, objetos nulos, precomposições e câmera 2.5D;
@@ -65,7 +68,7 @@ Atalhos:
 - autosave, undo/redo e projetos JSON;
 - exportação MP4/H.264, WebM, GIF e PNG com FFmpeg incorporado.
 
-Consulte [docs/FUNCOES_APK.md](docs/FUNCOES_APK.md) e [docs/ROADMAP_DESKTOP.md](docs/ROADMAP_DESKTOP.md).
+Consulte [docs/COMPATIBILIDADE_ALIGHT_XML.md](docs/COMPATIBILIDADE_ALIGHT_XML.md), [docs/FUNCOES_APK.md](docs/FUNCOES_APK.md) e [docs/ROADMAP_DESKTOP.md](docs/ROADMAP_DESKTOP.md).
 
 ## Desenvolvimento
 

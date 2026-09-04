@@ -1,6 +1,6 @@
 /* Camada avançada do protótipo: keyframes, desenho, composição e projetos. */
 const featureMap={
-  'Projeto e arquivos':['Criar, renomear e salvar projetos','Importar/exportar projeto JSON','Composições 16:9, 9:16, 1:1 e 4:5','Resolução, FPS, duração e fundo','Templates, presets e pacotes de elementos'],
+  'Projeto e arquivos':['Criar, renomear e salvar projetos','Importar/exportar projeto JSON','Importar/exportar cenas XML compatíveis com Alight Motion','Composições 16:9, 9:16, 1:1 e 4:5','Resolução, FPS, duração e fundo','Templates, presets e pacotes de elementos'],
   'Camadas':['Vídeo, imagem, áudio, texto e formas','Desenho vetorial livre','Duplicar, excluir e reordenar','Agrupamento e pré-composição','Entrada, saída e recorte temporal','Máscaras, clipping e parenting'],
   'Animação':['Keyframes por propriedade','Easing linear, suave, aceleração, desaceleração e rebote','Posição, escala, rotação e opacidade','Caminhos de movimento e gráfico de curva','Parenting, nulos e precomposição','Retiming, reverso e velocidade de mídia'],
   'Visual':['Cor sólida e gradientes','Contorno, cantos, transparência e máscaras','Modos de mesclagem','Glow, vinheta, blur, nitidez, contraste e matiz','Chroma key, canais RGB, saturação, sépia e inversão','Recorte, âncora e espelhamento'],

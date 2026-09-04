@@ -1,6 +1,6 @@
 # Compatibilidade Alight Motion XML
 
-O Motion Livre 0.0.0.1 inclui uma implementação independente do formato de cenas XML usado pelo Alight Motion. Ela foi desenvolvida para interoperabilidade a partir de documentação pública, sem copiar o APK, código-fonte, shaders, chaves, anúncios ou recursos proprietários.
+O Motion Livre 0.0.0.1 inclui uma implementação independente do formato de cenas XML usado pelo Alight Motion. Ela foi desenvolvida para interoperabilidade a partir de documentação pública.
 
 Referência técnica utilizada: [alight-motion-xml-schema](https://github.com/boiniArun2006/alight-motion-xml-schema), disponibilizada sob licença MIT.
 
@@ -31,11 +31,11 @@ Efeitos não reconhecidos são mantidos como dados XML na camada para poderem se
 ## Limites reais
 
 - Um XML sozinho normalmente não carrega os arquivos de vídeo, imagem e áudio. Referências `am-internal:///` pertencem a pacotes `.alight`; a mídia precisa ser religada/importada no computador.
-- O Motion Livre não redistribui os shaders e efeitos proprietários do APK. Um efeito preservado no XML pode aparecer somente ao abrir o arquivo em uma ferramenta que possua o motor original.
+- O Motion Livre não redistribui shaders ou efeitos proprietários. Um efeito preservado no XML pode aparecer somente ao abrir o arquivo em uma ferramenta que possua o motor original.
 - Camadas e recursos desconhecidos são importados com uma representação aproximada e seus metadados compatíveis são preservados quando possível.
 - Esta função não converte bytecode Android em código Windows. Ela implementa o comportamento e o formato de projeto de forma independente.
 
-## Segurança
+## Limites de importação
 
 - limite de 10 MB por XML;
 - limite de 5.000 camadas e 10.000 keyframes por propriedade;

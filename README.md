@@ -1,114 +1,142 @@
 # Motion Livre
 
-Editor de motion design aberto, offline e sem anúncios para Windows.
+Editor de vídeo e motion design para Windows, aberto, offline e sem anúncios.
+
+[Baixar o instalador](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.1/Motion-Livre-Setup-0.0.0.1-x64.exe) · [Baixar a versão portátil](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.1/Motion-Livre-Portable-0.0.0.1-x64.exe) · [Ver a versão atual](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.0.1)
+
+## Sobre o projeto
+
+O Motion Livre reúne edição por camadas, animação, áudio e exportação em um aplicativo desktop independente. Ele funciona localmente e já inclui o motor FFmpeg necessário para leitura e geração de mídia.
+
+A versão atual é `0.0.0.1` e oferece instalador e executável portátil para Windows 10 e Windows 11 de 64 bits.
+
+## Recursos
+
+### Edição e timeline
+
+- Vídeo, imagem, áudio, texto, formas e desenho vetorial.
+- Timeline com arraste, zoom, encaixe, marcadores e waveform.
+- Corte pelas bordas do clipe, divisão no cursor, entrada, saída e velocidade.
+- Camadas com visibilidade, bloqueio, ordem, agrupamento e precomposição.
+- Arrastar e soltar um ou vários vídeos ou imagens diretamente na janela.
+
+### Animação e composição
+
+- Keyframes de posição, escala, rotação, profundidade e opacidade.
+- Curvas de easing, caminho de movimento, parenting, objetos nulos e câmera 2.5D.
+- Transições de fade, zoom e deslizamento.
+- Máscaras geométricas e poligonais, recorte, âncora e espelhamento.
+- Composições 16:9, 9:16, 1:1 e 4:5 com resolução e FPS configuráveis.
+
+### Efeitos e áudio
+
+- Brilho, contraste, saturação, matiz, blur, glow, vinheta e nitidez.
+- Ajuste RGB, sépia, inversão, chroma key e motion blur.
+- Gradientes, contorno, cantos e modos de mesclagem.
+- Mixer com volume, panorama, solo, mute, fades e seleção de canal esquerdo ou direito.
+- Separação do áudio de uma camada de vídeo.
+
+### Arquivos e exportação
+
+- Projetos editáveis no formato `.motion.json`.
+- Presets reutilizáveis no formato `.motion-effect.xml`.
+- Importação e exportação de cenas XML compatíveis com o ecossistema Alight Motion.
+- Exportação para MP4, MOV, WebM, GIF, PNG e MP3.
+- Presets de saída de 720p a 4K.
+- Salvamento automático e histórico de desfazer/refazer.
 
 ## Instalação
 
-Downloads oficiais:
+Para uso normal, escolha uma das opções na [página de versões](https://github.com/kiwor101/motion-livre/releases):
 
-- [Baixar instalador 0.0.0.1 para Windows](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.1/Motion-Livre-Setup-0.0.0.1-x64.exe)
-- [Baixar versão portátil 0.0.0.1](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.1/Motion-Livre-Portable-0.0.0.1-x64.exe)
-- [Ver notas da versão 0.0.0.1](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.0.1)
+- **Instalador:** permite escolher a pasta e cria atalhos no Windows.
+- **Portátil:** executa diretamente, sem instalação.
 
-O arquivo [BAIXAR_MOTION_LIVRE.md](BAIXAR_MOTION_LIVRE.md), visível na raiz do projeto, também leva diretamente aos executáveis.
+O computador do usuário não precisa ter Node.js, Electron, FFmpeg, Rust, codecs ou ferramentas de desenvolvimento instalados.
 
-O instalador permite escolher a pasta e cria atalhos. A versão portátil funciona diretamente, sem instalação.
+## Primeiros passos
 
-### Requisitos do usuário final
+1. Abra o Motion Livre e defina o nome e as propriedades da composição.
+2. Importe a mídia pelo painel lateral ou arraste os arquivos para o palco.
+3. Organize e corte as camadas na timeline.
+4. Ajuste propriedades, efeitos, keyframes, transições e canais de áudio.
+5. Salve o projeto em `.motion.json` para continuar a edição depois.
+6. Abra **Exportar**, escolha o formato e configure resolução, FPS e qualidade.
 
-- Windows 10 ou Windows 11, 64 bits;
-- aproximadamente 500 MB livres.
+Atalhos principais:
 
-Não é necessário instalar Node.js, Rust, Electron, FFmpeg, codecs ou Visual Studio. O runtime e o motor de mídia estão incorporados.
-
-O Windows SmartScreen pode exibir um aviso porque o projeto ainda não possui certificado comercial. Confira a origem e o hash do arquivo antes de executar.
-
-## Como usar
-
-1. Abra o Motion Livre e defina o nome do projeto.
-2. Em **Mídia**, importe imagens ou vídeos; também é possível arrastar um ou vários arquivos diretamente para a janela ou para o palco.
-3. Use **Texto**, **Forma** ou **Desenho** para criar camadas.
-4. Em **Corte**, defina entrada/saída ou divida o clipe no cursor; ajuste velocidade, volume e fades.
-5. Em **Efeitos**, use presets ou controles de brilho, contraste, saturação, matiz, blur, sépia e outros.
-6. Arraste os elementos no palco e ajuste suas propriedades.
-7. Posicione o cursor da timeline e adicione **Keyframes**.
-8. Configure resolução, FPS, duração e fundo em **Projeto**.
-9. Use **Salvar projeto** para gravar um `.motion.json`.
-10. Em **Projeto**, use o XML compatível para trocar cenas e presets com ferramentas do ecossistema Alight Motion.
-11. Clique em **Exportar** e escolha MP4, MOV, WebM, GIF, PNG ou MP3.
-
-Atalhos:
-
-- `Ctrl+S`: salvar;
-- `Ctrl+O`: abrir;
-- `Ctrl+N`: novo projeto;
-- `Ctrl+Z` / `Ctrl+Y`: desfazer/refazer;
-- `Espaço`: reproduzir/pausar;
-- `Delete`: excluir a camada selecionada.
-
-## Recursos atuais
-
-- imagem, vídeo, áudio, texto, formas e desenho;
-- arrastar e soltar vídeos/imagens para criar camadas automaticamente, inclusive vários arquivos de uma vez;
-- timeline, corte por entrada/saída, divisão de clipes e keyframes lineares;
-- mixer com canais separados para vídeos e áudios, solo, mute, volume, panorama, canal esquerdo/direito e fades;
-- camadas com visibilidade, bloqueio, âncora, recorte, espelhamento, ordem e edição temporal;
-- importação de mídia com leitura de resolução, duração, rotação e áudio, usando **Ajustar inteira** por padrão para impedir zoom/corte involuntário;
-- velocidade de vídeo de 0,5× a 2× com áudio sincronizado;
-- transformações, cor, contorno e cantos;
-- máscaras simples, grupos, ordem e blending;
-- presets e controles ajustáveis de brilho, contraste, saturação, matiz, blur, escala de cinza, sépia e inversão;
-- salvar e importar presets de efeitos em arquivos `.motion-effect.xml`;
-- importar e exportar cenas Alight Motion XML com composição, formas, textos, gradientes, marcadores, transformações, keyframes, curvas Bézier, blending e efeitos reconhecidos;
-- preservar metadados e efeitos XML ainda não renderizados pelo Motion Livre para reduzir perdas ao reexportar;
-- timeline arrastável com alças de corte, zoom, encaixe, marcadores e waveform;
-- easing por propriedade, gráfico de curva, caminho de movimento e transições;
-- parenting, objetos nulos, precomposições e câmera 2.5D;
-- máscaras geométricas/poligonais, gradientes e caneta Bézier;
-- glow, vinheta, nitidez, chroma key, motion blur e ajuste RGB;
-- exportação MP4, MOV, WebM, GIF, PNG e MP3 com presets até 4K;
-- autosave, undo/redo e projetos JSON;
-- exportação MP4/H.264, WebM, GIF e PNG com FFmpeg incorporado.
-
-Consulte [docs/COMPATIBILIDADE_ALIGHT_XML.md](docs/COMPATIBILIDADE_ALIGHT_XML.md), [docs/FUNCOES_APK.md](docs/FUNCOES_APK.md) e [docs/ROADMAP_DESKTOP.md](docs/ROADMAP_DESKTOP.md).
+| Atalho | Ação |
+|---|---|
+| `Ctrl+N` | Novo projeto |
+| `Ctrl+O` | Abrir projeto |
+| `Ctrl+S` | Salvar projeto |
+| `Ctrl+Z` / `Ctrl+Y` | Desfazer / refazer |
+| `Espaço` | Reproduzir / pausar |
+| `Delete` | Excluir camada selecionada |
 
 ## Desenvolvimento
 
-Pré-requisitos: Node.js 20+, pnpm e Visual Studio Build Tools/Windows SDK.
+Pré-requisitos:
+
+- Node.js 20 ou superior;
+- pnpm 11;
+- PowerShell;
+- conexão com a internet na preparação inicial.
+
+Preparação do ambiente:
 
 ```powershell
+git clone https://github.com/kiwor101/motion-livre.git
+cd motion-livre
 pnpm install
-powershell -ExecutionPolicy Bypass -File tools/setup-ffmpeg.ps1
+pnpm setup:ffmpeg
 pnpm dev
 ```
 
-Gerar os executáveis autônomos:
+Gerar instalador e versão portátil:
 
 ```powershell
 pnpm dist
 ```
 
-Os artefatos finais são gravados em `dist/`. Binários, caches e dependências locais não são versionados.
-Após cada compilação, a limpeza automática mantém em `dist/` somente o instalador e a versão portátil da versão atual.
+Os executáveis são gravados em `dist/`. Dependências, binários do FFmpeg, arquivos temporários e artefatos de compilação não são versionados.
 
-Testes automatizados disponíveis:
+## Organização do código
 
-```powershell
-pnpm check
-node tools/security-renderer-test.cjs
-node tools/demo-project-test.cjs "C:\caminho\projeto.motion.json"
+```text
+desktop/                 Processo principal e ponte nativa do Electron
+docs/                    Documentação dos formatos XML
+tools/                   Preparação do FFmpeg e empacotamento
+app.js                   Editor e importação de mídia
+advanced.js              Composição, timeline e projetos
+pro-editor.js            Keyframes, máscaras, câmera e efeitos
+desktop-integration.js   Arquivos locais e exportação
+alight-compat.js         Interoperabilidade XML
+index.html               Interface do editor
 ```
 
-## Segurança
+## Colaboração
 
-O aplicativo distribuído usa Electron 39.8.10 com sandbox, isolamento de contexto, integração Node desativada, política CSP, pop-ups/permissões bloqueados, navegação restrita e validação da origem das chamadas IPC. Projetos e XMLs têm limites de tamanho, e texto importado é escapado antes de entrar na interface.
+Para evitar conflitos, cada mudança deve sair de uma branch atualizada:
 
-Os executáveis ainda não têm assinatura Authenticode comercial; por isso o Windows SmartScreen pode mostrar “editor desconhecido”.
+```powershell
+git switch main
+git pull --rebase origin main
+git switch -c feature/nome-da-mudanca
+```
+
+Mantenha cada commit concentrado em uma única alteração. Não envie `node_modules/`, `dist/`, `vendor/ffmpeg/` ou arquivos de mídia para o repositório.
+
+## Documentação
+
+- [Compatibilidade de cenas XML](docs/COMPATIBILIDADE_ALIGHT_XML.md)
+- [Presets de efeitos XML](docs/PRESETS_XML.md)
+- [Licenças de terceiros](THIRD_PARTY_NOTICES.md)
 
 ## Privacidade
 
-O editor funciona offline. A versão aberta não inclui anúncios, pagamentos, contas, analytics ou telemetria.
+O Motion Livre funciona offline e não exige conta. Projetos e mídias permanecem no computador do usuário.
 
 ## Licença
 
-Motion Livre sob licença MIT. FFmpeg e demais componentes mantêm suas respectivas licenças.
+Distribuído sob a [licença MIT](LICENSE).

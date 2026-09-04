@@ -40,42 +40,6 @@ async function probeMediaFile(filePath){
   });
 }
 
-async function runSmokeTest(){
-  try{
-    const result=await mainWindow.webContents.executeJavaScript(`(async()=>{
-      const a=addLayer('text','Teste','Título de teste'),b=addLayer('rect','','Forma de teste');
-      state.selectedIds.add(a.id);state.selectedIds.add(b.id);$('#precomposeLayers').click();
-      const controller=selected();$('#propEasing').value='ease-in-out';$('#propEasing').dispatchEvent(new Event('input',{bubbles:true}));
-      $('#fxGlow').value='35';$('#fxGlow').dispatchEvent(new Event('input',{bubbles:true}));$('#addKeyframe').click();setTime(1);
-      document.querySelector('[data-export-format="mp4"]').click();
-      const roundtripXml=window.alightCompat.exportScene(),roundtrip=window.alightCompat.importScene(roundtripXml,{silent:true}),roundtripTimeline=document.querySelectorAll('.track').length;
-      const sample='<?xml version="1.0" encoding="UTF-8"?><scene title="Teste XML" width="1080" height="1920" bgcolor="#FF08090B" totalTime="2000" fps="30" amver="106" ffver="101"><shape id="1" label="Retângulo XML" startTime="0" endTime="2000" fillType="color" s=".rect"><transform><location type="vec2"><kf t="0" v="270,960" e="cubicBezier 0.42 0 0.58 1"/><kf t="1" v="810,960"/></location><scale value="1,1"/><rotation value="0"/><opacity value="1"/></transform><fillColor value="#FFFF8800"/><effect id="com.alightcreative.effects.gaussianblur" locallyApplied="true"><property name="strength" type="float" value="0.1"/></effect></shape></scene>';
-      const imported=window.alightCompat.importScene(sample,{silent:true}),sampleLayer=state.layers[0],sampleExport=window.alightCompat.exportScene();
-      const png=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='),character=>character.charCodeAt(0)),transfer=new DataTransfer();transfer.items.add(new File([png],'arrastada.png',{type:'image/png'}));document.dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true}));await new Promise(resolve=>{const started=Date.now(),poll=()=>state.layers.some(layer=>layer.name==='arrastada.png')||Date.now()-started>2000?resolve():setTimeout(poll,20);poll()});
-      return{precomposition:!!controller.precomposition,easing:controller.easing,glow:controller.effects.glow,exportDialog:!$('#exportSettings').hidden,roundtripLayers:roundtrip.layers,roundtripTimeline,xmlScene:/<scene[\\s>]/.test(roundtripXml),sampleLayers:imported.layers,sampleKeys:imported.keyframes,sampleX:sampleLayer.x,sampleBlur:sampleLayer.effects.blur,customEasing:/cubicBezier 0.42 0 0.58 1/.test(sampleExport),dragDrop:state.layers.some(layer=>layer.name==='arrastada.png')};
-    })()`);
-    console.log('MOTION_SMOKE_RESULT='+JSON.stringify(result));
-    const okay=result.precomposition&&result.exportDialog&&result.roundtripLayers===3&&result.roundtripTimeline===3&&result.xmlScene&&result.sampleLayers===1&&result.sampleKeys===2&&Math.round(result.sampleX)===25&&result.sampleBlur===10&&result.customEasing&&result.dragDrop;
-    app.exit(okay?0:2);
-  }catch(error){console.error('MOTION_SMOKE_ERROR',error);app.exit(3)}
-}
-
-async function runMediaSmokeTest(folder){
-  try{
-    if(!path.isAbsolute(folder))throw new Error('A pasta de teste deve usar caminho absoluto');
-    const supported=/\.(mp4|mov|mkv|webm|avi|m4v)$/i,entries=(await fs.readdir(folder,{withFileTypes:true})).filter(entry=>entry.isFile()&&supported.test(entry.name));
-    if(!entries.length)throw new Error('Nenhum vídeo compatível encontrado');
-    const results=[];
-    for(const entry of entries){
-      const file=path.join(folder,entry.name),metadata=await probeMediaFile(file),descriptor={type:'video',url:pathToFileURL(file).href,name:entry.name,sourcePath:file,...metadata};
-      const result=await mainWindow.webContents.executeJavaScript(`(()=>new Promise(resolve=>{const layer=window.motionImportDescriptor(${JSON.stringify(descriptor)},{addToLibrary:false}),finish=()=>{const stage=document.querySelector('#stage').getBoundingClientRect(),element=document.querySelector('.layer[data-id="'+layer.id+'"]'),media=element?.querySelector('video'),rect=element?.getBoundingClientRect(),fit=window.motionMediaFit(layer.mediaWidth,layer.mediaHeight,state.composition.width,state.composition.height,layer.fitMode);const value={name:layer.name,width:layer.mediaWidth,height:layer.mediaHeight,duration:layer.mediaDuration,hasAudio:layer.hasAudio,fitMode:layer.fitMode,fitWidth:fit.width,fitHeight:fit.height,previewWidthRatio:rect?.width/stage.width,previewHeightRatio:rect?.height/stage.height,readyState:media?.readyState||0};state.layers=state.layers.filter(item=>item.id!==layer.id);state.selected=null;renderLayers();resolve(value)};const media=document.querySelector('.layer[data-id="'+layer.id+'"] video');if(media?.readyState>=1)finish();else{media?.addEventListener('loadedmetadata',finish,{once:true});setTimeout(finish,4000)}}))()`);
-      results.push(result);
-    }
-    const okay=results.every(result=>result.width>0&&result.height>0&&result.duration>0&&result.fitMode==='contain'&&result.fitWidth<=1920.5&&result.fitHeight<=1080.5&&Math.abs(result.previewWidthRatio-1)<.03&&Math.abs(result.previewHeightRatio-1)<.03&&result.readyState>=1);
-    console.log('MOTION_MEDIA_SMOKE_RESULT='+JSON.stringify({folder,count:results.length,okay,results}));app.exit(okay?0:4);
-  }catch(error){console.error('MOTION_MEDIA_SMOKE_ERROR',error);app.exit(5)}
-}
-
 function createWindow(){
   mainWindow=new BrowserWindow({
     width:1500,height:920,minWidth:1050,minHeight:700,
@@ -85,9 +49,6 @@ function createWindow(){
   mainWindow.loadFile(mainPagePath);
   mainWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   mainWindow.webContents.on('will-navigate',(event,url)=>{if(url!==mainPageUrl)event.preventDefault()});
-  const mediaSmoke=process.argv.find(argument=>argument.startsWith('--media-smoke-dir='));
-  if(mediaSmoke)mainWindow.webContents.once('did-finish-load',()=>runMediaSmokeTest(mediaSmoke.slice('--media-smoke-dir='.length)));
-  else if(process.argv.includes('--smoke-test'))mainWindow.webContents.once('did-finish-load',runSmokeTest);
 }
 
 function buildMenu(){

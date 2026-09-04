@@ -1,4 +1,4 @@
-/* Camada avançada do protótipo: keyframes, desenho, composição e projetos. */
+/* Ferramentas de edição: keyframes, desenho, composição e projetos. */
 const featureMap={
   'Projeto e arquivos':['Criar, renomear e salvar projetos','Importar/exportar projeto JSON','Importar/exportar cenas XML compatíveis com Alight Motion','Composições 16:9, 9:16, 1:1 e 4:5','Resolução, FPS, duração e fundo','Templates, presets e pacotes de elementos'],
   'Camadas':['Vídeo, imagem, áudio, texto e formas','Desenho vetorial livre','Duplicar, excluir e reordenar','Agrupamento e pré-composição','Entrada, saída e recorte temporal','Máscaras, clipping e parenting'],
@@ -6,7 +6,7 @@ const featureMap={
   'Visual':['Cor sólida e gradientes','Contorno, cantos, transparência e máscaras','Modos de mesclagem','Glow, vinheta, blur, nitidez, contraste e matiz','Chroma key, canais RGB, saturação, sépia e inversão','Recorte, âncora e espelhamento'],
   'Texto e vetores':['Família e tamanho de fonte','Alinhamento e cor','Formas retângulo/círculo','Splines e desenho manual','Preenchimento e contorno','Elementos nulos e grupos'],
   'Mídia e saída':['Navegador de mídia, waveform e mixer','Preview sincronizado','Canais L/R, pan, solo, mute e fades','MP4, MOV, WebM, GIF, PNG e MP3','Presets 720p, 1080p, 1440p e 4K','Qualidade, FPS, bitrate, faixa e transparência'],
-  'APK original removido':['Anúncios e attribution','Paywall, assinatura e licença','Conta, ranking e recompensas','Pesquisas e creator program','Firebase e notificações push','Telemetria e ofertas externas']
+  'Experiência offline':['Sem anúncios','Sem pagamentos ou assinatura','Sem conta obrigatória','Projetos armazenados localmente','Sem notificações promocionais','Sem telemetria']
 };
 
 state.composition={width:1920,height:1080,fps:30,background:'#08090b'};

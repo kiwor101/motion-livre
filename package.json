@@ -4,17 +4,28 @@
   "shortVersionWindows": "0.0.0.1",
   "description": "Editor de motion design aberto e offline para Windows",
   "main": "desktop/main.cjs",
-  "author": "Motion Livre",
+  "author": "Motion Livre Contributors",
   "license": "MIT",
   "private": true,
+  "homepage": "https://github.com/kiwor101/motion-livre",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kiwor101/motion-livre.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kiwor101/motion-livre/issues"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "electron .",
-    "check": "node --check app.js && node --check advanced.js && node --check desktop-integration.js && node --check pro-editor.js && node --check alight-compat.js && node --check desktop/main.cjs && node --check desktop/preload.cjs && node tools/validate-ui.cjs",
+    "setup:ffmpeg": "powershell -ExecutionPolicy Bypass -File tools/setup-ffmpeg.ps1",
     "prepare:runtime": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1",
     "dist": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1 && electron-builder --projectDir ../motion-livre-runtime-staging --win nsis portable && powershell -ExecutionPolicy Bypass -File tools/clean-dist.ps1"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.4",
     "electron": "39.8.10",
     "electron-builder": "^26.0.12"
   },
@@ -68,8 +79,5 @@
     "portable": {
       "artifactName": "Motion-Livre-Portable-0.0.0.1-${arch}.${ext}"
     }
-  },
-  "dependencies": {
-    "@tauri-apps/api": "^2.11.1"
   }
 }

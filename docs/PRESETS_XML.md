@@ -15,6 +15,6 @@ Exemplo:
 </motion-livre-effect>
 ```
 
-Os pacotes internos `.ta` encontrados no APK são binários proprietários, não XML legível. Por isso, o formato do Motion Livre é documentado e independente, permitindo criar e compartilhar presets sem depender do aplicativo Android.
+O formato do Motion Livre é documentado e independente, permitindo criar e compartilhar presets entre projetos.
 
 O arquivo `.motion-effect.xml` é um preset nativo de uma camada. Para trocar cenas completas com o ecossistema Alight Motion, use **Projeto → Importar/Exportar cena XML compatível**. Consulte [COMPATIBILIDADE_ALIGHT_XML.md](COMPATIBILIDADE_ALIGHT_XML.md).

@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
 $target = Join-Path (Split-Path -Parent $project) 'motion-livre-runtime-staging'
+$output = [IO.Path]::GetFullPath((Join-Path $project 'dist'))
 New-Item -ItemType Directory -Force -Path $target,(Join-Path $target 'desktop'),(Join-Path $target 'vendor\ffmpeg') | Out-Null
 $files = @('index.html','styles.css','advanced.css','export.css','mixer.css','pro-editor.css','pro-mask.css','media-fit.css','app.js','advanced.js','desktop-integration.js','pro-editor.js','alight-compat.js','LICENSE','THIRD_PARTY_NOTICES.md')
 foreach ($file in $files) {
@@ -23,7 +24,7 @@ $runtimePackage = @{
     electronVersion = '39.8.10'
     asar = $true
     npmRebuild = $false
-    directories = @{ output = '..\apk-windows-prototype\dist' }
+    directories = @{ output = $output }
     files = @('index.html','styles.css','advanced.css','export.css','mixer.css','pro-editor.css','pro-mask.css','media-fit.css','app.js','advanced.js','desktop-integration.js','pro-editor.js','alight-compat.js','LICENSE','THIRD_PARTY_NOTICES.md','desktop/**/*','package.json')
     extraResources = @(
       @{ from = 'vendor/ffmpeg/ffmpeg.exe'; to = 'ffmpeg/ffmpeg.exe' },

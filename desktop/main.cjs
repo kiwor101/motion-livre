@@ -44,7 +44,7 @@ function createWindow(){
   mainWindow=new BrowserWindow({
     width:1500,height:920,minWidth:1050,minHeight:700,
     backgroundColor:'#111318',title:'Motion Livre',
-    webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,devTools:!app.isPackaged}
+    webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,backgroundThrottling:false,devTools:!app.isPackaged}
   });
   mainWindow.loadFile(mainPagePath);
   mainWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
@@ -125,17 +125,17 @@ secureHandle('export:media',async(_event,{bytes,format,name,audioTracks=[],setti
   const audioInputs=validAudio.flatMap(track=>['-i',track.path]);
   const filters=validAudio.map((track,index)=>{const duration=Math.max(.01,(track.end-track.start));const sourceEnd=Math.max(track.sourceIn+.01,Math.min(Number.isFinite(track.sourceOut)?track.sourceOut:track.sourceIn+duration*track.speed,track.sourceIn+duration*track.speed));const fadeOutStart=Math.max(0,duration-(track.fadeOut||0)),channel=track.audioChannel==='left'?'pan=stereo|c0=c0|c1=c0':track.audioChannel==='right'?'pan=stereo|c0=c1|c1=c1':'aformat=channel_layouts=stereo',pan=Math.max(-1,Math.min(1,track.pan||0)),reverse=track.reverse?',areverse':'';return `[${index+1}:a:0]atrim=start=${track.sourceIn}:end=${sourceEnd},asetpts=PTS-STARTPTS${reverse},${channel},stereotools=balance_out=${pan},atempo=${Math.max(.5,Math.min(2,track.speed))},volume=${Math.max(0,Math.min(2,track.volume))},afade=t=in:st=0:d=${Math.min(duration,track.fadeIn||0)},afade=t=out:st=${fadeOutStart}:d=${Math.min(duration,track.fadeOut||0)},adelay=${Math.round(track.start*1000)}|${Math.round(track.start*1000)}[a${index}]`});
   const mix=validAudio.length?`${filters.join(';')};${validAudio.map((_,i)=>`[a${i}]`).join('')}amix=inputs=${validAudio.length}:normalize=0:dropout_transition=0[aout]`:'';
-  const crf=String(Math.max(14,Math.min(32,Number(settings.quality)||18))),audioBitrate=/^(128|192|320)k$/.test(settings.audioBitrate||'')?settings.audioBitrate:'192k';
+  const crf=String(Math.max(14,Math.min(32,Number(settings.quality)||18))),audioBitrate=/^(128|192|320)k$/.test(settings.audioBitrate||'')?settings.audioBitrate:'192k',fps=[24,30,60].includes(Number(settings.fps))?Number(settings.fps):30,constantFrameRate=`setpts=N/(${fps}*TB),fps=${fps}`,rangeStart=Number(settings.start),rangeEnd=Number(settings.end),outputDuration=Number.isFinite(rangeStart)&&Number.isFinite(rangeEnd)&&rangeEnd>rangeStart?Math.max(1/fps,Math.min(3600,rangeEnd-rangeStart)):null,durationArgs=outputDuration?['-t',String(outputDuration)]:[];
   if(format==='mp3'&&!mix){await fs.rm(tempDir,{recursive:true,force:true});throw new Error('Nenhum canal de áudio ativo para exportar')}
   const args=format==='gif'
-    ?['-y','-i',input,'-vf','fps=15,scale=960:-1:flags=lanczos','-loop','0',result.filePath]
+    ?['-y','-i',input,'-vf',`setpts=N/(${fps}*TB),fps=15,scale=960:-1:flags=lanczos`,'-loop','0',...durationArgs,result.filePath]
     :format==='png'
       ?['-y','-i',input,'-frames:v','1',result.filePath]
       :format==='mp3'
-        ?['-y','-i',input,...audioInputs,'-filter_complex',mix,'-map','[aout]','-c:a','libmp3lame','-b:a',audioBitrate,result.filePath]
+        ?['-y','-i',input,...audioInputs,'-filter_complex',mix,'-map','[aout]','-c:a','libmp3lame','-b:a',audioBitrate,...durationArgs,result.filePath]
       :format==='webm'
-        ?['-y','-i',input,...audioInputs,...(mix?['-filter_complex',mix,'-map','0:v:0','-map','[aout]']:['-map','0:v:0']),'-c:v','libvpx-vp9','-crf',crf,'-b:v','0','-pix_fmt',settings.transparent?'yuva420p':'yuv420p','-c:a','libopus','-b:a',audioBitrate,'-shortest',result.filePath]
-        :['-y','-i',input,...audioInputs,...(mix?['-filter_complex',mix,'-map','0:v:0','-map','[aout]']:['-map','0:v:0']),'-c:v','libx264','-preset','medium','-crf',crf,'-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a',audioBitrate,'-shortest',result.filePath];
+        ?['-y','-i',input,...audioInputs,...(mix?['-filter_complex',mix,'-map','0:v:0','-map','[aout]']:['-map','0:v:0']),'-vf',constantFrameRate,'-fps_mode','cfr','-c:v','libvpx-vp9','-crf',crf,'-b:v','0','-pix_fmt',settings.transparent?'yuva420p':'yuv420p','-c:a','libopus','-b:a',audioBitrate,...durationArgs,result.filePath]
+        :['-y','-i',input,...audioInputs,...(mix?['-filter_complex',mix,'-map','0:v:0','-map','[aout]']:['-map','0:v:0']),'-vf',constantFrameRate,'-fps_mode','cfr','-c:v','libx264','-preset','medium','-crf',crf,'-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a',audioBitrate,...durationArgs,result.filePath];
   return await new Promise((resolve,reject)=>{
     exportProcess=spawn(bundledTool('ffmpeg'),args,{windowsHide:true});
     exportProcess.stderr.on('data',chunk=>{const message=chunk.toString();const match=message.match(/time=(\d+):(\d+):(\d+(?:\.\d+)?)/);if(match){const seconds=+match[1]*3600+ +match[2]*60+ +match[3];mainWindow.webContents.send('export:progress',seconds)}});

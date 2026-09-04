@@ -1,6 +1,6 @@
 # Presets de efeitos XML
 
-O Motion Livre 0.8.0 salva ajustes reutilizáveis no formato aberto `.motion-effect.xml`.
+O Motion Livre 0.9.0 salva ajustes reutilizáveis no formato aberto `.motion-effect.xml`.
 
 O preset inclui brilho, contraste, saturação, matiz, desfoque, escala de cinza, sépia, inversão, RGB, glow, vinheta, nitidez, chroma key, motion blur, opacidade, mesclagem, gradiente, transições, máscaras, contorno, recorte e espelhamento. Para usar, selecione uma camada, abra **Efeitos** e escolha **Salvar preset de efeitos XML** ou **Importar preset XML**.
 
@@ -16,3 +16,5 @@ Exemplo:
 ```
 
 Os pacotes internos `.ta` encontrados no APK são binários proprietários, não XML legível. Por isso, o formato do Motion Livre é documentado e independente, permitindo criar e compartilhar presets sem depender do aplicativo Android.
+
+O arquivo `.motion-effect.xml` é um preset nativo de uma camada. Para trocar cenas completas com o ecossistema Alight Motion, use **Projeto → Importar/Exportar cena XML compatível**. Consulte [COMPATIBILIDADE_ALIGHT_XML.md](COMPATIBILIDADE_ALIGHT_XML.md).

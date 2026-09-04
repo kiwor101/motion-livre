@@ -1,6 +1,6 @@
 # Paridade com After Motion Z
 
-A versão 0.8.0 foi orientada pela análise estática do APK fornecido e pelas funções públicas descritas em `https://aftermotionz.com/`.
+A versão 0.9.0 foi orientada pela análise estática do APK fornecido, pela referência pública do formato de cenas XML e pelas funções descritas em `https://aftermotionz.com/`.
 
 ## Implementado
 
@@ -12,7 +12,7 @@ A versão 0.8.0 foi orientada pela análise estática do APK fornecido e pelas f
 - parenting, controle nulo, precomposição e câmera 2.5D simulada;
 - máscaras retangular, circular, elíptica e poligonal;
 - gradientes, blending, glow, vinheta, blur, nitidez, chroma key, motion blur e canais RGB;
-- presets XML compartilháveis;
+- presets XML compartilháveis e intercâmbio de cenas Alight Motion XML;
 - MP4, MOV, WebM, GIF, PNG e MP3; qualidade, FPS, bitrate, faixa, transparência e presets até 4K.
 
 ## Limites conhecidos

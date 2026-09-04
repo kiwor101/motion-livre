@@ -52,7 +52,20 @@ async function importMedia(file){
  if(!metadata?.width||!metadata?.height)metadata={...(metadata||{}),...await browserMediaMetadata(type,url)};
  return addMediaDescriptor({type,url,name:file.name,sourcePath,duration:metadata.duration||0,width:metadata.width||0,height:metadata.height||0,rotation:metadata.rotation||0,hasAudio:!!metadata.hasAudio});
 }
-$('#mediaInput').onchange=e=>importMedia(e.target.files[0]);
+function isSupportedVisualMedia(file){return /^(video|image)\//i.test(file.type||'')||/\.(mp4|mov|mkv|webm|avi|m4v|jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name||'')}
+async function importMediaFiles(files,dropPoint=null){
+ const accepted=[...files].filter(isSupportedVisualMedia);let added=0;
+ for(const file of accepted){const layer=await importMedia(file);if(layer){if(dropPoint){layer.x=Math.max(0,Math.min(100,dropPoint.x+added*2));layer.y=Math.max(0,Math.min(100,dropPoint.y+added*2));renderLayers();selectLayer(layer.id)}added++}}
+ if(added){switchPanel('media');toast(`${added} ${added===1?'arquivo adicionado':'arquivos adicionados'} como ${added===1?'camada':'camadas'}`)}else toast('Solte arquivos de vídeo ou imagem compatíveis');
+ return added;
+}
+window.motionImportFiles=importMediaFiles;
+$('#mediaInput').onchange=async e=>{await importMediaFiles(e.target.files);e.target.value=''};
+const transferHasFiles=event=>[...(event.dataTransfer?.types||[])].includes('Files');
+document.addEventListener('dragenter',event=>{if(!transferHasFiles(event))return;event.preventDefault();document.body.classList.add('media-dragging')});
+document.addEventListener('dragover',event=>{if(!transferHasFiles(event))return;event.preventDefault();event.dataTransfer.dropEffect='copy';document.body.classList.add('media-dragging')});
+document.addEventListener('dragleave',event=>{if(!event.relatedTarget)document.body.classList.remove('media-dragging')});
+document.addEventListener('drop',async event=>{if(!event.dataTransfer?.files?.length)return;event.preventDefault();document.body.classList.remove('media-dragging');const rect=$('#stage').getBoundingClientRect(),inside=event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom,point=inside?{x:(event.clientX-rect.left)/rect.width*100,y:(event.clientY-rect.top)/rect.height*100}:null;await importMediaFiles(event.dataTransfer.files,point)});
 $('#audioInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f),a=document.createElement('audio');a.src=url;const duration=await new Promise(resolve=>{a.onloadedmetadata=()=>resolve(Number.isFinite(a.duration)?a.duration:state.duration);a.onerror=()=>resolve(state.duration)});const l=addLayer('audio',url,f.name);Object.assign(l,{sourcePath:window.motionDesktop?.getPathForFile?.(f)||'',mediaDuration:duration,sourceIn:0,sourceOut:duration,start:0,end:Math.min(duration,state.duration),volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false});renderLayers();selectLayer(l.id);if(typeof renderAudioMixer==='function')renderAudioMixer();toast('Canal de áudio criado')};
 $('#duplicateLayer').onclick=()=>{const l=selected();if(l){const n=addLayer(l.type,l.content,l.name+' cópia');Object.assign(n,{...l,id:n.id,x:l.x+4,y:l.y+4});renderLayers();selectLayer(n.id)}};
 $('#deleteLayer').onclick=()=>{state.layers=state.layers.filter(l=>l.id!==state.selected);state.selected=null;renderLayers();syncProps();markDirty()};

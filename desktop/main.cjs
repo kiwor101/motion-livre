@@ -24,7 +24,7 @@ async function probeMediaFile(filePath){
 
 async function runSmokeTest(){
   try{
-    const result=await mainWindow.webContents.executeJavaScript(`(()=>{
+    const result=await mainWindow.webContents.executeJavaScript(`(async()=>{
       const a=addLayer('text','Teste','Título de teste'),b=addLayer('rect','','Forma de teste');
       state.selectedIds.add(a.id);state.selectedIds.add(b.id);$('#precomposeLayers').click();
       const controller=selected();$('#propEasing').value='ease-in-out';$('#propEasing').dispatchEvent(new Event('input',{bubbles:true}));
@@ -33,10 +33,11 @@ async function runSmokeTest(){
       const roundtripXml=window.alightCompat.exportScene(),roundtrip=window.alightCompat.importScene(roundtripXml,{silent:true}),roundtripTimeline=document.querySelectorAll('.track').length;
       const sample='<?xml version="1.0" encoding="UTF-8"?><scene title="Teste XML" width="1080" height="1920" bgcolor="#FF08090B" totalTime="2000" fps="30" amver="106" ffver="101"><shape id="1" label="Retângulo XML" startTime="0" endTime="2000" fillType="color" s=".rect"><transform><location type="vec2"><kf t="0" v="270,960" e="cubicBezier 0.42 0 0.58 1"/><kf t="1" v="810,960"/></location><scale value="1,1"/><rotation value="0"/><opacity value="1"/></transform><fillColor value="#FFFF8800"/><effect id="com.alightcreative.effects.gaussianblur" locallyApplied="true"><property name="strength" type="float" value="0.1"/></effect></shape></scene>';
       const imported=window.alightCompat.importScene(sample,{silent:true}),sampleLayer=state.layers[0],sampleExport=window.alightCompat.exportScene();
-      return{precomposition:!!controller.precomposition,easing:controller.easing,glow:controller.effects.glow,exportDialog:!$('#exportSettings').hidden,roundtripLayers:roundtrip.layers,roundtripTimeline,xmlScene:/<scene[\\s>]/.test(roundtripXml),sampleLayers:imported.layers,sampleKeys:imported.keyframes,sampleX:sampleLayer.x,sampleBlur:sampleLayer.effects.blur,customEasing:/cubicBezier 0.42 0 0.58 1/.test(sampleExport)};
+      const png=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='),character=>character.charCodeAt(0)),transfer=new DataTransfer();transfer.items.add(new File([png],'arrastada.png',{type:'image/png'}));document.dispatchEvent(new DragEvent('drop',{dataTransfer:transfer,bubbles:true,cancelable:true}));await new Promise(resolve=>{const started=Date.now(),poll=()=>state.layers.some(layer=>layer.name==='arrastada.png')||Date.now()-started>2000?resolve():setTimeout(poll,20);poll()});
+      return{precomposition:!!controller.precomposition,easing:controller.easing,glow:controller.effects.glow,exportDialog:!$('#exportSettings').hidden,roundtripLayers:roundtrip.layers,roundtripTimeline,xmlScene:/<scene[\\s>]/.test(roundtripXml),sampleLayers:imported.layers,sampleKeys:imported.keyframes,sampleX:sampleLayer.x,sampleBlur:sampleLayer.effects.blur,customEasing:/cubicBezier 0.42 0 0.58 1/.test(sampleExport),dragDrop:state.layers.some(layer=>layer.name==='arrastada.png')};
     })()`);
     console.log('MOTION_SMOKE_RESULT='+JSON.stringify(result));
-    const okay=result.precomposition&&result.exportDialog&&result.roundtripLayers===3&&result.roundtripTimeline===3&&result.xmlScene&&result.sampleLayers===1&&result.sampleKeys===2&&Math.round(result.sampleX)===25&&result.sampleBlur===10&&result.customEasing;
+    const okay=result.precomposition&&result.exportDialog&&result.roundtripLayers===3&&result.roundtripTimeline===3&&result.xmlScene&&result.sampleLayers===1&&result.sampleKeys===2&&Math.round(result.sampleX)===25&&result.sampleBlur===10&&result.customEasing&&result.dragDrop;
     app.exit(okay?0:2);
   }catch(error){console.error('MOTION_SMOKE_ERROR',error);app.exit(3)}
 }

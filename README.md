@@ -26,7 +26,7 @@ O Windows SmartScreen pode exibir um aviso porque o projeto ainda não possui ce
 ## Como usar
 
 1. Abra o Motion Livre e defina o nome do projeto.
-2. Em **Mídia**, importe imagens ou vídeos.
+2. Em **Mídia**, importe imagens ou vídeos; também é possível arrastar um ou vários arquivos diretamente para a janela ou para o palco.
 3. Use **Texto**, **Forma** ou **Desenho** para criar camadas.
 4. Em **Corte**, defina entrada/saída ou divida o clipe no cursor; ajuste velocidade, volume e fades.
 5. Em **Efeitos**, use presets ou controles de brilho, contraste, saturação, matiz, blur, sépia e outros.
@@ -49,6 +49,7 @@ Atalhos:
 ## Recursos atuais
 
 - imagem, vídeo, áudio, texto, formas e desenho;
+- arrastar e soltar vídeos/imagens para criar camadas automaticamente, inclusive vários arquivos de uma vez;
 - timeline, corte por entrada/saída, divisão de clipes e keyframes lineares;
 - mixer com canais separados para vídeos e áudios, solo, mute, volume, panorama, canal esquerdo/direito e fades;
 - camadas com visibilidade, bloqueio, âncora, recorte, espelhamento, ordem e edição temporal;

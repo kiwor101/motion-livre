@@ -42,7 +42,7 @@
     <section class="library">
       <div class="panel active" id="panel-media">
         <h2>Mídia</h2><p>Importe vídeo ou imagem para a composição.</p>
-        <label class="upload">+ Importar mídia<input id="mediaInput" type="file" accept="video/*,image/*"></label>
+        <label class="upload">+ Importar mídia<input id="mediaInput" type="file" accept="video/*,image/*" multiple></label>
         <div id="mediaList" class="asset-list"><div class="empty">Seus arquivos aparecerão aqui</div></div>
       </div>
       <div class="panel" id="panel-text">
@@ -205,6 +205,7 @@
     <div class="timeline-head"><strong>Camadas</strong><span>0%</span><span>20%</span><span>40%</span><span>60%</span><span>80%</span><span>100%</span></div>
     <div id="timeline" class="timeline"><div class="timeline-empty">Adicione uma camada para começar</div><div id="playhead" class="playhead"></div></div>
   </section>
+  <div id="mediaDropOverlay" class="media-drop-overlay"><strong>Solte para adicionar à composição</strong><span>Vídeos e imagens serão importados como novas camadas</span></div>
   <div id="toast" class="toast"></div>
   <div id="projectMenu" class="popup" hidden><button id="menuExport">Exportar JSON</button><button id="menuImport">Importar JSON</button><button id="menuExportAlight">Exportar Alight XML</button><button id="menuImportAlight">Importar Alight XML</button><button id="menuFeatures">Mapa de recursos</button></div>
   <div id="exportMenu" class="popup export-popup" hidden><strong>Formato de saída</strong><button data-export-format="mp4">MP4 · H.264 + AAC (recomendado)</button><button data-export-format="mov">MOV · H.264 + AAC</button><button data-export-format="webm">WebM / transparência</button><button data-export-format="gif">GIF animado</button><button data-export-format="png">PNG do frame atual</button><button data-export-format="mp3">Somente áudio MP3</button></div>

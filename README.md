@@ -91,6 +91,20 @@ pnpm dist
 Os artefatos finais são gravados em `dist/`. Binários, caches e dependências locais não são versionados.
 Após cada compilação, a limpeza automática mantém em `dist/` somente o instalador e a versão portátil da versão atual.
 
+Testes automatizados disponíveis:
+
+```powershell
+pnpm check
+node tools/security-renderer-test.cjs
+node tools/demo-project-test.cjs "C:\caminho\projeto.motion.json"
+```
+
+## Segurança
+
+O aplicativo distribuído usa Electron 39.8.10 com sandbox, isolamento de contexto, integração Node desativada, política CSP, pop-ups/permissões bloqueados, navegação restrita e validação da origem das chamadas IPC. Projetos e XMLs têm limites de tamanho, e texto importado é escapado antes de entrar na interface.
+
+Os executáveis ainda não têm assinatura Authenticode comercial; por isso o Windows SmartScreen pode mostrar “editor desconhecido”.
+
 ## Privacidade
 
 O editor funciona offline. A versão aberta não inclui anúncios, pagamentos, contas, analytics ou telemetria.

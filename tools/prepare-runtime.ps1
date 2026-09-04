@@ -20,7 +20,7 @@ $runtimePackage = @{
     appId = 'org.motionlivre.editor'
     productName = 'Motion Livre'
     buildNumber = '1'
-    electronVersion = '37.10.3'
+    electronVersion = '39.8.10'
     asar = $true
     npmRebuild = $false
     directories = @{ output = '..\apk-windows-prototype\dist' }

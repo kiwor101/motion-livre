@@ -3,12 +3,13 @@ $project = Split-Path -Parent $PSScriptRoot
 $target = Join-Path (Split-Path -Parent $project) 'motion-livre-runtime-staging'
 $output = [IO.Path]::GetFullPath((Join-Path $project 'dist'))
 New-Item -ItemType Directory -Force -Path $target,(Join-Path $target 'desktop'),(Join-Path $target 'vendor\ffmpeg') | Out-Null
-$files = @('index.html','styles.css','advanced.css','export.css','mixer.css','pro-editor.css','pro-mask.css','media-fit.css','app.js','advanced.js','desktop-integration.js','pro-editor.js','alight-compat.js','LICENSE','THIRD_PARTY_NOTICES.md')
+$files = @('index.html','styles.css','advanced.css','export.css','mixer.css','pro-editor.css','pro-mask.css','media-fit.css','app.js','advanced.js','desktop-integration.js','pro-editor.js','alight-compat.js','timeline.js','studio.js','studio.css','LICENSE','THIRD_PARTY_NOTICES.md')
 foreach ($file in $files) {
   Copy-Item -LiteralPath (Join-Path $project $file) -Destination (Join-Path $target $file) -Force
 }
 Copy-Item -LiteralPath (Join-Path $project 'desktop\main.cjs'),(Join-Path $project 'desktop\preload.cjs') -Destination (Join-Path $target 'desktop') -Force
 Copy-Item -LiteralPath (Join-Path $project 'vendor\ffmpeg\ffmpeg.exe'),(Join-Path $project 'vendor\ffmpeg\ffprobe.exe') -Destination (Join-Path $target 'vendor\ffmpeg') -Force
+Copy-Item -LiteralPath (Join-Path $project 'assets') -Destination $target -Recurse -Force
 $runtimePackage = @{
   name = 'motion-livre-runtime'
   version = '0.0.0'
@@ -25,7 +26,7 @@ $runtimePackage = @{
     asar = $true
     npmRebuild = $false
     directories = @{ output = $output }
-    files = @('index.html','styles.css','advanced.css','export.css','mixer.css','pro-editor.css','pro-mask.css','media-fit.css','app.js','advanced.js','desktop-integration.js','pro-editor.js','alight-compat.js','LICENSE','THIRD_PARTY_NOTICES.md','desktop/**/*','package.json')
+    files = @('index.html','styles.css','advanced.css','export.css','mixer.css','pro-editor.css','pro-mask.css','media-fit.css','app.js','advanced.js','desktop-integration.js','pro-editor.js','alight-compat.js','timeline.js','studio.js','studio.css','LICENSE','THIRD_PARTY_NOTICES.md','desktop/**/*','assets/**/*','package.json')
     extraResources = @(
       @{ from = 'vendor/ffmpeg/ffmpeg.exe'; to = 'ffmpeg/ffmpeg.exe' },
       @{ from = 'vendor/ffmpeg/ffprobe.exe'; to = 'ffmpeg/ffprobe.exe' }

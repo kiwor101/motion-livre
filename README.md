@@ -103,6 +103,23 @@ Os executáveis são gravados em `dist/`. Dependências, binários do FFmpeg, ar
 
 ## Organização do código
 
+### Edição na timeline
+
+- Interface com ícones Lucide e fonte Inter incluídos localmente, sem CDN. O CSS próprio define os componentes e espaçamentos do editor.
+- Régua com escala fixa de 40 pixels por segundo no zoom inicial, traços a cada segundo e números a cada 5 segundos. Use a rolagem horizontal, o controle de zoom ou **Alt/Shift + roda do mouse**. Redimensionar a janela não altera a escala temporal.
+- A barra sob o preview oferece reprodução, início/fim, navegação temporal, volume, guias e tela cheia. Os controles continuam disponíveis em tela cheia; Esc sai.
+- O botão de grade ativa guias de alinhamento em 9:16, 16:9, 1:1, 4:5 ou na proporção da composição. As guias não alteram a mídia e não são exportadas.
+- Faixas de texto e áudio são compactas; áudio mostra sua forma de onda, respeitando o trecho recortado. Botões com ícones exibem dicas ao passar o mouse ou receber foco pelo teclado.
+
+- Dividir no cursor mantém os clipes na mesma faixa por padrão. O seletor ao lado de **Dividir** também permite criar uma faixa acima ou abaixo.
+- As setas **↑ / ↓** movem o clipe selecionado para a faixa vizinha; nas extremidades, criam uma nova faixa. Intervalos ocupados não são sobrescritos.
+- Arraste a régua ou o cursor branco para navegar pelo vídeo. Arraste o centro de um clipe para movê-lo e suas bordas para ajustar entrada e saída.
+- Durante o movimento, a faixa de destino é destacada e uma guia mostra o intervalo. Segure **Alt** para ignorar o encaixe; o posicionamento respeita os quadros da composição.
+- Vídeos exibem miniaturas geradas localmente. As faixas são preservadas no projeto JSON; cada clipe mantém seus próprios efeitos e keyframes.
+- **⧉ Duplicar** cria uma faixa acima, mantendo a posição visual do conteúdo. Arraste um clipe para a borda superior/inferior de uma faixa para criar outra faixa; a guia indica o destino.
+- Arraste o nome de uma faixa na timeline ou no painel **Camadas** para reordenar a faixa inteira. Dê duplo clique no nome para renomear; confirme com Enter ou cancele com Esc.
+- Projetos salvam a biblioteca de mídia (inclusive arquivos sem clipes), os nomes e a organização das faixas. Arquivos locais continuam vinculados pelos seus caminhos originais.
+
 ```text
 desktop/                 Processo principal e ponte nativa do Electron
 docs/                    Documentação dos formatos XML
@@ -112,6 +129,7 @@ advanced.js              Composição, timeline e projetos
 pro-editor.js            Keyframes, máscaras, câmera e efeitos
 desktop-integration.js   Arquivos locais e exportação
 alight-compat.js         Interoperabilidade XML
+timeline.js              Faixas, clipes, miniaturas e interação temporal
 index.html               Interface do editor
 ```
 

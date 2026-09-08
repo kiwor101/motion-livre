@@ -1,5 +1,10 @@
 # Avisos de terceiros
 
+## Interface
+
+- Ícones Lucide 0.468.0, licença ISC. Arquivos SVG locais em `assets/icons/`; licença completa em `assets/icons/LICENSE`. Fonte: https://github.com/lucide-icons/lucide/tree/0.468.0.
+- Fonte Inter Variable, de Rasmus Andersson, licença SIL Open Font License 1.1. Arquivo local em `assets/fonts/InterVariable.woff2`; licença completa em `assets/fonts/LICENSE.txt`. Fonte: https://rsms.me/inter/.
+
 ## Alight Motion XML Schema
 
 O módulo de interoperabilidade XML foi desenvolvido com auxílio da documentação independente [alight-motion-xml-schema](https://github.com/boiniArun2006/alight-motion-xml-schema).

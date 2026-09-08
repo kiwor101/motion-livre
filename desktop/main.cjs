@@ -1,8 +1,16 @@
 const {app,BrowserWindow,dialog,ipcMain,Menu,session}=require('electron');
+// Some Windows environments reject Electron's GPU/cache sandbox. The editor's
+// renderer remains fully functional with Chromium's software compositor.
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {spawn}=require('node:child_process');
 const {pathToFileURL}=require('node:url');
+// Keep development caches inside the workspace so a restricted Windows profile
+// cannot prevent Chromium from creating its cache directories.
+app.setPath('userData',path.join(__dirname,'..','.runtime-data'));
 
 let mainWindow;
 let exportProcess=null;
@@ -145,5 +153,10 @@ secureHandle('export:media',async(_event,{bytes,format,name,audioTracks=[],setti
 });
 secureHandle('app:info',()=>({version:DISPLAY_VERSION,platform:process.platform,userData:app.getPath('userData')}));
 
-app.whenReady().then(()=>{session.defaultSession.setPermissionRequestHandler((_webContents,_permission,callback)=>callback(false));session.defaultSession.setPermissionCheckHandler(()=>false);buildMenu();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow()})});
+app.whenReady().then(()=>{
+  const allowPreviewFullscreen=(contents,permission)=>permission==='fullscreen'&&contents===mainWindow?.webContents&&contents.getURL()===mainPageUrl;
+  session.defaultSession.setPermissionRequestHandler((contents,permission,callback)=>callback(allowPreviewFullscreen(contents,permission)));
+  session.defaultSession.setPermissionCheckHandler((contents,permission)=>allowPreviewFullscreen(contents,permission));
+  buildMenu();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow()});
+});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit()});

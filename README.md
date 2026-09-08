@@ -2,13 +2,13 @@
 
 Editor de vídeo e motion design para Windows, aberto, offline e sem anúncios.
 
-[Baixar o instalador](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.1/Motion-Livre-Setup-0.0.0.1-x64.exe) · [Baixar a versão portátil](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.1/Motion-Livre-Portable-0.0.0.1-x64.exe) · [Ver a versão atual](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.0.1)
+[Baixar o instalador](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.2/Motion-Livre-Setup-0.0.0.2-x64.exe) · [Baixar a versão portátil](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.2/Motion-Livre-Portable-0.0.0.2-x64.exe) · [Ver a versão atual](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.0.2)
 
 ## Sobre o projeto
 
 O Motion Livre reúne edição por camadas, animação, áudio e exportação em um aplicativo desktop independente. Ele funciona localmente e já inclui o motor FFmpeg necessário para leitura e geração de mídia.
 
-A versão atual é `0.0.0.1` e oferece instalador e executável portátil para Windows 10 e Windows 11 de 64 bits.
+A versão atual é `0.0.0.2` e oferece instalador e executável portátil para Windows 10 e Windows 11 de 64 bits.
 
 ## Recursos
 

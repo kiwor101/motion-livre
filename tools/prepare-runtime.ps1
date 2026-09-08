@@ -13,7 +13,7 @@ Copy-Item -LiteralPath (Join-Path $project 'assets') -Destination $target -Recur
 $runtimePackage = @{
   name = 'motion-livre-runtime'
   version = '0.0.0'
-  shortVersionWindows = '0.0.0.1'
+  shortVersionWindows = '0.0.0.2'
   description = 'Editor de motion design aberto e offline para Windows'
   author = 'Motion Livre'
   main = 'desktop/main.cjs'
@@ -21,7 +21,7 @@ $runtimePackage = @{
   build = @{
     appId = 'org.motionlivre.editor'
     productName = 'Motion Livre'
-    buildNumber = '1'
+    buildNumber = '2'
     electronVersion = '39.8.10'
     asar = $true
     npmRebuild = $false
@@ -32,8 +32,8 @@ $runtimePackage = @{
       @{ from = 'vendor/ffmpeg/ffprobe.exe'; to = 'ffmpeg/ffprobe.exe' }
     )
     win = @{ target = @('nsis','portable') }
-    nsis = @{ artifactName = 'Motion-Livre-Setup-0.0.0.1-${arch}.${ext}'; oneClick = $false; allowToChangeInstallationDirectory = $true; createDesktopShortcut = $true; createStartMenuShortcut = $true }
-    portable = @{ artifactName = 'Motion-Livre-Portable-0.0.0.1-${arch}.${ext}' }
+    nsis = @{ artifactName = 'Motion-Livre-Setup-0.0.0.2-${arch}.${ext}'; oneClick = $false; allowToChangeInstallationDirectory = $true; createDesktopShortcut = $true; createStartMenuShortcut = $true }
+    portable = @{ artifactName = 'Motion-Livre-Portable-0.0.0.2-${arch}.${ext}' }
   }
 } | ConvertTo-Json -Depth 8
 [System.IO.File]::WriteAllText((Join-Path $target 'package.json'),$runtimePackage,(New-Object System.Text.UTF8Encoding($false)))

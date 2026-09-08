@@ -10,11 +10,11 @@ const {spawn}=require('node:child_process');
 const {pathToFileURL}=require('node:url');
 // Keep development caches inside the workspace so a restricted Windows profile
 // cannot prevent Chromium from creating its cache directories.
-app.setPath('userData',path.join(__dirname,'..','.runtime-data'));
+if(!app.isPackaged)app.setPath('userData',path.join(__dirname,'..','.runtime-data'));
 
 let mainWindow;
 let exportProcess=null;
-const DISPLAY_VERSION='0.0.0.1';
+const DISPLAY_VERSION=require('../package.json').shortVersionWindows||app.getVersion();
 const projectFilter=[{name:'Projeto Motion Livre',extensions:['motion.json','json']}];
 const effectFilter=[{name:'Preset de efeitos Motion Livre',extensions:['motion-effect.xml','xml']}];
 const alightFilter=[{name:'Cena XML compatível com Alight Motion',extensions:['xml']}];

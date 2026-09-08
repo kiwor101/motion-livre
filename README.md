@@ -2,7 +2,14 @@
 
 Editor de vídeo e motion design para Windows, aberto, offline e sem anúncios.
 
-[Baixar o instalador](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.2/Motion-Livre-Setup-0.0.0.2-x64.exe) · [Baixar a versão portátil](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.2/Motion-Livre-Portable-0.0.0.2-x64.exe) · [Ver a versão atual](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.0.2)
+**Downloads — versão 0.0.0.2 · Windows 10/11 de 64 bits**
+
+| Versão | Download | Como usar |
+|---|---|---|
+| Portátil | [Baixar Portable.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.2/Motion-Livre-Portable-0.0.0.2-x64.exe) | Baixe e abra, sem instalação. |
+| Instalador | [Baixar Setup.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.2/Motion-Livre-Setup-0.0.0.2-x64.exe) | Instale na pasta desejada e use os atalhos do Windows. |
+
+Os dois pacotes incluem Electron, FFmpeg e FFprobe. [Ver arquivos e notas da versão](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.0.2).
 
 ## Sobre o projeto
 
@@ -16,6 +23,8 @@ A versão atual é `0.0.0.2` e oferece instalador e executável portátil para W
 
 - Vídeo, imagem, áudio, texto, formas e desenho vetorial.
 - Timeline com arraste, zoom, encaixe, marcadores e waveform.
+- Seleção múltipla de clipes com Ctrl, Shift ou seleção por arraste.
+- Marcadores de batida (Beat sync), separados dos marcadores manuais.
 - Corte pelas bordas do clipe, divisão no cursor, entrada, saída e velocidade.
 - Camadas com visibilidade, bloqueio, ordem, agrupamento e precomposição.
 - Arrastar e soltar um ou vários vídeos ou imagens diretamente na janela.
@@ -43,6 +52,7 @@ A versão atual é `0.0.0.2` e oferece instalador e executável portátil para W
 - Importação e exportação de cenas XML compatíveis com o ecossistema Alight Motion.
 - Exportação para MP4, MOV, WebM, GIF, PNG e MP3.
 - Presets de saída de 720p a 4K.
+- Faixa de renderização para exportar somente o trecho escolhido.
 - Salvamento automático e histórico de desfazer/refazer.
 
 ## Instalação
@@ -53,6 +63,8 @@ Para uso normal, escolha uma das opções na [página de versões](https://githu
 - **Portátil:** executa diretamente, sem instalação.
 
 O computador do usuário não precisa ter Node.js, Electron, FFmpeg, Rust, codecs ou ferramentas de desenvolvimento instalados.
+
+Na página da versão, escolha um dos arquivos `.exe`. Os links **Source code (zip/tar.gz)** são destinados ao desenvolvimento e não contêm o programa pronto para uso. Projetos e mídias devem ser salvos em uma pasta própria; mantenha os arquivos de mídia nos caminhos usados pelo projeto.
 
 ## Primeiros passos
 
@@ -93,13 +105,19 @@ pnpm setup:ffmpeg
 pnpm dev
 ```
 
+Use a própria pasta clonada do repositório para editar, executar e compilar. Abra essa pasta no Codex e no terminal; não é necessário manter uma segunda cópia do projeto. Dependências e componentes locais ficam em `node_modules/` e `vendor/ffmpeg/`, fora do versionamento.
+
+Na raiz do projeto, `npm run dev` também inicia o editor depois da preparação acima.
+
 Gerar instalador e versão portátil:
 
 ```powershell
 pnpm dist
 ```
 
-Os executáveis são gravados em `dist/`. Dependências, binários do FFmpeg, arquivos temporários e artefatos de compilação não são versionados.
+Os dois executáveis de 64 bits são gravados em `dist/`. O empacotamento usa temporariamente `.build/runtime/`, dentro do próprio projeto. Quando os dois pacotes são gerados com sucesso, os arquivos intermediários e executáveis antigos de `dist/` são removidos, mantendo somente o instalador e o portátil da versão atual.
+
+Os executáveis são distribuídos pelos anexos da Release no GitHub. Dependências, binários do FFmpeg, dados locais e artefatos de compilação não são versionados.
 
 ## Organização do código
 

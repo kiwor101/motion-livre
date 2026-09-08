@@ -23,7 +23,7 @@
     "dev": "electron .",
     "setup:ffmpeg": "powershell -ExecutionPolicy Bypass -File tools/setup-ffmpeg.ps1",
     "prepare:runtime": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1",
-    "dist": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1 && electron-builder --projectDir ../motion-livre-runtime-staging --win nsis portable && powershell -ExecutionPolicy Bypass -File tools/clean-dist.ps1"
+    "dist": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1 && electron-builder --projectDir .build/runtime --win nsis portable --x64 && powershell -ExecutionPolicy Bypass -File tools/clean-dist.ps1"
   },
   "devDependencies": {
     "electron": "39.8.10",
@@ -37,7 +37,7 @@
     "npmRebuild": false,
     "directories": {
       "output": "dist",
-      "app": "../motion-livre-runtime-staging"
+      "app": ".build/runtime"
     },
     "files": [
       "index.html",

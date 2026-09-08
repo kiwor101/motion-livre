@@ -48,7 +48,7 @@ async function browserMediaMetadata(type,url){
 }
 function addMediaDescriptor(descriptor,options={}){
  const {type,url,name,sourcePath='',duration=0,width=0,height=0,rotation=0,hasAudio=false}=descriptor;
- const create=()=>{const l=addLayer(type,url,name);Object.assign(l,{waveform:descriptor.waveform||[],sourcePath,mediaDuration:duration,mediaWidth:width,mediaHeight:height,mediaRotation:rotation,hasAudio,fitMode:'contain',sourceIn:0,sourceOut:duration||state.duration,end:Math.min(duration||state.duration,state.duration),speed:1,volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false,fadeIn:0,fadeOut:0});if(duration>state.duration){state.duration=Math.min(duration,600);l.end=state.duration;syncComposition?.()}renderLayers();selectLayer(l.id);return l};
+ const create=()=>{const previousDuration=state.duration,l=addLayer(type,url,name);Object.assign(l,{waveform:descriptor.waveform||[],sourcePath,mediaDuration:duration,mediaWidth:width,mediaHeight:height,mediaRotation:rotation,hasAudio,fitMode:'contain',sourceIn:0,sourceOut:duration||state.duration,end:Math.min(duration||state.duration,state.duration),speed:1,volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false,fadeIn:0,fadeOut:0});if(duration>state.duration){state.duration=Math.min(duration,600);l.end=state.duration;if(state.renderRange&&(state.renderRange.end??previousDuration)>=previousDuration-.001)state.renderRange.end=state.duration;syncComposition?.()}renderLayers();selectLayer(l.id);return l};
  if(options.addToLibrary!==false){state.mediaLibrary??=[];const key=sourcePath||url;if(!state.mediaLibrary.some(m=>(m.sourcePath||m.url)===key))state.mediaLibrary.push({...descriptor});renderMediaLibrary()}
  return options.createLayer===false?null:create();
 }
@@ -65,7 +65,7 @@ function restoreMediaLibrary(data){
 function loadProjectData(d){
  if(!Array.isArray(d.layers)||d.layers.length>5000)throw new Error('Quantidade de camadas inválida');stop();
  const ids=new Map(d.layers.map(l=>[l.id,uid++]));
- $('#projectName').value=d.name||'Projeto';$('#aspect').value=d.aspect||'16/9';state.duration=d.duration||10;state.composition=d.composition||state.composition;state.markers=d.markers||[];state.beatMarkers=d.beatMarkers||[];state.beatSync=d.beatSync||{bpm:120,offset:0};
+ $('#projectName').value=d.name||'Projeto';$('#aspect').value=d.aspect||'16/9';state.duration=d.duration||10;state.composition=d.composition||state.composition;state.markers=d.markers||[];state.beatMarkers=d.beatMarkers||[];state.beatSync=d.beatSync||{bpm:120,offset:0};state.renderRange={start:Math.max(0,d.renderRange?.start||0),end:Math.min(d.duration||10,d.renderRange?.end??d.duration??10)};
  state.layers=d.layers.map(l=>({...l,id:ids.get(l.id),parentId:ids.get(l.parentId)||null,content:resolveLayerContent({...l}),keyframes:Array.isArray(l.keyframes)?l.keyframes.slice(0,10000):[]}));
  state.selected=null;state.selectedIds?.clear();restoreMediaLibrary(d);state.history=[];state.future=[];syncComposition();renderLayers();syncProps();setTime(0);pushHistory();
 }

@@ -14,7 +14,7 @@ if(!app.isPackaged)app.setPath('userData',path.join(__dirname,'..','.runtime-dat
 
 let mainWindow;
 let exportProcess=null;
-const DISPLAY_VERSION=require('../package.json').shortVersionWindows||app.getVersion();
+const DISPLAY_VERSION=app.getVersion();
 const projectFilter=[{name:'Projeto Motion Livre',extensions:['motion.json','json']}];
 const effectFilter=[{name:'Preset de efeitos Motion Livre',extensions:['motion-effect.xml','xml']}];
 const alightFilter=[{name:'Cena XML compatível com Alight Motion',extensions:['xml']}];

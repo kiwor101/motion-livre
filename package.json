@@ -1,7 +1,6 @@
 {
   "name": "motion-livre",
-  "version": "0.0.0",
-  "shortVersionWindows": "0.0.0.2",
+  "version": "0.0.1",
   "description": "Editor de motion design aberto e offline para Windows",
   "main": "desktop/main.cjs",
   "author": "Motion Livre Contributors",
@@ -32,7 +31,6 @@
   "build": {
     "appId": "org.motionlivre.editor",
     "productName": "Motion Livre",
-    "buildNumber": "2",
     "asar": true,
     "npmRebuild": false,
     "directories": {
@@ -71,17 +69,17 @@
         "nsis",
         "portable"
       ],
-      "artifactName": "Motion-Livre-0.0.0.2-${arch}.${ext}"
+      "artifactName": "Motion-Livre-${version}-${arch}.${ext}"
     },
     "nsis": {
-      "artifactName": "Motion-Livre-Setup-0.0.0.2-${arch}.${ext}",
+      "artifactName": "Motion-Livre-Setup-${version}-${arch}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     },
     "portable": {
-      "artifactName": "Motion-Livre-Portable-0.0.0.2-${arch}.${ext}"
+      "artifactName": "Motion-Livre-Portable-${version}-${arch}.${ext}"
     }
   }
 }

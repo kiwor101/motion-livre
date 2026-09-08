@@ -2,20 +2,20 @@
 
 Editor de vídeo e motion design para Windows, aberto, offline e sem anúncios.
 
-**Downloads — versão 0.0.0.2 · Windows 10/11 de 64 bits**
+**Downloads — versão 0.0.1 · Windows 10/11 de 64 bits**
 
 | Versão | Download | Como usar |
 |---|---|---|
-| Portátil | [Baixar Portable.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.2/Motion-Livre-Portable-0.0.0.2-x64.exe) | Baixe e abra, sem instalação. |
-| Instalador | [Baixar Setup.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.0.2/Motion-Livre-Setup-0.0.0.2-x64.exe) | Instale na pasta desejada e use os atalhos do Windows. |
+| Portátil | [Baixar Portable.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.1/Motion-Livre-Portable-0.0.1-x64.exe) | Baixe e abra, sem instalação. |
+| Instalador | [Baixar Setup.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.1/Motion-Livre-Setup-0.0.1-x64.exe) | Instale na pasta desejada e use os atalhos do Windows. |
 
-Os dois pacotes incluem Electron, FFmpeg e FFprobe. [Ver arquivos e notas da versão](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.0.2).
+Os dois pacotes incluem Electron, FFmpeg e FFprobe. [Ver arquivos e notas da versão](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.1).
 
 ## Sobre o projeto
 
 O Motion Livre reúne edição por camadas, animação, áudio e exportação em um aplicativo desktop independente. Ele funciona localmente e já inclui o motor FFmpeg necessário para leitura e geração de mídia.
 
-A versão atual é `0.0.0.2` e oferece instalador e executável portátil para Windows 10 e Windows 11 de 64 bits.
+A versão atual é `0.0.1` e oferece instalador e executável portátil para Windows 10 e Windows 11 de 64 bits. Esta é a base da nova organização do projeto, preservando as funcionalidades e correções já implementadas. A numeração foi padronizada, sem apagar o histórico de contribuições.
 
 ## Recursos
 
@@ -153,15 +153,23 @@ index.html               Interface do editor
 
 ## Colaboração
 
-Para evitar conflitos, cada mudança deve sair de uma branch atualizada:
+Cada pessoa mantém uma única pasta clonada no próprio computador e trabalha na sua branch:
 
-```powershell
-git switch main
-git pull --rebase origin main
-git switch -c feature/nome-da-mudanca
-```
+| Branch | Responsável | Uso |
+|---|---|---|
+| `main` | `kiwor101` | Código integrado; recebe Pull Requests, não pushes diretos. |
+| `dev/kiwor101` | `kiwor101` | Desenvolvimento do mantenedor. |
+| `dev/emanueltk7` | `emanueltk7` | Desenvolvimento do colaborador. |
 
-Mantenha cada commit concentrado em uma única alteração. Não envie `node_modules/`, `dist/`, `vendor/ffmpeg/` ou arquivos de mídia para o repositório.
+Somente `kiwor101` integra Pull Requests na `main`. Cada branch de desenvolvimento aceita atualizações apenas da respectiva conta. As três branches têm bloqueio de exclusão e force push no GitHub.
+
+O ciclo é: **atualizar sua branch com a `main` → implementar um pacote pequeno → testar → commit/push na sua branch → abrir PR → `kiwor101` revisa e integra**. Depois do merge, os dois atualizam suas branches antes do próximo pacote. Usem **Create a merge commit**, mantendo as branches pessoais; não usem squash/rebase nessas branches permanentes.
+
+Branches separam o trabalho, mas não eliminam conflitos na mesma função. Abram o PR em rascunho assim que houver o primeiro commit e indiquem o objetivo e as áreas afetadas. Se ambos precisarem alterar o mesmo comportamento, combinem a ordem dessa parte.
+
+[Guia de colaboração e comandos para os dois computadores](CONTRIBUTING.md) · [Orientações para IAs](AGENTS.md)
+
+A versão oficial continua `0.0.1` durante este ciclo. Não altere a numeração nem publique executáveis a cada commit: a publicação fica com `kiwor101`, a partir de um commit integrado e validado. `package.json` é a fonte da versão usada pelo aplicativo e pelo empacotamento.
 
 ## Documentação
 

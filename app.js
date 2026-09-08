@@ -65,7 +65,7 @@ function restoreMediaLibrary(data){
 function loadProjectData(d){
  if(!Array.isArray(d.layers)||d.layers.length>5000)throw new Error('Quantidade de camadas inválida');stop();
  const ids=new Map(d.layers.map(l=>[l.id,uid++]));
- $('#projectName').value=d.name||'Projeto';$('#aspect').value=d.aspect||'16/9';state.duration=d.duration||10;state.composition=d.composition||state.composition;state.markers=d.markers||[];
+ $('#projectName').value=d.name||'Projeto';$('#aspect').value=d.aspect||'16/9';state.duration=d.duration||10;state.composition=d.composition||state.composition;state.markers=d.markers||[];state.beatMarkers=d.beatMarkers||[];state.beatSync=d.beatSync||{bpm:120,offset:0};
  state.layers=d.layers.map(l=>({...l,id:ids.get(l.id),parentId:ids.get(l.parentId)||null,content:resolveLayerContent({...l}),keyframes:Array.isArray(l.keyframes)?l.keyframes.slice(0,10000):[]}));
  state.selected=null;state.selectedIds?.clear();restoreMediaLibrary(d);state.history=[];state.future=[];syncComposition();renderLayers();syncProps();setTime(0);pushHistory();
 }

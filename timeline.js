@@ -20,6 +20,17 @@
   const tools=document.createElement('div');tools.className='timeline-edit-tools';
   tools.innerHTML='<button data-action="play" title="Reproduzir / pausar">▶ / ❚❚</button><button data-action="split" title="Dividir no cursor">✂ Dividir</button><select id="splitDestination" aria-label="Destino do corte"><option value="same">Na mesma faixa</option><option value="up">Nova faixa acima</option><option value="down">Nova faixa abaixo</option></select><button data-action="up" title="Mover clipe para a faixa acima">↑</button><button data-action="down" title="Mover clipe para a faixa abaixo">↓</button><button data-action="delete" title="Excluir clipe">Excluir</button><output id="timelinePosition"></output>';
   toolbar.prepend(tools);
+  state.beatMarkers=state.beatMarkers||[];state.beatSync=state.beatSync||{bpm:120,offset:0};
+  const allMarkerTimes=()=>[...(state.markers||[]),...(state.beatMarkers||[])];
+  const extract=document.createElement('button');extract.dataset.action='extract-audio';extract.textContent='♫ Extrair áudio';extract.title='Extrair o áudio do vídeo selecionado';tools.insertBefore(extract,$('#timelinePosition'));
+  const beatButton=document.createElement('button');beatButton.textContent='♩ Beat sync';beatButton.title='Gerar marcadores em uma grade de tempo';tools.insertBefore(beatButton,$('#timelinePosition'));
+  const beatPanel=document.createElement('div');beatPanel.className='beat-sync-panel';beatPanel.hidden=true;beatPanel.innerHTML='<strong>Beat sync</strong><label>BPM <input data-beat-bpm type="number" min="30" max="300" step="0.01" value="120"></label><label>Início (s) <input data-beat-offset type="number" min="0" step="0.001" value="0"></label><button data-beat-analyze>Estimar pela waveform</button><button data-beat-generate>Gerar grade</button><button data-beat-clear>Remover beat sync</button><small>A grade mantém o tempo constante. A estimativa usa os picos apenas para sugerir BPM e fase.</small>';document.body.append(beatPanel);
+  const beatBpm=beatPanel.querySelector('[data-beat-bpm]'),beatOffset=beatPanel.querySelector('[data-beat-offset]');beatBpm.value=state.beatSync.bpm||120;beatOffset.value=state.beatSync.offset||0;
+  beatButton.onclick=e=>{e.stopPropagation();beatPanel.hidden=!beatPanel.hidden;if(!beatPanel.hidden){const r=beatButton.getBoundingClientRect();beatPanel.style.left=`${Math.min(innerWidth-beatPanel.offsetWidth-12,r.left)}px`;beatPanel.style.top=`${r.bottom+6}px`}};
+  document.addEventListener('pointerdown',e=>{if(!beatPanel.hidden&&!beatPanel.contains(e.target)&&e.target!==beatButton)beatPanel.hidden=true});
+  function estimateBeat(){const l=selected(),wave=l?.waveform;if(!l||!['audio','video'].includes(l.type)||!wave?.length)return toast('Selecione um clipe com waveform');const duration=l.mediaDuration||((l.end||state.duration)-(l.start||0))*(l.speed||1),secondsPerPoint=duration/wave.length;let best={score:-Infinity,bpm:120,lag:1};for(let bpm=60;bpm<=200;bpm+=.25){const lag=60/bpm/secondsPerPoint;if(lag<1||lag>=wave.length/2)continue;let score=0,count=0;for(let i=0;i+lag<wave.length;i++){const j=Math.round(i+lag);score+=(wave[i]||0)*(wave[j]||0);count++}score/=Math.max(1,count);if(score>best.score)best={score,bpm,lag}}const interval=60/best.bpm,sourceStart=l.sourceIn||0;let peak=0;for(let i=1;i<wave.length;i++)if(wave[i]>wave[peak])peak=i;const peakTimeline=(l.start||0)+(peak*secondsPerPoint-sourceStart)/(l.speed||1),offset=((peakTimeline%interval)+interval)%interval;beatBpm.value=best.bpm.toFixed(2);beatOffset.value=Math.max(0,offset).toFixed(3);toast(`Sugestão: ${best.bpm.toFixed(2)} BPM`)}
+  function generateBeats(){const bpm=clamp(+beatBpm.value||120,30,300),interval=60/bpm,offset=clamp(+beatOffset.value||0,0,state.duration);state.beatSync={bpm:+bpm.toFixed(3),offset:+offset.toFixed(3)};state.beatMarkers=[];for(let t=offset;t<=state.duration+.0001&&state.beatMarkers.length<5000;t+=interval)state.beatMarkers.push(+t.toFixed(4));pushHistory();renderTimeline();markDirty();toast(`${state.beatMarkers.length} marcadores de beat sync gerados`)}
+  beatPanel.querySelector('[data-beat-analyze]').onclick=estimateBeat;beatPanel.querySelector('[data-beat-generate]').onclick=generateBeats;beatPanel.querySelector('[data-beat-clear]').onclick=()=>{state.beatMarkers=[];pushHistory();renderTimeline();markDirty();toast('Marcadores do beat sync removidos')};
   const duplicate=document.createElement('button');duplicate.textContent='⧉ Duplicar';duplicate.title='Duplicar em nova camada acima';duplicate.dataset.action='duplicate';tools.insertBefore(duplicate,$('#timelinePosition'));
   duplicate.onclick=()=>$('#duplicateLayer').click();
   $('#duplicateLayer').onclick=()=>{const l=selected();if(!l)return;if(l.locked)return toast('Faixa bloqueada');pushHistory();const copy=structuredClone(l);copy.id=uid++;copy.trackId=`track-${crypto.randomUUID()}`;copy.trackName=(l.trackName||l.name)+' cópia';copy.name=l.name+' cópia';const members=state.layers.filter(x=>trackId(x)===trackId(l));state.layers.splice(Math.max(...members.map(x=>state.layers.indexOf(x)))+1,0,copy);state.selected=copy.id;commit();selectLayer(copy.id)};
@@ -38,7 +49,7 @@
   }
   const layersPanel=document.createElement('details');layersPanel.className='layers-panel';layersPanel.open=true;layersPanel.innerHTML='<summary>Camadas</summary><div class="layers-panel-list"></div>';$('.library').append(layersPanel);
   function renderLayersPanel(){const list=layersPanel.querySelector('.layers-panel-list');list.replaceChildren();for(const [id,clips] of groups()){const row=document.createElement('div');row.className='panel-layer'+(clips.some(l=>l.id===state.selected)?' active':'');row.innerHTML='<span class="layer-title"></span>';row.onclick=()=>selectLayer(clips[0].id);trackControls(row,id,clips);list.append(row)}}
-  const resetProject=$('#newProject').onclick;$('#newProject').onclick=e=>{state.mediaLibrary=[];renderMediaLibrary();resetProject(e)};
+  const resetProject=$('#newProject').onclick;$('#newProject').onclick=e=>{state.mediaLibrary=[];state.beatMarkers=[];state.beatSync={bpm:120,offset:0};renderMediaLibrary();resetProject(e)};
   for(const [action,label,title] of [['freeze','❄ Congelar','Inserir 2 segundos do quadro atual'],['reverse','↶ Reverso','Reproduzir o clipe de trás para frente'],['flip','↔ Espelhar','Espelhar horizontalmente']]){
     const button=document.createElement('button');button.dataset.action=action;button.textContent=label;button.title=title;
     if(action!=='freeze')button.setAttribute('aria-pressed','false');
@@ -86,7 +97,7 @@
   previewTools.innerHTML='<button id="previewFullscreen" title="Preview em tela cheia" aria-label="Preview em tela cheia">⛶</button>';previewWrap.append(previewTools);
   $('#previewFullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else {const bounds=$('#stage').getBoundingClientRect();previewWrap.style.setProperty('--preview-ratio',bounds.width/bounds.height);await previewWrap.requestFullscreen()}}catch{toast('Não foi possível abrir a tela cheia')}};
   document.addEventListener('fullscreenchange',()=>{const active=document.fullscreenElement===previewWrap;$('#previewFullscreen').title=active?'Sair da tela cheia (Esc)':'Preview em tela cheia';$('#previewFullscreen').setAttribute('aria-label',$('#previewFullscreen').title)});
-  tools.onclick=e=>{const a=e.target.dataset.action;if(a==='play')$('#playBtn').click();if(a==='split')$('#splitAtPlayhead').click();if(a==='delete')$('#deleteLayer').click();if(a==='up'||a==='down')moveTrack(a==='up'?-1:1)};
+  tools.onclick=e=>{const a=e.target.dataset.action;if(a==='play')$('#playBtn').click();if(a==='split')$('#splitAtPlayhead').click();if(a==='delete')$('#deleteLayer').click();if(a==='extract-audio')window.motionDetachAudio?.();if(a==='up'||a==='down')moveTrack(a==='up'?-1:1)};
   function moveTrack(direction){
     const l=selected();if(!l||l.locked)return;
     const rows=groups(),i=rows.findIndex(([id])=>id===trackId(l)),target=rows[i+direction];
@@ -106,12 +117,22 @@
     if(['video','audio'].includes(l.type)){
       const source=sourceTimeForLayer(l,t,l.mediaDuration||Infinity);
       if(l.reverse){right.sourceOut=source;l.sourceIn=source}else{right.sourceIn=source;l.sourceOut=source}
+      // A emenda não é uma borda de fade: cada metade conserva apenas o fade externo.
+      l.fadeOut=0;right.fadeIn=0;
     }
     l.end=t;const destination=$('#splitDestination').value;
     if(destination!=='same')right.trackId=`track-${crypto.randomUUID()}`;
     const index=state.layers.indexOf(l);state.layers.splice(index+(destination==='down'?0:1),0,right);
     state.selected=right.id;commit();selectLayer(right.id);
   };
+  const contextMenu=document.createElement('div');contextMenu.className='clip-context-menu';contextMenu.hidden=true;document.body.append(contextMenu);
+  function closeContextMenu(){contextMenu.hidden=true;contextMenu.replaceChildren()}
+  function showContextMenu(event,layer=null,markerRef=null){event.preventDefault();event.stopPropagation();closeContextMenu();if(layer)selectLayer(layer.id);const actions=markerRef
+    ?[['Remover marcador',()=>{const list=markerRef.type==='beat'?state.beatMarkers:state.markers;list.splice(markerRef.index,1);pushHistory();renderTimeline();markDirty()}]]
+    :[['Dividir no cursor',()=>$('#splitAtPlayhead').click()],['Duplicar em nova faixa',()=>$('#duplicateLayer').click()],...(layer?.type==='video'?[['Extrair áudio',()=>window.motionDetachAudio?.(layer)]]:[]),['Excluir clipe',()=>$('#deleteLayer').click()]];
+    for(const [label,action] of actions){const button=document.createElement('button');button.textContent=label;button.onclick=()=>{closeContextMenu();action()};contextMenu.append(button)}contextMenu.hidden=false;contextMenu.style.left=`${Math.min(innerWidth-190,event.clientX)}px`;contextMenu.style.top=`${Math.max(8,Math.min(innerHeight-contextMenu.offsetHeight-10,event.clientY))}px`}
+  document.addEventListener('pointerdown',e=>{if(!contextMenu.hidden&&!contextMenu.contains(e.target))closeContextMenu()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeContextMenu()});
+  function dragMarker(event,type,index){if(event.button!==0)return;event.preventDefault();event.stopPropagation();stop();const list=type==='beat'?state.beatMarkers:state.markers,marker=event.currentTarget;let next=list[index];const move=e=>{const r=timeline.getBoundingClientRect();next=clamp((e.clientX-r.left+timeline.scrollLeft-header)/pixelsPerSecond(),0,state.duration);if(state.snapTimeline&&!e.altKey)next=Math.round(next/frame())*frame();marker.style.left=`${header+next*pixelsPerSecond()}px`;marker.title=`${type==='beat'?'Beat sync':'Marcador manual'} · ${timeText(next)}`};const end=()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',end);list[index]=+next.toFixed(4);list.sort((a,b)=>a-b);pushHistory();renderTimeline();markDirty()};addEventListener('pointermove',move);addEventListener('pointerup',end)}
   const thumbnails=new Map();let thumbnailQueue=Promise.resolve();
   function mediaEvent(video,event,action){return new Promise((resolve,reject)=>{
     const cleanup=()=>{clearTimeout(timer);video.removeEventListener(event,ok);video.removeEventListener('error',fail)};
@@ -167,17 +188,18 @@
         clip.innerHTML=`<div class="filmstrip"></div><span class="clip-label">${escapeHtml(l.name)} · ${timeText((l.end??state.duration)-(l.start||0))}</span><i class="clip-handle left"></i><i class="clip-handle right"></i>`;
         for(const k of l.keyframes||[]){if(k.time<(l.start||0)||k.time>(l.end??state.duration))continue;const dot=document.createElement('i');dot.className='key-dot';dot.style.left=`${(k.time-(l.start||0))/((l.end??state.duration)-(l.start||0))*100}%`;clip.append(dot)}
         if(l.type==='audio'&&l.waveform?.length){const wave=document.createElement('canvas');wave.className='clip-waveform';wave.width=Math.min(4096,Math.max(40,(l.end-l.start)*pixelsPerSecond()));wave.height=32;const ctx=wave.getContext('2d');ctx.fillStyle='#a9e9ce';for(let x=0;x<wave.width;x+=2){const source=sourceTimeForLayer(l,l.start+x/wave.width*(l.end-l.start),l.mediaDuration),i=Math.min(l.waveform.length-1,Math.floor(source/(l.mediaDuration||state.duration)*l.waveform.length)),v=l.waveform[i]||0;ctx.fillRect(x,16-v*14,1,Math.max(1,v*28))}clip.append(wave)}
-        clip.onpointerdown=e=>edit(e,l);lane.append(clip);preview(l,clip.querySelector('.filmstrip'));
+        clip.onpointerdown=e=>edit(e,l);clip.oncontextmenu=e=>showContextMenu(e,l);lane.append(clip);preview(l,clip.querySelector('.filmstrip'));
       }
       row.append(name,lane);timeline.insertBefore(row,head);
     }
-    for(const t of state.markers||[]){const marker=document.createElement('i');marker.className='timeline-marker';marker.style.left=`${header+t*pixelsPerSecond()}px`;timeline.append(marker)}
+    const drawMarkers=(items,type)=>items.forEach((t,index)=>{const marker=document.createElement('i');marker.className=`timeline-marker ${type==='beat'?'beat-marker':'manual-marker'}`;marker.dataset.markerType=type;marker.dataset.markerIndex=index;marker.style.left=`${header+t*pixelsPerSecond()}px`;marker.title=`${type==='beat'?'Beat sync':'Marcador manual'} · ${timeText(t)} · arraste ou botão direito`;marker.onpointerdown=e=>dragMarker(e,type,index);marker.oncontextmenu=e=>{e.preventDefault();showContextMenu(e,null,{type,index})};timeline.append(marker)});drawMarkers(state.markers||[],'manual');drawMarkers(state.beatMarkers||[],'beat');
     renderAudioMixer();renderLayersPanel();position();
   };
   function position(){head.style.left=`${header+state.time/state.duration*width()}px`;$('#timelinePosition').textContent=`${timeText(state.time)} / ${timeText(state.duration)}`;for(const [action,key] of [['reverse','reverse'],['flip','flipX']])tools.querySelector(`[data-action="${action}"]`).setAttribute('aria-pressed',String(!!selected()?.[key]))}
   const previousTime=setTime;setTime=function(t){previousTime(t);position()};
   function scrub(e){if(e.button!==0)return;e.preventDefault();stop();const update=p=>{const r=timeline.getBoundingClientRect();setTime(Math.round(clamp((p.clientX-r.left+timeline.scrollLeft-header)/width()*state.duration,0,state.duration)/frame())*frame())};update(e);const end=()=>{removeEventListener('pointermove',update);removeEventListener('pointerup',end);removeEventListener('pointercancel',end)};addEventListener('pointermove',update);addEventListener('pointerup',end);addEventListener('pointercancel',end)}
   head.onpointerdown=scrub;
+  $('#stage').addEventListener('contextmenu',e=>{const element=e.target.closest('.layer'),layer=element&&state.layers.find(l=>l.id===+element.dataset.id);if(layer)showContextMenu(e,layer)});
   function edit(e,l){
     if(e.button!==0||l.locked)return;e.preventDefault();e.stopPropagation();stop();pushHistory();
     const mode=e.target.classList.contains('left')?'left':e.target.classList.contains('right')?'right':'move';
@@ -190,7 +212,7 @@
       last=p;let delta=(p.clientX-x+timeline.scrollLeft-scroll)/width()*state.duration;
       let value=(mode==='right'?original.end:original.start||0)+delta;
       value=Math.round(value/frame())*frame();
-      if(state.snapTimeline&&!p.altKey){const points=[0,state.time,state.duration,...state.markers,...state.layers.filter(v=>v!==l).flatMap(v=>[v.start||0,v.end??state.duration])];let distance=8/width()*state.duration;for(const point of points){for(const offset of mode==='move'?[0,original.end-(original.start||0)]:[0]){const d=Math.abs(value+offset-point);if(d<distance){distance=d;value=point-offset}}}}
+      if(state.snapTimeline&&!p.altKey){const points=[0,state.time,state.duration,...allMarkerTimes(),...state.layers.filter(v=>v!==l).flatMap(v=>[v.start||0,v.end??state.duration])];let distance=8/width()*state.duration;for(const point of points){for(const offset of mode==='move'?[0,original.end-(original.start||0)]:[0]){const d=Math.abs(value+offset-point);if(d<distance){distance=d;value=point-offset}}}}
       const speed=l.speed||1,min=frame();
       if(mode==='move'){l.start=Math.max(0,value);l.end=l.start+original.end-(original.start||0);const shift=l.start-(original.start||0);l.keyframes=(original.keyframes||[]).map(k=>({...k,time:k.time+shift}));}
       else if(mode==='left'){

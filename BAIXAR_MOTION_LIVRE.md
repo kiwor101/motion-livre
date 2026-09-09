@@ -11,3 +11,5 @@ Pode ser executada diretamente, sem instalação.
 Requisitos: Windows 10 ou Windows 11 de 64 bits. Os pacotes incluem Electron, FFmpeg e FFprobe; o usuário não precisa instalar Node.js, Rust ou ferramentas de desenvolvimento.
 
 [Ver os dois executáveis e as notas da versão 0.0.1](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.1). Os arquivos **Source code** são o código-fonte, não os executáveis.
+
+Os links acima são da versão **oficial**. Builds de branches pessoais, quando publicadas, são identificadas como **Pre-release** para testes e devem aparecer em uma seção separada, com links próprios. Cada atualização do aplicativo deve entregar os dois formatos; veja as [orientações de publicação](CONTRIBUTING.md#setup-e-portable-fazem-parte-da-entrega).

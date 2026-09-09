@@ -11,6 +11,8 @@ Editor de vídeo e motion design para Windows, aberto, offline e sem anúncios.
 
 Os dois pacotes incluem Electron, FFmpeg e FFprobe. [Ver arquivos e notas da versão](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.1).
 
+Estes são os downloads **oficiais**. Atualizações ainda nas branches dos colaboradores podem ter builds separadas, marcadas como **Pre-release** para testes; elas não substituem automaticamente estes arquivos.
+
 ## Sobre o projeto
 
 O Motion Livre reúne edição por camadas, animação, áudio e exportação em um aplicativo desktop independente. Ele funciona localmente e já inclui o motor FFmpeg necessário para leitura e geração de mídia.
@@ -169,7 +171,9 @@ Branches separam o trabalho, mas não eliminam conflitos na mesma função. Abra
 
 [Guia de colaboração e comandos para os dois computadores](CONTRIBUTING.md) · [Orientações para IAs](AGENTS.md)
 
-A versão oficial continua `0.0.1` durante este ciclo. Não altere a numeração nem publique executáveis a cada commit: a publicação fica com `kiwor101`, a partir de um commit integrado e validado. `package.json` é a fonte da versão usada pelo aplicativo e pelo empacotamento.
+A versão oficial continua `0.0.1` durante este ciclo. Ao concluir cada pacote que altera o aplicativo, **os dois colaboradores devem compilar e conferir Setup e Portable**, publicar uma prévia de teste da própria branch e atualizar os links de teste na documentação e no PR. Isso vale também para o chat de desenvolvimento do Emanuel; enviar somente código não conclui a entrega. Não é necessário compilar cada commit intermediário ou uma mudança exclusivamente documental.
+
+Depois da integração por `kiwor101`, qualquer um dos dois pode publicar os executáveis oficiais do código integrado e validado, coordenando um publicador por vez. Pré-releases nunca substituem os downloads oficiais antes do merge. Veja o [fluxo completo de compilação e publicação](CONTRIBUTING.md#setup-e-portable-fazem-parte-da-entrega). `package.json` continua sendo a fonte da versão; essas orientações não são uma automação de build do GitHub.
 
 ## Documentação
 

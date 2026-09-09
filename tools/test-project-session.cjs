@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const Session=require('../core/project-session.js'),Editor=require('../core/editor-state.js'),Commands=require('../core/layer-commands.js'),Clips=require('../.build/core/clip-commands.js');
+const state=Editor.create({layers:[{id:3,type:'video',name:'Vídeo',trackId:'faixa',trackName:'Principal',sourcePath:'C:/original.mp4',proxyPath:'C:/cache.mp4',content:'file:///C:/cache.mp4',start:0,end:8,sourceIn:0,sourceOut:8,volume:73,pan:-20,speed:1,muted:true,fadeIn:1,fadeOut:2,keyframes:[{time:0,values:{x:0}},{time:8,values:{x:100}}]},{id:8,type:'text',parentId:3,content:'Filho'}],mediaLibrary:[{name:'Não usada',url:'data:image/png;base64,AA==',type:'image'}]});
+const saved=Session.encode(state,{name:'Projeto',aspect:'9/16'}),loaded=Session.decode(saved);
+assert.equal(loaded.layers[0].id,3);assert.equal(loaded.layers[1].parentId,3);assert.equal(loaded.layers[0].trackName,'Principal');assert.equal(loaded.layers[0].content,'');assert.ok(!('proxyPath' in saved.layers[0]));assert.equal(loaded.mediaLibrary.length,2);
+const right=Commands.split(state,3,4,9,Clips.splitClip);
+assert.equal(right.volume,73);assert.equal(right.pan,-20);assert.equal(right.muted,true);assert.equal(right.sourcePath,'C:/original.mp4');assert.equal(right.keyframes.length,2);assert.equal(state.layers[0].keyframes.length,2);assert.notEqual(right.keyframes,state.layers[0].keyframes);assert.notEqual(right.keyframes[0].values,state.layers[0].keyframes[0].values);
+Commands.removeMany(state,[3,9]);assert.equal(state.layers[0].parentId,null);
+const prior=JSON.stringify(state);assert.throws(()=>Session.apply(state,{layers:[{id:1},{id:1}]}));assert.equal(JSON.stringify(state),prior);
+Session.apply(state,saved);assert.equal(state.layers[0].id,3);assert.ok(state.selectedIds instanceof Set);
+console.log('PASS: portable project, stable IDs, parent cleanup, independent split animation and atomic invalid load');

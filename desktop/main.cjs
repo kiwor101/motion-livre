@@ -1,19 +1,22 @@
 const {app,BrowserWindow,dialog,ipcMain,Menu,session}=require('electron');
-// Some Windows environments reject Electron's GPU/cache sandbox. The editor's
-// renderer remains fully functional with Chromium's software compositor.
-app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-gpu-compositing');
+// Hardware acceleration is the default for the composition engine. Keep an
+// explicit recovery mode for machines with broken or outdated GPU drivers.
+const softwareRendering=process.env.MOTION_LIVRE_SOFTWARE_RENDERING==='1';
+if(softwareRendering){app.disableHardwareAcceleration();app.commandLine.appendSwitch('disable-gpu');app.commandLine.appendSwitch('disable-gpu-compositing')}
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {spawn}=require('node:child_process');
 const {pathToFileURL}=require('node:url');
+const {createFrameExport}=require('./frame-export.cjs');
+const ProxyCache=require('./proxy-cache.cjs');
 // Keep development caches inside the workspace so a restricted Windows profile
 // cannot prevent Chromium from creating its cache directories.
 if(!app.isPackaged)app.setPath('userData',path.join(__dirname,'..','.runtime-data'));
 
 let mainWindow;
-let exportProcess=null;
+let exportStarting=false;
+let frameExport=null;
+let createVideoProxy;
 const DISPLAY_VERSION=app.getVersion();
 const projectFilter=[{name:'Projeto Motion Livre',extensions:['motion.json','json']}];
 const effectFilter=[{name:'Preset de efeitos Motion Livre',extensions:['motion-effect.xml','xml']}];
@@ -22,7 +25,6 @@ const mainPagePath=path.join(__dirname,'..','index.html');
 const mainPageUrl=pathToFileURL(mainPagePath).href;
 const MAX_PROJECT_BYTES=50*1024*1024;
 const MAX_EFFECT_BYTES=10*1024*1024;
-const MAX_EXPORT_BYTES=2*1024*1024*1024;
 
 function assertTrustedEvent(event){
   const senderUrl=event.senderFrame?.url||event.sender?.getURL?.()||'';
@@ -119,41 +121,41 @@ secureHandle('project:autosave',async(_event,data)=>{
 });
 secureHandle('project:recover',async()=>{try{const file=path.join(app.getPath('userData'),'autosave.motion.json'),stat=await fs.stat(file);if(stat.size>MAX_PROJECT_BYTES)return null;return await fs.readFile(file,'utf8')}catch{return null}});
 secureHandle('media:probe',async(_event,filePath)=>await probeMediaFile(filePath));
-secureHandle('export:cancel',()=>{if(exportProcess){exportProcess.kill();exportProcess=null;return true}return false});
-secureHandle('export:media',async(_event,{bytes,format,name,audioTracks=[],settings={}})=>{
-  if(!bytes||!Number.isFinite(bytes.byteLength??bytes.length)||(bytes.byteLength??bytes.length)>MAX_EXPORT_BYTES)throw new Error('Render inválido ou acima do limite permitido');
-  const formats={mp4:{ext:'mp4',label:'Vídeo MP4'},mov:{ext:'mov',label:'Vídeo MOV'},webm:{ext:'webm',label:'Vídeo WebM'},gif:{ext:'gif',label:'GIF animado'},png:{ext:'png',label:'Imagem PNG'},mp3:{ext:'mp3',label:'Áudio MP3'}};
-  const selected=formats[format]||formats.mp4;
-  const result=await dialog.showSaveDialog(mainWindow,{title:'Exportar composição',defaultPath:`${name||'projeto'}.${selected.ext}`,filters:[{name:selected.label,extensions:[selected.ext]}]});
-  if(result.canceled||!result.filePath)return null;
-  const tempDir=await fs.mkdtemp(path.join(app.getPath('temp'),'motion-livre-'));
-  const input=path.join(tempDir,'render.webm');
-  await fs.writeFile(input,Buffer.from(bytes));
-  const validAudio=[];for(const track of audioTracks.slice(0,128)){try{if(track.path&&path.isAbsolute(track.path)){await ensureRegularFile(track.path,/\.(mp4|mov|mkv|webm|avi|m4v|mp3|wav|m4a|aac|ogg|flac)$/i);validAudio.push(track)}}catch{}}
-  const audioInputs=validAudio.flatMap(track=>['-i',track.path]);
-  const filters=validAudio.map((track,index)=>{const duration=Math.max(.01,(track.end-track.start));const sourceEnd=Math.max(track.sourceIn+.01,Math.min(Number.isFinite(track.sourceOut)?track.sourceOut:track.sourceIn+duration*track.speed,track.sourceIn+duration*track.speed));const fadeOutStart=Math.max(0,duration-(track.fadeOut||0)),channel=track.audioChannel==='left'?'pan=stereo|c0=c0|c1=c0':track.audioChannel==='right'?'pan=stereo|c0=c1|c1=c1':'aformat=channel_layouts=stereo',pan=Math.max(-1,Math.min(1,track.pan||0)),reverse=track.reverse?',areverse':'';return `[${index+1}:a:0]atrim=start=${track.sourceIn}:end=${sourceEnd},asetpts=PTS-STARTPTS${reverse},${channel},stereotools=balance_out=${pan},atempo=${Math.max(.5,Math.min(2,track.speed))},volume=${Math.max(0,Math.min(2,track.volume))},afade=t=in:st=0:d=${Math.min(duration,track.fadeIn||0)},afade=t=out:st=${fadeOutStart}:d=${Math.min(duration,track.fadeOut||0)},adelay=${Math.round(track.start*1000)}|${Math.round(track.start*1000)}[a${index}]`});
-  // amix may propagate AV_NOPTS after trimmed/delayed inputs. AAC then receives
-  // INT64_MAX as its first timestamp, producing a silent and invalid MP4 track.
-  const mix=validAudio.length?`${filters.join(';')};${validAudio.map((_,i)=>`[a${i}]`).join('')}amix=inputs=${validAudio.length}:normalize=0:dropout_transition=0,aresample=async=1:first_pts=0[aout]`:'';
-  const crf=String(Math.max(14,Math.min(32,Number(settings.quality)||18))),audioBitrate=/^(128|192|320)k$/.test(settings.audioBitrate||'')?settings.audioBitrate:'192k',fps=[24,30,60].includes(Number(settings.fps))?Number(settings.fps):30,constantFrameRate=`setpts=N/(${fps}*TB),fps=${fps}`,rangeStart=Number(settings.start),rangeEnd=Number(settings.end),outputDuration=Number.isFinite(rangeStart)&&Number.isFinite(rangeEnd)&&rangeEnd>rangeStart?Math.max(1/fps,Math.min(3600,rangeEnd-rangeStart)):null,durationArgs=outputDuration?['-t',String(outputDuration)]:[];
-  if(format==='mp3'&&!mix){await fs.rm(tempDir,{recursive:true,force:true});throw new Error('Nenhum canal de áudio ativo para exportar')}
-  const args=format==='gif'
-    ?['-y','-i',input,'-vf',`setpts=N/(${fps}*TB),fps=15,scale=960:-1:flags=lanczos`,'-loop','0',...durationArgs,result.filePath]
-    :format==='png'
-      ?['-y','-i',input,'-frames:v','1',result.filePath]
-      :format==='mp3'
-        ?['-y','-i',input,...audioInputs,'-filter_complex',mix,'-map','[aout]','-c:a','libmp3lame','-b:a',audioBitrate,...durationArgs,result.filePath]
-      :format==='webm'
-        ?['-y','-i',input,...audioInputs,...(mix?['-filter_complex',mix,'-map','0:v:0','-map','[aout]']:['-map','0:v:0']),'-vf',constantFrameRate,'-fps_mode','cfr','-c:v','libvpx-vp9','-crf',crf,'-b:v','0','-pix_fmt',settings.transparent?'yuva420p':'yuv420p','-c:a','libopus','-b:a',audioBitrate,...durationArgs,result.filePath]
-        :['-y','-i',input,...audioInputs,...(mix?['-filter_complex',mix,'-map','0:v:0','-map','[aout]']:['-map','0:v:0']),'-vf',constantFrameRate,'-fps_mode','cfr','-c:v','libx264','-preset','medium','-crf',crf,'-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a',audioBitrate,...durationArgs,result.filePath];
-  return await new Promise((resolve,reject)=>{
-    exportProcess=spawn(bundledTool('ffmpeg'),args,{windowsHide:true});
-    exportProcess.stderr.on('data',chunk=>{const message=chunk.toString();const match=message.match(/time=(\d+):(\d+):(\d+(?:\.\d+)?)/);if(match){const seconds=+match[1]*3600+ +match[2]*60+ +match[3];mainWindow.webContents.send('export:progress',seconds)}});
-    exportProcess.on('error',reject);
-    exportProcess.on('close',async code=>{exportProcess=null;await fs.rm(tempDir,{recursive:true,force:true});if(code===0)resolve(result.filePath);else if(code===null)resolve(null);else reject(new Error(`FFmpeg finalizou com código ${code}`))});
-  });
+secureHandle('media:proxy',async(_event,{filePath,metadata={}})=>{
+  const stat=await ensureRegularFile(filePath,/\.(mp4|mov|mkv|webm|avi|m4v)$/i);
+  createVideoProxy??=ProxyCache.createCache({directory:path.join(app.getPath('userData'),'proxies'),generate:(input,output)=>new Promise((resolve,reject)=>{
+    const child=spawn(bundledTool('ffmpeg'),ProxyCache.ffmpegArgs(input,output),{windowsHide:true,stdio:['ignore','ignore','pipe']});let stderr='';
+    child.stderr.on('data',chunk=>stderr=(stderr+chunk).slice(-8000));child.on('error',reject);child.on('close',code=>code===0?resolve():reject(new Error(stderr.trim()||'Falha ao criar proxy ('+code+')')));
+  })});
+  return await createVideoProxy(filePath,metadata,stat);
 });
-secureHandle('app:info',()=>({version:DISPLAY_VERSION,platform:process.platform,userData:app.getPath('userData')}));
+secureHandle('export:cancel',async()=>{const current=frameExport;if(!current)return false;try{return await current.cancel()}finally{if(frameExport===current)frameExport=null}});
+secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={}})=>{
+  if(frameExport||exportStarting)throw new Error('Já existe uma exportação em andamento');
+  exportStarting=true;
+  try{
+    if(!['mp4','mov','webm','gif','png','mp3'].includes(format))throw new Error('Formato inválido');
+    const result=await dialog.showSaveDialog(mainWindow,{title:'Exportar composição',defaultPath:(name||'projeto')+'.'+format,filters:[{name:format.toUpperCase(),extensions:[format]}]});
+    if(result.canceled||!result.filePath)return{started:false};
+    const validAudio=[];
+    for(const track of audioTracks.slice(0,128)){await ensureRegularFile(track.path,/\.(mp4|mov|mkv|webm|avi|m4v|mp3|wav|m4a|aac|ogg|flac)$/i);validAudio.push(track)}
+    frameExport=createFrameExport({ffmpeg:bundledTool('ffmpeg'),filePath:result.filePath,format,settings,audioTracks:validAudio});
+    return{started:true,acceptsFrames:frameExport.acceptsFrames,filePath:result.filePath,settings:frameExport.settings};
+  }finally{exportStarting=false}
+});
+secureHandle('export:frame',async(_event,bytes)=>{
+  const current=frameExport;if(!current)throw new Error('Nenhuma exportação ativa');
+  try{await current.write(bytes);return true}catch(error){
+    try{await current.cancel()}catch(cleanupError){console.error(cleanupError)}
+    finally{if(frameExport===current)frameExport=null}
+    throw error;
+  }
+});
+secureHandle('export:finish',async()=>{
+  const current=frameExport;if(!current)throw new Error('Nenhuma exportação ativa');
+  try{return await current.finish()}catch(error){try{await current.cancel()}catch(cleanupError){console.error(cleanupError)}throw error}finally{if(frameExport===current)frameExport=null}
+});
+secureHandle('app:info',()=>({version:DISPLAY_VERSION,platform:process.platform,userData:app.getPath('userData'),softwareRendering,hardwareAcceleration:app.isHardwareAccelerationEnabled(),gpuFeatures:app.getGPUFeatureStatus()}));
 
 app.whenReady().then(()=>{
   const allowPreviewFullscreen=(contents,permission)=>permission==='fullscreen'&&contents===mainWindow?.webContents&&contents.getURL()===mainPageUrl;
@@ -161,4 +163,5 @@ app.whenReady().then(()=>{
   session.defaultSession.setPermissionCheckHandler((contents,permission)=>allowPreviewFullscreen(contents,permission));
   buildMenu();createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow()});
 });
+app.on('before-quit',()=>{frameExport?.cancel().catch(console.error)});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit()});

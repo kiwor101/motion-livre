@@ -5,7 +5,7 @@ const {pathToFileURL}=require('node:url');
  const browser=await chromium.launch({headless:true,channel:'msedge',args:['--allow-file-access-from-files']});
  try{
   const page=await browser.newPage({viewport:{width:1500,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  const url=pathToFileURL(path.resolve(__dirname,'../index.html')).href;await page.goto(url);
+  const url=pathToFileURL(path.resolve(__dirname,'../index.html')).href;await page.goto(url);await page.waitForFunction(()=>!!window.motionUiReady);await page.evaluate(()=>window.motionUiReady);
   await page.evaluate(()=>{
    const canvas=document.createElement('canvas');canvas.width=16;canvas.height=16;
    addMediaDescriptor({type:'image',url:canvas.toDataURL(),name:'Imagem original'});
@@ -30,7 +30,7 @@ const {pathToFileURL}=require('node:url');
   assert.equal(await page.locator('.track').count(),3);
   const saved=await page.evaluate(()=>JSON.stringify(projectData()));
   const expected=JSON.parse(saved).layers.map(l=>[l.name,l.trackName,l.trackId,l.start,l.end]);
-  await page.reload();
+  await page.reload();await page.waitForFunction(()=>!!window.motionUiReady);await page.evaluate(()=>window.motionUiReady);
   await page.locator('#importProject').setInputFiles({name:'teste.motion.json',mimeType:'application/json',buffer:Buffer.from(saved)});
   await page.waitForFunction(()=>state.layers.length===3);
   assert.deepEqual(await page.evaluate(()=>state.layers.map(l=>[l.name,l.trackName,l.trackId,l.start,l.end])),expected);

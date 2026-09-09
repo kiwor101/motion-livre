@@ -19,14 +19,26 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "electron .",
+    "build:core": "tsc -p tsconfig.core.json",
+    "build:ui": "vite build",
+    "check:ui": "vue-tsc --noEmit",
+    "test:core": "pnpm build:core && node tools/test-animation-core.cjs && node tools/test-clip-commands-core.cjs && node tools/test-editor-state.cjs && node tools/test-history-core.cjs && node tools/test-preview-quality.cjs && node tools/test-project-model-core.cjs && node tools/test-project-session.cjs && node tools/test-project-commands.cjs && node tools/test-export-controller.cjs && node tools/test-export-ipc.cjs && node tools/test-media-lifecycle.cjs && node tools/test-proxy-cache.cjs && node tools/test-time-mapping.cjs && node tools/test-export-audio.cjs && node tools/test-export-mix.cjs && node tools/test-proxy-real.cjs && node tools/test-frame-export.cjs",
+    "test:renderer": "electron tools/test-renderer-contracts.cjs && electron tools/test-editing-commands.cjs",
+    "test:smoke": "electron tools/smoke-renderer.cjs",
+    "dev": "pnpm build:ui && concurrently --kill-others \"vite build --watch\" \"electron .\"",
     "setup:ffmpeg": "powershell -ExecutionPolicy Bypass -File tools/setup-ffmpeg.ps1",
     "prepare:runtime": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1",
-    "dist": "powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1 && electron-builder --projectDir .build/runtime --win nsis portable --x64 && powershell -ExecutionPolicy Bypass -File tools/clean-dist.ps1"
+    "dist": "pnpm build:ui && powershell -ExecutionPolicy Bypass -File tools/prepare-runtime.ps1 && electron-builder --projectDir .build/runtime --win nsis portable --x64 && powershell -ExecutionPolicy Bypass -File tools/clean-dist.ps1"
   },
   "devDependencies": {
+    "@types/node": "^26.5.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "concurrently": "^10.0.5",
     "electron": "39.8.10",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2",
+    "vue-tsc": "^3.3.11"
   },
   "build": {
     "appId": "org.motionlivre.editor",
@@ -46,6 +58,9 @@
       "pro-editor.css",
       "pro-mask.css",
       "media-fit.css",
+      "core/**/*",
+      "renderer/**/*",
+      "ui-dist/**/*",
       "app.js",
       "advanced.js",
       "pro-editor.js",
@@ -61,8 +76,14 @@
       "package.json"
     ],
     "extraResources": [
-      {"from": "vendor/ffmpeg/ffmpeg.exe", "to": "ffmpeg/ffmpeg.exe"},
-      {"from": "vendor/ffmpeg/ffprobe.exe", "to": "ffmpeg/ffprobe.exe"}
+      {
+        "from": "vendor/ffmpeg/ffmpeg.exe",
+        "to": "ffmpeg/ffmpeg.exe"
+      },
+      {
+        "from": "vendor/ffmpeg/ffprobe.exe",
+        "to": "ffmpeg/ffprobe.exe"
+      }
     ],
     "win": {
       "target": [
@@ -81,5 +102,9 @@
     "portable": {
       "artifactName": "Motion-Livre-Portable-${version}-${arch}.${ext}"
     }
+  },
+  "dependencies": {
+    "pinia": "^4.0.3",
+    "vue": "^3.5.42"
   }
 }

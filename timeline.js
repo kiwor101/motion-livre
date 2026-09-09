@@ -34,17 +34,14 @@
   beatButton.onclick=e=>{e.stopPropagation();beatPanel.hidden=!beatPanel.hidden;if(!beatPanel.hidden){const r=beatButton.getBoundingClientRect();beatPanel.style.left=`${Math.min(innerWidth-beatPanel.offsetWidth-12,r.left)}px`;beatPanel.style.top=`${r.bottom+6}px`}};
   document.addEventListener('pointerdown',e=>{if(!beatPanel.hidden&&!beatPanel.contains(e.target)&&e.target!==beatButton)beatPanel.hidden=true});
   function estimateBeat(){const l=selected(),wave=l?.waveform;if(!l||!['audio','video'].includes(l.type)||!wave?.length)return toast('Selecione um clipe com waveform');const duration=l.mediaDuration||((l.end||state.duration)-(l.start||0))*(l.speed||1),secondsPerPoint=duration/wave.length;let best={score:-Infinity,bpm:120,lag:1};for(let bpm=60;bpm<=200;bpm+=.25){const lag=60/bpm/secondsPerPoint;if(lag<1||lag>=wave.length/2)continue;let score=0,count=0;for(let i=0;i+lag<wave.length;i++){const j=Math.round(i+lag);score+=(wave[i]||0)*(wave[j]||0);count++}score/=Math.max(1,count);if(score>best.score)best={score,bpm,lag}}const interval=60/best.bpm,sourceStart=l.sourceIn||0;let peak=0;for(let i=1;i<wave.length;i++)if(wave[i]>wave[peak])peak=i;const peakTimeline=(l.start||0)+(peak*secondsPerPoint-sourceStart)/(l.speed||1),offset=((peakTimeline%interval)+interval)%interval;beatBpm.value=best.bpm.toFixed(2);beatOffset.value=Math.max(0,offset).toFixed(3);toast(`Sugestão: ${best.bpm.toFixed(2)} BPM`)}
-  function generateBeats(){const bpm=clamp(+beatBpm.value||120,30,300),interval=60/bpm,offset=clamp(+beatOffset.value||0,0,state.duration);state.beatSync={bpm:+bpm.toFixed(3),offset:+offset.toFixed(3)};state.beatMarkers=[];for(let t=offset;t<=state.duration+.0001&&state.beatMarkers.length<5000;t+=interval)state.beatMarkers.push(+t.toFixed(4));pushHistory();renderTimeline();markDirty();toast(`${state.beatMarkers.length} marcadores de beat sync gerados`)}
+  function generateBeats(){const bpm=clamp(+beatBpm.value||120,30,300),offset=clamp(+beatOffset.value||0,0,state.duration);MotionProjectCommands.generateBeats(state,{bpm,offset});pushHistory();renderTimeline();markDirty();toast(`${state.beatMarkers.length} marcadores de beat sync gerados`)}
   beatPanel.querySelector('[data-beat-analyze]').onclick=estimateBeat;beatPanel.querySelector('[data-beat-generate]').onclick=generateBeats;beatPanel.querySelector('[data-beat-clear]').onclick=()=>{state.beatMarkers=[];pushHistory();renderTimeline();markDirty();toast('Marcadores do beat sync removidos')};
-  function setRenderBoundary(kind){const range=state.renderRange||{start:0,end:state.duration},value=+state.time.toFixed(4);if(kind==='start'){if(value>=range.end)return toast('O início deve ficar antes do fim');range.start=value}else{if(value<=range.start)return toast('O fim deve ficar depois do início');range.end=value}state.renderRange=range;pushHistory();renderTimeline();markDirty();toast(`Ponto de ${kind==='start'?'entrada':'saída'} da renderização: ${timeText(value)}`)}
-  function trimTimeline(side){if(!state.layers.length)return toast('A timeline está vazia');if(side==='start'){const gap=Math.min(...state.layers.map(l=>l.start||0));if(gap<=frame()/2)return toast('Não há espaço vazio no início');pushHistory();for(const l of state.layers){l.start=Math.max(0,(l.start||0)-gap);l.end=Math.max(0,(l.end??state.duration)-gap);l.keyframes=(l.keyframes||[]).map(k=>({...k,time:Math.max(0,k.time-gap)}))}state.markers=(state.markers||[]).map(t=>t-gap).filter(t=>t>=0);state.beatMarkers=(state.beatMarkers||[]).map(t=>t-gap).filter(t=>t>=0);state.renderRange={start:Math.max(0,(state.renderRange?.start||0)-gap),end:Math.max(frame(),(state.renderRange?.end??state.duration)-gap)};state.duration=Math.max(frame(),state.duration-gap);setTime(Math.max(0,state.time-gap))}else{const end=Math.max(...state.layers.map(l=>l.end??0));if(state.duration-end<=frame()/2)return toast('Não há espaço vazio no fim');pushHistory();state.duration=Math.max(frame(),end);state.markers=(state.markers||[]).filter(t=>t<=state.duration);state.beatMarkers=(state.beatMarkers||[]).filter(t=>t<=state.duration);state.renderRange={start:Math.min(state.renderRange?.start||0,Math.max(0,state.duration-frame())),end:Math.min(state.renderRange?.end??state.duration,state.duration)};setTime(Math.min(state.time,state.duration))}syncComposition();commit();toast(`Espaço vazio do ${side==='start'?'início':'fim'} removido`)}
+  function setRenderBoundary(kind){const value=+state.time.toFixed(4);if(!MotionProjectCommands.setRange(state,{edge:kind,time:value}))return toast('O início deve ficar antes do fim');pushHistory();renderTimeline();markDirty();toast(`Ponto de ${kind==='start'?'entrada':'saída'} da renderização: ${timeText(value)}`)}
+  function trimTimeline(side){if(!MotionProjectCommands.trimEmpty(state,{edge:side}))return toast('Não há espaço vazio para remover');syncComposition();commit();toast(`Espaço vazio do ${side==='start'?'início':'fim'} removido`)}
   const duplicate=document.createElement('button');duplicate.textContent='⧉ Duplicar';duplicate.title='Duplicar em nova camada acima';duplicate.dataset.action='duplicate';tools.insertBefore(duplicate,$('#timelinePosition'));
   duplicate.onclick=()=>$('#duplicateLayer').click();
-  $('#duplicateLayer').onclick=()=>{const l=selected();if(!l)return;if(l.locked)return toast('Faixa bloqueada');pushHistory();const copy=structuredClone(l);copy.id=uid++;copy.trackId=`track-${crypto.randomUUID()}`;copy.trackName=(l.trackName||l.name)+' cópia';copy.name=l.name+' cópia';const members=state.layers.filter(x=>trackId(x)===trackId(l));state.layers.splice(Math.max(...members.map(x=>state.layers.indexOf(x)))+1,0,copy);state.selected=copy.id;commit();selectLayer(copy.id)};
-  function reorderTrack(id,target,before){
-    if(id===target)return;const rows=groups(),from=rows.findIndex(r=>r[0]===id);if(from<0||rows[from][1].some(l=>l.locked))return;
-    pushHistory();const [moving]=rows.splice(from,1),at=rows.findIndex(r=>r[0]===target);rows.splice(at+(before?0:1),0,moving);state.layers=rows.reverse().flatMap(r=>r[1].slice().reverse());commit();
-  }
+  $('#duplicateLayer').onclick=()=>{pushHistory();const copy=MotionLayerCommands.duplicate(state,state.selected,uid++);if(copy){commit();selectLayer(copy.id)}};
+  function reorderTrack(source,target,before){pushHistory();if(MotionLayerCommands.reorderTrack(state,source,target,before))commit()}
   function trackControls(name,id,clips){
     const label=name.querySelector('.layer-title');label.textContent=clips[0].trackName||clips.at(-1).name;label.title='Duplo clique para renomear; arraste para reordenar';
     label.onclick=e=>{e.stopPropagation();state.selected=clips[0].id;syncProps();position();timeline.querySelectorAll('[data-clip]').forEach(el=>el.classList.toggle('selected-clip',+el.dataset.clip===state.selected));$$('#stage .layer').forEach(el=>el.classList.toggle('selected',+el.dataset.id===state.selected))};
@@ -57,7 +54,7 @@
   const layersPanel=document.createElement('details');layersPanel.className='layers-panel';layersPanel.open=true;layersPanel.innerHTML='<summary>Camadas</summary><div class="layers-panel-list"></div>';$('.library').append(layersPanel);
   function renderLayersPanel(){const list=layersPanel.querySelector('.layers-panel-list');list.replaceChildren();for(const [id,clips] of groups()){const row=document.createElement('div');row.className='panel-layer'+(clips.some(l=>l.id===state.selected)?' active':'');row.innerHTML='<span class="layer-title"></span>';row.onclick=()=>selectLayer(clips[0].id);trackControls(row,id,clips);list.append(row)}}
   const resetProject=$('#newProject').onclick;$('#newProject').onclick=e=>{state.mediaLibrary=[];state.beatMarkers=[];state.beatSync={bpm:120,offset:0};state.renderRange={start:0,end:10};state.selectedIds.clear();renderMediaLibrary();resetProject(e)};
-  const deleteOne=$('#deleteLayer').onclick;$('#deleteLayer').onclick=()=>{if(!state.selectedIds.size)return deleteOne.call($('#deleteLayer'));const ids=new Set(state.selectedIds);pushHistory();state.layers=state.layers.filter(l=>!ids.has(l.id));state.selectedIds.clear();state.selected=null;renderLayers();syncProps();pushHistory();markDirty();toast(`${ids.size} clipes excluídos`)};
+  $('#deleteLayer').onclick=()=>{pushHistory();const removed=MotionLayerCommands.removeMany(state,state.selectedIds.size?state.selectedIds:[state.selected]);if(removed.length){commit();toast(removed.length+' clipes excluídos')}};
   for(const [action,label,title] of [['freeze','❄ Congelar','Inserir 2 segundos do quadro atual'],['reverse','↶ Reverso','Reproduzir o clipe de trás para frente'],['flip','↔ Espelhar','Espelhar horizontalmente']]){
     const button=document.createElement('button');button.dataset.action=action;button.textContent=label;button.title=title;
     if(action!=='freeze')button.setAttribute('aria-pressed','false');
@@ -116,21 +113,7 @@
     const at=anchor?state.layers.indexOf(anchor)+(direction<0?1:0):(direction<0?state.layers.length:0);
     state.layers.splice(at,0,l);commit();
   }
-  $('#splitAtPlayhead').onclick=()=>{
-    const l=selected(),t=state.time;if(!l||l.locked)return;
-    if(t<=(l.start||0)||t>=(l.end??state.duration))return toast('Posicione o cursor dentro do clipe');
-    pushHistory();trackId(l);
-    const right=structuredClone(l);right.id=uid++;right.start=t;
-    // Preserve all animation keys so interpolation at the cut remains identical.
-    if(['video','audio'].includes(l.type)){
-      const source=sourceTimeForLayer(l,t,l.mediaDuration||Infinity);
-      if(l.reverse){right.sourceOut=source;l.sourceIn=source}else{right.sourceIn=source;l.sourceOut=source}
-      // A emenda não é uma borda de fade: cada metade conserva apenas o fade externo.
-      l.fadeOut=0;right.fadeIn=0;
-    }
-    l.end=t;const index=state.layers.indexOf(l);state.layers.splice(index+1,0,right);
-    state.selected=right.id;commit();selectLayer(right.id);
-  };
+  $('#splitAtPlayhead').onclick=()=>{const layer=selected();if(!layer||layer.locked)return;if(state.time<=(layer.start||0)||state.time>=(layer.end??state.duration))return toast('Posicione o cursor dentro do clipe');pushHistory();trackId(layer);const right=MotionLayerCommands.split(state,layer.id,state.time,uid++,MotionClips.splitClip);if(right){commit();selectLayer(right.id)}};
   const contextMenu=document.createElement('div');contextMenu.className='clip-context-menu';contextMenu.hidden=true;document.body.append(contextMenu);
   function closeContextMenu(){contextMenu.hidden=true;contextMenu.replaceChildren()}
   function showContextMenu(event,layer=null,markerRef=null){event.preventDefault();event.stopPropagation();closeContextMenu();if(layer)selectLayer(layer.id);const actions=markerRef
@@ -235,15 +218,13 @@
       value=Math.round(value/frame())*frame();
       if(state.snapTimeline&&!p.altKey){const points=[0,state.time,state.duration,...allMarkerTimes(),...state.layers.filter(v=>v!==l).flatMap(v=>[v.start||0,v.end??state.duration])];let distance=8/width()*state.duration;for(const point of points){for(const offset of mode==='move'?[0,original.end-(original.start||0)]:[0]){const d=Math.abs(value+offset-point);if(d<distance){distance=d;value=point-offset}}}}
       const speed=l.speed||1,min=frame();
-      if(mode==='move'){l.start=Math.max(0,value);l.end=l.start+original.end-(original.start||0);const shift=l.start-(original.start||0);l.keyframes=(original.keyframes||[]).map(k=>({...k,time:k.time+shift}));}
+      if(mode==='move')Object.assign(l,MotionClips.moveClip(original,value,state.duration));
       else if(mode==='left'){
         const limit=['video','audio'].includes(l.type)?(original.reverse?(original.start||0)-((l.mediaDuration||original.sourceOut)-original.sourceOut)/speed:(original.start||0)-(original.sourceIn||0)/speed):0;
-        l.start=clamp(value,Math.max(0,limit),original.end-min);
-        if(l.reverse)l.sourceOut=original.sourceOut-(l.start-(original.start||0))*speed;else l.sourceIn=(original.sourceIn||0)+(l.start-(original.start||0))*speed;
+        Object.assign(l,MotionClips.trimClip(original,'start',clamp(value,Math.max(0,limit),original.end-min)));
       }else{
         const limit=['video','audio'].includes(l.type)?(original.reverse?original.end+(original.sourceIn||0)/speed:original.end+((l.mediaDuration||original.sourceOut)-original.sourceOut)/speed):state.duration;
-        l.end=clamp(value,(original.start||0)+min,limit);
-        if(l.reverse)l.sourceIn=(original.sourceIn||0)-(l.end-original.end)*speed;else l.sourceOut=original.sourceOut+(l.end-original.end)*speed;
+        Object.assign(l,MotionClips.trimClip(original,'end',clamp(value,(original.start||0)+min,limit)));
       }
       const row=document.elementFromPoint(p.clientX,p.clientY)?.closest('.track');
       destination=mode==='move'&&row?row.dataset.track:trackId(original);

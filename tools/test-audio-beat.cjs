@@ -5,7 +5,7 @@ const {pathToFileURL}=require('node:url');
  const browser=await chromium.launch({headless:true,channel:'msedge',args:['--allow-file-access-from-files']});
  try{
   const page=await browser.newPage({viewport:{width:1500,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(pathToFileURL(path.resolve(__dirname,'../index.html')).href);
+  await page.goto(pathToFileURL(path.resolve(__dirname,'../index.html')).href);await page.waitForFunction(()=>!!window.motionUiReady);await page.evaluate(()=>window.motionUiReady);
   await page.evaluate(()=>{
    state.duration=12;syncComposition();
    const video=addLayer('video','data:video/mp4;base64,AA==','Clipe com som');

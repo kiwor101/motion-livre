@@ -7,7 +7,7 @@ const path=require('node:path');
  try{
   const page=await browser.newPage({viewport:{width:1500,height:950}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(pathToFileURL(path.resolve(__dirname,'../index.html')).href);
+  await page.goto(pathToFileURL(path.resolve(__dirname,'../index.html')).href);await page.waitForFunction(()=>!!window.motionUiReady);await page.evaluate(()=>window.motionUiReady);
   await page.evaluate(()=>{const l=addLayer('rect','','Teste');l.start=0;l.end=10;l.keyframes=[{time:0,values:{x:10}},{time:10,values:{x:90}}];renderLayers();setTime(5)});
   await page.locator('[data-action="split"]').click();
   assert.equal(await page.locator('.track').count(),1);

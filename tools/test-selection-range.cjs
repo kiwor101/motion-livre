@@ -5,7 +5,7 @@ const {pathToFileURL}=require('node:url');
  const browser=await chromium.launch({headless:true,channel:'msedge',args:['--allow-file-access-from-files']});
  try{
   const page=await browser.newPage({viewport:{width:1500,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(pathToFileURL(path.resolve(__dirname,'../index.html')).href);
+  await page.goto(pathToFileURL(path.resolve(__dirname,'../index.html')).href);await page.waitForFunction(()=>!!window.motionUiReady);await page.evaluate(()=>window.motionUiReady);
   const ids=await page.evaluate(()=>{state.duration=20;state.renderRange={start:0,end:20};syncComposition();return [[2,5],[4,7],[8,12]].map(([start,end],i)=>{const l=addLayer('text',`Texto ${i}`,`Clipe ${i}`);Object.assign(l,{start,end,trackId:`track-${i}`,trackName:`Faixa ${i}`,keyframes:[{time:start+1,values:{x:50}}]});return l.id})});
   await page.locator(`[data-clip="${ids[0]}"]`).click();await page.locator(`[data-clip="${ids[1]}"]`).click({modifiers:['Control']});assert.deepEqual(new Set(await page.evaluate(()=>[...state.selectedIds])),new Set(ids.slice(0,2)));
   await page.locator(`[data-clip="${ids[2]}"]`).click({modifiers:['Shift']});assert.ok((await page.evaluate(()=>state.selectedIds.size))>=2);

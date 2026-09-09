@@ -1,0 +1,5 @@
+#compositionPreview{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#vueTools,#vueLibrary,#vueStage,#vueInspector,#vueTimeline,#vueOverlays{display:contents}
+.stage.unified-renderer>.layer{z-index:1;background:transparent!important;color:transparent!important;filter:none!important;box-shadow:none!important}
+.stage.unified-renderer>.layer>img,.stage.unified-renderer>.layer>video,.stage.unified-renderer>.layer>canvas{visibility:hidden}
+.stage.unified-renderer>.stage-hint{z-index:2}

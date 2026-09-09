@@ -23,6 +23,7 @@ const {pathToFileURL}=require('node:url');
   await page.evaluate(()=>{state.markers=[1.5];state.selected=state.layers.find(l=>l.type==='audio').id;renderLayers();selectLayer(state.selected)});
   await page.getByText('♩ Beat sync').click();await page.locator('[data-beat-bpm]').fill('120');await page.locator('[data-beat-offset]').fill('0.25');await page.locator('[data-beat-generate]').click();
   assert.deepEqual(await page.evaluate(()=>state.markers),[1.5]);assert.ok(await page.evaluate(()=>state.beatMarkers.length>10));
+  assert.equal(await page.locator('.beat-marker').first().evaluate(e=>e.parentElement.classList.contains('time-ruler')),true);assert.equal(await page.locator('.manual-marker').evaluate(e=>e.parentElement.classList.contains('time-ruler')),true);
   const beforeBeat=await page.evaluate(()=>state.beatMarkers[0]),beatBox=await page.locator('.beat-marker').first().boundingBox();await page.mouse.move(beatBox.x+1,beatBox.y+10);await page.mouse.down();await page.mouse.move(beatBox.x+35,beatBox.y+10);await page.mouse.up();assert.notEqual(await page.evaluate(()=>state.beatMarkers[0]),beforeBeat);
   await page.locator('[data-beat-clear]').click();
   assert.deepEqual(await page.evaluate(()=>state.markers),[1.5]);assert.deepEqual(await page.evaluate(()=>state.beatMarkers),[]);

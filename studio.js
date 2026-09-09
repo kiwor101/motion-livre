@@ -9,11 +9,12 @@
   for(const [action,[name,label]] of Object.entries(actions))icon(document.querySelector(`[data-action="${action}"]`),name,label);
   for(const [id,name,label] of [['undoBtn','undo-2','Desfazer · Ctrl+Z'],['redoBtn','redo-2','Refazer · Ctrl+Y'],['toStart','skip-back','Voltar ao início'],['playBtn','play','Reproduzir / pausar · Espaço'],['muteBtn','volume-2','Silenciar preview'],['previewFullscreen','maximize','Tela cheia'],['addMarker','bookmark-plus','Adicionar marcador'],['clearMarkers','bookmark-x','Limpar marcadores']])icon($('#'+id),name,label);
   for(const [panel,name] of Object.entries({media:'folder-open',text:'type',audio:'music-2',shape:'shapes',effects:'sparkles',cut:'scissors',animation:'key-round',project:'settings-2',draw:'pen-tool'})){
-    const button=$(`[data-panel="${panel}"]`);if(button){const label=button.textContent.replace(button.querySelector('span')?.textContent||'','').trim();icon(button,name,label)}}
+    const button=$(`[data-panel="${panel}"]`);if(button){const label=button.textContent.replace(button.querySelector('span')?.textContent||'','').trim();icon(button,name,label);const title=document.createElement('span');title.className='tool-label';title.textContent=label;button.replaceChildren(title)}}
+  const topbar=$('.topbar'),mainTools=$('.tools');topbar.insertBefore(mainTools,$('.top-actions'));
   for(const [id,name] of [['newProject','plus'],['saveProject','save'],['projectFile','folder-open'],['exportBtn','download']]){const b=$('#'+id);b.classList.add('labeled-icon');b.style.setProperty('--icon',`url("assets/icons/${name}.svg")`)}
-  const transport=$('.transport'),wrap=$('.stage-wrap');wrap.append(transport);transport.append($('.preview-tools'));
+  const transport=$('.transport'),wrap=$('.stage-wrap'),stage=$('#stage'),stageToolbar=$('.stage-toolbar');stage.prepend(stageToolbar);stage.append(transport);transport.append($('.preview-tools'));
   $('#muteBtn').onclick=()=>{state.previewMuted=!state.previewMuted;$('#muteBtn').textContent=state.previewMuted?'🔇':'🔊';$$('#stage video,#stage audio').forEach(v=>{const l=state.layers.find(l=>l.id===+v.parentElement.dataset.id);v.muted=state.previewMuted||!!l?.muted});setTime(state.time)};
-  function fitPreview(){if(document.fullscreenElement)return;const ratio=$('#aspect').value.split('/').reduce((a,b)=>Number(a)/Number(b)),w=Math.max(1,Math.min(wrap.clientWidth-36,(wrap.clientHeight-84)*ratio));$('#stage').style.aspectRatio=$('#aspect').value;$('#stage').style.width=w+'px';$('#stage').style.height=w/ratio+'px'}
+  function fitPreview(){if(document.fullscreenElement)return;const ratio=$('#aspect').value.split('/').reduce((a,b)=>Number(a)/Number(b)),w=Math.max(1,Math.min((wrap.clientWidth-28)*.78,(wrap.clientHeight-28)*ratio));stage.style.aspectRatio=$('#aspect').value;stage.style.width=w+'px';stage.style.height=w/ratio+'px'}
   new ResizeObserver(fitPreview).observe(wrap);$('#aspect').addEventListener('change',fitPreview);$('#fitStage').addEventListener('click',fitPreview);
   const sync=syncComposition;syncComposition=function(){sync();fitPreview()};document.addEventListener('fullscreenchange',fitPreview);
   const end=document.createElement('button');end.id='toEnd';icon(end,'skip-forward','Ir ao fim');end.onclick=()=>{stop();setTime(state.duration)};transport.insertBefore(end,$('#timeLabel'));
@@ -32,12 +33,23 @@
   const zoom=$('#timelineZoom');zoom.title='Zoom · Alt ou Shift + roda do mouse';
   for(const [name,factor,label] of [['zoom-out',.8,'Diminuir zoom'],['zoom-in',1.25,'Aumentar zoom']]){const b=document.createElement('button');icon(b,name,label);b.onclick=()=>{zoom.value=Math.max(.25,Math.min(5,(state.timelineZoom||1)*factor));zoom.dispatchEvent(new Event('input',{bubbles:true}))};zoom.parentElement.insertAdjacentElement(name==='zoom-out'?'beforebegin':'afterend',b)}
   const snap=$('#snapTimeline'),snapLabel=snap.closest('label');snapLabel.classList.add('snap-toggle');snapLabel.style.setProperty('--icon','url("assets/icons/magnet.svg")');snapLabel.title='Encaixe magnético';snap.setAttribute('aria-label','Encaixe magnético');
-  const split=$('#splitDestination');split.title='Destino do corte';split.setAttribute('aria-label','Destino do corte');
+  const toolbar=$('.timeline-controls'),timelineTools=$('.timeline-edit-tools');
+  const toolGroup=(name,nodes)=>{const group=document.createElement('div');group.className=`timeline-tool-group ${name}`;nodes.filter(Boolean).forEach(node=>group.append(node));return group};
+  const action=key=>timelineTools.querySelector(`[data-action="${key}"]`),zoomLabel=zoom.closest('label');
+  timelineTools.replaceChildren(
+    toolGroup('playback-tools',[action('play')]),
+    toolGroup('edit-tools',[action('split'),action('duplicate'),action('up'),action('down'),action('delete')]),
+    toolGroup('clip-tools',[action('freeze'),action('reverse'),action('flip'),action('extract-audio')]),
+    toolGroup('range-tools',[action('range-in'),action('range-out'),action('trim-start'),action('trim-end')]),
+    toolGroup('marker-tools',[$('#addMarker'),$('#clearMarkers'),timelineTools.querySelector('[data-tool="beats"]')]),
+    toolGroup('view-tools',[snapLabel,toolbar.querySelector('[data-icon="zoom-out"]'),zoomLabel,toolbar.querySelector('[data-icon="zoom-in"]')]),
+    toolGroup('timeline-status',[timelineTools.querySelector('.render-range-status'),$('#timelinePosition')])
+  );toolbar.replaceChildren(timelineTools);
   // One tooltip portal avoids clipping inside scroll containers and works in fullscreen.
   const tip=document.createElement('div');tip.className='studio-tooltip';tip.role='tooltip';tip.id='studioTooltip';tip.hidden=true;document.body.append(tip);
   function showTip(target){if(!target?.dataset.tooltip)return;tip.textContent=target.dataset.tooltip;target.setAttribute('aria-describedby',tip.id);(document.fullscreenElement||document.body).append(tip);tip.hidden=false;const r=target.getBoundingClientRect(),b=tip.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(innerWidth-b.width-8,r.left+r.width/2-b.width/2))+'px';tip.style.top=(r.bottom+10+b.height>innerHeight?r.top-b.height-10:r.bottom+10)+'px'}
   document.addEventListener('pointerover',e=>showTip(e.target.closest('[data-tooltip]')));document.addEventListener('focusin',e=>showTip(e.target.closest('[data-tooltip]')));
   for(const event of ['pointerout','focusout','pointerdown'])document.addEventListener(event,()=>{tip.hidden=true;document.querySelectorAll('[aria-describedby="studioTooltip"]').forEach(e=>e.removeAttribute('aria-describedby'))});
-  function decorateTracks(){for(const b of document.querySelectorAll('.track-name button')){const name=b.hasAttribute('data-vis')?(b.textContent==='○'?'eye-off':'eye'):b.hasAttribute('data-lock')?(b.textContent==='🔒'?'lock-keyhole':'lock-keyhole-open'):(b.textContent==='☑'?'square-check':'square');icon(b,name,b.title||b.getAttribute('aria-label'))}}
+  function decorateTracks(){for(const b of document.querySelectorAll('.track-name button')){const name=b.hasAttribute('data-vis')?(b.textContent==='○'?'eye-off':'eye'):b.hasAttribute('data-lock')?(b.textContent==='🔒'?'lock-keyhole':'lock-keyhole-open'):b.hasAttribute('data-mute')?(b.textContent==='🔇'?'volume-x':'volume-2'):(b.textContent==='☑'?'square-check':'square');icon(b,name,b.title||b.getAttribute('aria-label'))}}
   const render=renderTimeline;renderTimeline=function(){render();decorateTracks()};renderTimeline();refreshTransport();
 })();

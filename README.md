@@ -129,7 +129,7 @@ Os executáveis são distribuídos pelos anexos da Release no GitHub. Dependênc
 - O botão de grade ativa guias de alinhamento em 9:16, 16:9, 1:1, 4:5 ou na proporção da composição. As guias não alteram a mídia e não são exportadas.
 - Faixas de texto e áudio são compactas; áudio mostra sua forma de onda, respeitando o trecho recortado. Botões com ícones exibem dicas ao passar o mouse ou receber foco pelo teclado.
 
-- Dividir no cursor mantém os clipes na mesma faixa por padrão. O seletor ao lado de **Dividir** também permite criar uma faixa acima ou abaixo.
+- Dividir no cursor mantém as duas partes do clipe na mesma faixa.
 - As setas **↑ / ↓** movem o clipe selecionado para a faixa vizinha; nas extremidades, criam uma nova faixa. Intervalos ocupados não são sobrescritos.
 - Arraste a régua ou o cursor branco para navegar pelo vídeo. Arraste o centro de um clipe para movê-lo e suas bordas para ajustar entrada e saída.
 - Durante o movimento, a faixa de destino é destacada e uma guia mostra o intervalo. Segure **Alt** para ignorar o encaixe; o posicionamento respeita os quadros da composição.

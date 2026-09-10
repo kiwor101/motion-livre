@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const state=MotionEditorState.create();
-const mediaRuntime=MotionMediaRuntime.create({document,bridge:window.motionDesktop,onChange:()=>{renderLayers();setTime(state.time)}});window.motionMedia=mediaRuntime;
+const mediaRuntime=MotionMediaRuntime.create({document,bridge:window.motionDesktop,onChange:()=>{renderLayers();setTime(state.playback.time)}});window.motionMedia=mediaRuntime;
 let uid=1,raf;
 function toast(msg){const e=$('#toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800)}
 function switchPanel(name){$$('.tool').forEach(x=>x.classList.toggle('active',x.dataset.panel===name));$$('.panel').forEach(x=>x.classList.toggle('active',x.id===`panel-${name}`))}
@@ -31,7 +31,7 @@ function renderLayers(){
  });
  mediaRuntime.reconcile(state.layers);existing.forEach((element,id)=>{if(!activeIds.has(id))element.remove()});renderTimeline();
 }
-function applyStyle(e,l){e.style.left=l.x+'%';e.style.top=l.y+'%';e.style.opacity=l.opacity/100;e.style.color=l.color;e.style.backgroundColor=(l.type==='rect'||l.type==='circle')?l.color:'';e.style.filter=l.filter;e.style.setProperty('--media-fit',l.fitMode||'contain');e.style.transformOrigin=`${l.anchorX??50}% ${l.anchorY??50}%`;e.style.clipPath=`inset(${l.cropY||0}% ${l.cropX||0}%)`;e.style.transform=`translate(-50%,-50%) scale(${(l.flipX?-1:1)*l.scale/100},${(l.flipY?-1:1)*l.scale/100}) rotate(${l.rotation}deg)`;e.style.visibility=l.visible===false?'hidden':'visible';e.classList.toggle('selected',l.id===state.selected)}
+function applyStyle(e,l){e.style.left=l.x+'%';e.style.top=l.y+'%';e.style.opacity=l.opacity/100;e.style.color=l.color;e.style.backgroundColor=(l.type==='rect'||l.type==='circle')?l.color:'';e.style.filter=l.filter;e.style.setProperty('--media-fit',l.fitMode||'contain');e.style.transformOrigin=`${l.anchorX??50}% ${l.anchorY??50}%`;e.style.clipPath=`inset(${l.cropY||0}% ${l.cropX||0}%)`;e.style.transform=`translate(-50%,-50%) scale(${(l.flipX?-1:1)*l.scale/100},${(l.flipY?-1:1)*l.scale/100}) rotate(${l.rotation}deg)`;e.style.visibility=l.visible===false?'hidden':'visible';e.classList.toggle('selected',l.id===state.selection.selected)}
 function beginDrag(ev,l){
  if(l.locked)return toast('Camada bloqueada');if(ev.button!==0)return;selectLayer(l.id);
  const r=$('#stage').getBoundingClientRect(),before={x:l.x,y:l.y};projectHistory.begin(snapshot());
@@ -39,8 +39,8 @@ function beginDrag(ev,l){
  const up=e=>{removeEventListener('pointermove',move);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);if(e.type==='pointercancel'){Object.assign(l,before);projectHistory.cancel();updateSelected();syncProps()}else projectHistory.commit(snapshot());markDirty()};
  addEventListener('pointermove',move);addEventListener('pointerup',up);addEventListener('pointercancel',up);
 }
-function selectLayer(id){MotionLayerCommands.select(state,id);$$('.layer').forEach(e=>e.classList.toggle('selected',+e.dataset.id===id));syncProps()}
-function selected(){return state.layers.find(l=>l.id===state.selected)}
+function selectLayer(id){MotionSelectionCommands.selectOnly(state,id);$$('.layer').forEach(e=>e.classList.toggle('selected',+e.dataset.id===id));syncProps()}
+function selected(){return state.layers.find(l=>l.id===state.selection.selected)}
 function syncProps(){const l=selected();$('#noSelection').hidden=!!l;$('#properties').hidden=!l;if(!l)return;[['Name','name'],['X','x'],['Y','y'],['Scale','scale'],['Rotation','rotation'],['Opacity','opacity'],['Color','color']].forEach(([a,k])=>{$('#prop'+a).value=l[k];const o=$('#out'+a);if(o)o.value=l[k]+(k==='rotation'?'°':'%')})}
 function updateSelected(){const l=selected(),e=l&&$(`.layer[data-id="${l.id}"]`);if(e)applyStyle(e,l)}
 ['X','Y','Scale','Rotation','Opacity','Color'].forEach(a=>$('#prop'+a).oninput=e=>{const l=selected();if(!l)return;MotionProjectCommands.setProperties(state,{id:l.id,values:{[a.toLowerCase()]:a==='Color'?e.target.value:+e.target.value}});updateSelected();syncProps();markDirty()});
@@ -48,14 +48,13 @@ $('#propName').oninput=e=>{const l=selected();if(l){MotionProjectCommands.setPro
 $('#stage').onclick=()=>selectLayer(null);
 $('#addText').onclick=()=>addLayer('text',$('#textValue').value||'Texto','Texto');
 $$('[data-shape]').forEach(b=>b.onclick=()=>addLayer(b.dataset.shape,'',b.dataset.shape==='circle'?'Círculo':'Retângulo'));
-$$('[data-effect]').forEach(b=>b.onclick=()=>{const l=selected();if(!l)return toast('Selecione uma camada');l.filter=b.dataset.effect;updateSelected();markDirty();toast('Efeito aplicado')});
 async function browserMediaMetadata(type,url){
  return await new Promise(resolve=>{const media=document.createElement(type==='video'?'video':'img'),finish=()=>resolve({duration:Number.isFinite(media.duration)?media.duration:0,width:media.videoWidth||media.naturalWidth||0,height:media.videoHeight||media.naturalHeight||0,rotation:0,hasAudio:false});if(type==='video'){media.preload='metadata';media.onloadedmetadata=finish}else media.onload=finish;media.onerror=finish;media.src=url});
 }
 function addMediaDescriptor(descriptor,options={}){
  const {type,url,name,sourcePath='',duration=0,width=0,height=0,rotation=0,hasAudio=false}=descriptor;
- const create=()=>{const previousDuration=state.duration,l=addLayer(type,url,name);Object.assign(l,{waveform:descriptor.waveform||[],sourcePath,mediaDuration:duration,mediaWidth:width,mediaHeight:height,mediaRotation:rotation,hasAudio,fitMode:'contain',sourceIn:0,sourceOut:duration||state.duration,end:Math.min(duration||state.duration,state.duration),speed:1,volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false,fadeIn:0,fadeOut:0});if(duration>state.duration){state.duration=Math.min(duration,600);l.end=state.duration;if(state.renderRange&&(state.renderRange.end??previousDuration)>=previousDuration-.001)state.renderRange.end=state.duration;syncComposition?.()}renderLayers();selectLayer(l.id);requestVideoProxy(l,{width,height,duration});return l};
- if(options.addToLibrary!==false){state.mediaLibrary??=[];const key=sourcePath||url;if(!state.mediaLibrary.some(m=>(m.sourcePath||m.url)===key))state.mediaLibrary.push({...descriptor});renderMediaLibrary()}
+ const create=()=>{const previousDuration=state.duration,l=addLayer(type,url,name);MotionMediaCommands.configureLayer(state,{id:l.id,source:descriptor});if(state.duration!==previousDuration)syncComposition?.();renderLayers();selectLayer(l.id);requestVideoProxy(l,{width,height,duration});return l};
+ if(options.addToLibrary!==false){MotionMediaCommands.addToLibrary(state,descriptor);renderMediaLibrary()}
  return options.createLayer===false?null:create();
 }
 function renderMediaLibrary(){
@@ -65,8 +64,7 @@ function renderMediaLibrary(){
 }
 function restoreMediaLibrary(data){
  const entries=[...(data.mediaLibrary||[]),...data.layers.filter(l=>['image','video','audio'].includes(l.type)).map(l=>({type:l.type,url:l.content,sourcePath:l.sourcePath,name:l.name,duration:l.mediaDuration,width:l.mediaWidth,height:l.mediaHeight}))];
- state.mediaLibrary=[];
- for(const entry of entries){const url=entry.sourcePath&&window.motionDesktop?motionDesktop.fileUrl(entry.sourcePath):entry.url;if(!url)continue;const key=entry.sourcePath||url;if(!state.mediaLibrary.some(m=>(m.sourcePath||m.url)===key))state.mediaLibrary.push({...entry,url})}renderMediaLibrary();
+ MotionMediaCommands.replaceLibrary(state,entries.map(entry=>({...entry,url:entry.sourcePath&&window.motionDesktop?motionDesktop.fileUrl(entry.sourcePath):entry.url})).filter(entry=>entry.url));renderMediaLibrary();
 }
 function loadProjectData(data){
  const next=MotionProjectSession.decode(data);stop();MotionProjectSession.apply(state,next);uid=Math.max(uid,...state.layers.map(l=>l.id+1));
@@ -86,7 +84,7 @@ async function importMedia(file){
 function isSupportedVisualMedia(file){return /^(video|image)\//i.test(file.type||'')||/\.(mp4|mov|mkv|webm|avi|m4v|jpg|jpeg|png|gif|webp|bmp)$/i.test(file.name||'')}
 async function importMediaFiles(files,dropPoint=null){
  const accepted=[...files].filter(isSupportedVisualMedia);let added=0;
- for(const file of accepted){const layer=await importMedia(file);if(layer){if(dropPoint){layer.x=Math.max(0,Math.min(100,dropPoint.x+added*2));layer.y=Math.max(0,Math.min(100,dropPoint.y+added*2));renderLayers();selectLayer(layer.id)}added++}}
+ for(const file of accepted){const layer=await importMedia(file);if(layer){if(dropPoint){MotionProjectCommands.setProperties(state,{id:layer.id,values:{x:Math.max(0,Math.min(100,dropPoint.x+added*2)),y:Math.max(0,Math.min(100,dropPoint.y+added*2))}});renderLayers();selectLayer(layer.id)}added++}}
  if(added){switchPanel('media');toast(`${added} ${added===1?'arquivo adicionado':'arquivos adicionados'} como ${added===1?'camada':'camadas'}`)}else toast('Solte arquivos de vídeo ou imagem compatíveis');
  return added;
 }
@@ -98,18 +96,19 @@ document.addEventListener('dragover',event=>{if(!transferHasFiles(event))return;
 document.addEventListener('dragleave',event=>{if(!event.relatedTarget)document.body.classList.remove('media-dragging')});
 document.addEventListener('drop',async event=>{if(!event.dataTransfer?.files?.length)return;event.preventDefault();document.body.classList.remove('media-dragging');const rect=$('#stage').getBoundingClientRect(),inside=event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom,point=inside?{x:(event.clientX-rect.left)/rect.width*100,y:(event.clientY-rect.top)/rect.height*100}:null;await importMediaFiles(event.dataTransfer.files,point)});
 $('#audioInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f),a=document.createElement('audio');const duration=await new Promise(resolve=>{a.onloadedmetadata=()=>resolve(Number.isFinite(a.duration)?a.duration:state.duration);a.onerror=()=>resolve(state.duration);a.src=url});addMediaDescriptor({type:'audio',url,name:f.name,sourcePath:window.motionDesktop?.getPathForFile?.(f)||'',duration,hasAudio:true});e.target.value='';toast('Canal de áudio criado')};
-$('#duplicateLayer').onclick=()=>{const n=MotionLayerCommands.duplicate(state,state.selected,uid++);if(n){renderLayers();selectLayer(n.id);markDirty()}};
+$('#duplicateLayer').onclick=()=>{const n=MotionLayerCommands.duplicate(state,state.selection.selected,uid++);if(n){renderLayers();selectLayer(n.id);markDirty()}};
 $('#deleteLayer').onclick=()=>{if(!MotionLayerCommands.remove(state))return;renderLayers();syncProps();if(typeof pushHistory==='function')pushHistory();markDirty()};
 function renderTimeline(){}
 function sourceTimeForLayer(layer,t,mediaDuration=Infinity){return MotionTime.sourceTimeForLayer(layer,t,mediaDuration)}
-function setTime(t){state.time=Math.max(0,Math.min(state.duration,t));$('#timeSlider').value=state.time;$('#playhead').style.left=`calc(240px + (100% - 240px) * ${state.time/state.duration})`;$('#timeLabel').textContent=`${fmt(state.time)} / ${fmt(state.duration)}`;mediaRuntime.sync(state);document.dispatchEvent(new Event('motion:scenechange'))}
+function setTime(t){state.playback.time=Math.max(0,Math.min(state.duration,t));$('#timeSlider').value=state.playback.time;$('#playhead').style.left=`calc(240px + (100% - 240px) * ${state.playback.time/state.duration})`;$('#timeLabel').textContent=`${fmt(state.playback.time)} / ${fmt(state.duration)}`;mediaRuntime.sync(state);document.dispatchEvent(new Event('motion:scenechange'))}
 function fmt(t){const ticks=Math.max(0,Math.floor(t*100+1e-6));return `${String(Math.floor(ticks/6000)).padStart(2,'0')}:${String(Math.floor(ticks/100)%60).padStart(2,'0')}.${String(ticks%100).padStart(2,'0')}`}
-function tick(now){if(!state.playing)return;setTime((now-state.started)/1000);if(state.time>=state.duration)stop();else raf=requestAnimationFrame(tick)}
-function play(){if(state.time>=state.duration)setTime(0);mediaRuntime.start();state.playing=true;state.started=performance.now()-state.time*1000;$('#playBtn').textContent='❚❚';setTime(state.time);raf=requestAnimationFrame(tick)}
-function stop(){state.playing=false;cancelAnimationFrame(raf);$('#playBtn').textContent='▶';mediaRuntime.pause();$('#audioPreview').pause()}
-$('#playBtn').onclick=()=>state.playing?stop():play();$('#toStart').onclick=()=>{stop();setTime(0)};$('#timeSlider').oninput=e=>{stop();setTime(+e.target.value)};$('#muteBtn').onclick=()=>{$$('#stage video').forEach(v=>v.muted=!v.muted);$('#muteBtn').textContent=$('#muteBtn').textContent==='🔊'?'🔇':'🔊'};
+function tick(now){if(!state.playback.playing)return;setTime((now-state.playback.started)/1000);if(state.playback.time>=state.duration)stop();else raf=requestAnimationFrame(tick)}
+function play(){if(state.playback.time>=state.duration)setTime(0);mediaRuntime.start();state.playback.playing=true;state.playback.started=performance.now()-state.playback.time*1000;$('#playBtn').textContent='❚❚';setTime(state.playback.time);raf=requestAnimationFrame(tick)}
+function stop(){state.playback.playing=false;cancelAnimationFrame(raf);$('#playBtn').textContent='▶';mediaRuntime.pause();$('#audioPreview').pause()}
+$('#playBtn').onclick=()=>state.playback.playing?stop():play();$('#toStart').onclick=()=>{stop();setTime(0)};$('#timeSlider').oninput=e=>{stop();setTime(+e.target.value)};$('#muteBtn').onclick=()=>{$$('#stage video').forEach(v=>v.muted=!v.muted);$('#muteBtn').textContent=$('#muteBtn').textContent==='🔊'?'🔇':'🔊'};
 $('#aspect').onchange=e=>$('#stage').style.aspectRatio=e.target.value;
 function markDirty(){$('#saveState').textContent='Alterações não salvas';queueMicrotask(()=>{if(typeof pushHistory==='function')pushHistory()});document.dispatchEvent(new Event('motion:scenechange'))}
 $('#saveProject').onclick=()=>{localStorage.setItem('motionLivreProject',JSON.stringify(projectData()));$('#saveState').textContent='Salvo localmente';toast('Projeto salvo neste computador')};
-$('#newProject').onclick=()=>{stop();state.layers=[];state.selected=null;renderLayers();syncProps();setTime(0);markDirty()};
+$('#newProject').onclick=()=>{stop();if(typeof pushHistory==='function')pushHistory();MotionProjectCommands.resetProject(state);renderLayers();syncProps();setTime(0);markDirty()};
 setTime(0);renderLayers();
+const motionPreview=MotionPreviewEngine.create({document,stage:$('#stage'),project:()=>state,media:mediaRuntime});window.motionPreview=motionPreview;

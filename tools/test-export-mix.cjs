@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
-const run=require('node:util').promisify(require('node:child_process').execFile),{audioMix}=require('../desktop/export-plan.cjs'),{audioSegmentForRange}=require('../.build/core/time-mapping.js');
+const run=require('node:util').promisify(require('node:child_process').execFile),{audioMix}=require('../.build/core/audio-export-plan.js'),{audioSegmentForRange}=require('../.build/core/time-mapping.js');
 (async()=>{const dir=await fs.mkdtemp(path.join(os.tmpdir(),'motion-mix-')),ffmpeg=path.resolve('vendor/ffmpeg/ffmpeg.exe');try{
  const inputs=[path.join(dir,'a.wav'),path.join(dir,'b.wav')];for(let i=0;i<2;i++)await run(ffmpeg,['-y','-f','lavfi','-i',`sine=frequency=${440+i*440}:sample_rate=48000:duration=5`,'-ac','2',inputs[i]],{windowsHide:true});
  const tracks=[{start:1,end:4,sourceIn:0,sourceOut:3,speed:1,volume:.8,pan:-1,fadeIn:.5,fadeOut:.5},{start:1,end:4,sourceIn:1,sourceOut:4,speed:1,volume:.4,pan:1,fadeIn:.5,fadeOut:.5}].map(l=>({...l,...audioSegmentForRange(l,1,4,5)}));

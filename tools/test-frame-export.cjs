@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
-const {createFrameExport}=require('../desktop/frame-export.cjs'),{normalize}=require('../core/export-settings.js');
+const {createFrameExport}=require('../desktop/frame-export.cjs'),{normalize}=require('../.build/core/export-settings.js');
 const run=require('node:util').promisify(require('node:child_process').execFile);
 (async()=>{
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'motion-encoder-')),ffmpeg=path.resolve('vendor/ffmpeg/ffmpeg.exe');let session;

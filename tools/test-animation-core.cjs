@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {easeValue,interpolateProperty,evaluateLayer,evaluateScene}=require('../core/animation.js');
+const {easeValue,interpolateProperty,evaluateLayer,evaluateScene}=require('../.build/core/animation.js');
 
 assert.equal(easeValue(0,'linear'),0);
 assert.equal(easeValue(1,'ease-in-out'),1);

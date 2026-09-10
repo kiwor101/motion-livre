@@ -1,8 +1,25 @@
 import * as MotionHistory from '../core/history';
 import * as MotionTime from '../core/time-mapping';
 import * as MotionClips from '../core/clip-commands';
+import * as MotionProject from '../core/project-model';
+import * as MotionEditorState from '../core/editor-state';
+import * as MotionProjectCommands from '../core/project-commands';
+import * as MotionLayerCommands from '../core/layer-commands';
+import * as MotionProjectSession from '../core/project-session';
+import * as MotionExportSettings from '../core/export-settings';
+import * as MotionAnimation from '../core/animation';
+import * as MotionPreviewQuality from '../core/preview-quality';
+import * as MotionMediaCommands from '../core/media-commands';
+import * as MotionSelectionCommands from '../core/selection-commands';
+import * as MotionWebGL from '../renderer/webgl-presenter';
+import * as MotionRasterizer from '../renderer/rasterizer';
+import * as MotionComposition from '../renderer/composition-engine';
+import * as MotionMediaRuntime from '../renderer/media-runtime';
+import * as MotionExportController from '../renderer/export-controller';
+import * as MotionPreviewEngine from '../renderer/preview-engine';
+const MotionUiState={drawing:false,timelineZoom:1,snapTimeline:true,showMotionPath:true,maskEditing:false,pathEditing:false,selectionAnchor:null as number|null};
 // Temporary boundary for the remaining script adapters; implementations live only in TS.
-Object.assign(globalThis,{MotionHistory,MotionTime,MotionClips});
+Object.assign(globalThis,{MotionHistory,MotionTime,MotionClips,MotionProject,MotionEditorState,MotionProjectCommands,MotionLayerCommands,MotionProjectSession,MotionExportSettings,MotionAnimation,MotionPreviewQuality,MotionMediaCommands,MotionSelectionCommands,MotionWebGL,MotionRasterizer,MotionComposition,MotionMediaRuntime,MotionExportController,MotionPreviewEngine,MotionUiState});
 import {createApp} from 'vue';
 import AppTopBar from './components/app/AppTopBar.vue';
 import ToolSidebar from './components/tools/ToolSidebar.vue';
@@ -20,6 +37,6 @@ createApp(InspectorPanel).mount('#vueInspector');
 createApp(TimelineSection).mount('#vueTimeline');
 createApp(AppOverlays).mount('#vueOverlays');
 
-const scripts=['core/export-settings.js','core/project-model.js','core/project-commands.js','core/project-session.js','core/editor-state.js','core/layer-commands.js','core/animation.js','renderer/preview-quality.js','renderer/media-runtime.js','renderer/rasterizer.js','renderer/composition-engine.js','renderer/export-controller.js','app.js','advanced.js','desktop-integration.js','pro-editor.js','alight-compat.js','timeline.js','studio.js','renderer/webgl-presenter.js','renderer/preview-engine.js'];
+const scripts=['app.js','advanced.js','desktop-integration.js','pro-editor.js','alight-compat.js','timeline.js','studio.js'];
 const ready=(async()=>{for(const source of scripts)await new Promise<void>((resolve,reject)=>{const script=document.createElement('script');script.src=source;script.onload=()=>resolve();script.onerror=()=>reject(new Error(`Falha ao carregar ${source}`));document.body.append(script)})})();
 Object.assign(window,{motionUiReady:ready});

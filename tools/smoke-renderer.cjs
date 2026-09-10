@@ -55,9 +55,9 @@ app.whenReady().then(async()=>{
     renderLayers();setTime(.25);await wait(()=>motionPreview.lastPresentOk===true);
     const gl=motionPreview.canvas.getContext('webgl2'),extension=gl.getExtension('WEBGL_lose_context');check(!!extension,'WebGL required');
     const lostEvent=new Promise(resolve=>motionPreview.canvas.addEventListener('webglcontextlost',resolve,{once:true}));extension.loseContext();await lostEvent;await new Promise(resolve=>setTimeout(resolve,100));extension.restoreContext();await wait(()=>!motionPreview.contextLost&&motionPreview.lastPresentOk);
-    const beforeTime=state.time,beforeSource=resolveLayerContent(state.layers[0]);
+    const beforeTime=state.playback.time,beforeSource=resolveLayerContent(state.layers[0]);
     const exported=await motionNativeExport('mp4',{width:${width},height:${height},fps:24,start:0,end:${seconds},quality:28});
-    check(exported&&state.time===beforeTime&&resolveLayerContent(state.layers[0])===beforeSource,'Export changed preview state');
+    check(exported&&state.playback.time===beforeTime&&resolveLayerContent(state.layers[0])===beforeSource,'Export changed preview state');
     check(motionPreview.textureCount<=1,'Per-layer textures retained');
     return{backend:motionPreview.backend,preview:motionPreview.quality,layerCount:state.layers.length};
   })()`);

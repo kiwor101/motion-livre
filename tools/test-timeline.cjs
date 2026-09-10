@@ -16,7 +16,7 @@ const path=require('node:path');
   assert.equal(await page.evaluate(()=>state.layers.every(l=>l.keyframes.length===2)),true);
   const ruler=await page.locator('.time-ruler').boundingBox(),lane=await page.locator('.track-lane').boundingBox();
   await page.mouse.click(lane.x+40*2.5,ruler.y+18);
-  assert.ok(Math.abs(await page.evaluate(()=>state.time)-2.5)<.05);
+  assert.ok(Math.abs(await page.evaluate(()=>state.playback.time)-2.5)<.05);
   await page.evaluate(()=>{selectLayer(state.layers[1].id)});
   await page.locator('[data-action="up"]').click();
   assert.equal(await page.locator('.track').count(),2);

@@ -1,8 +1,8 @@
 const {spawn}=require('node:child_process');
 const fs=require('node:fs/promises');
 const {randomUUID}=require('node:crypto');
-const {audioMix}=require('./export-plan.cjs');
-const {normalize}=require('../core/export-settings.js');
+const {audioMix}=require('../.build/core/audio-export-plan.js');
+const {normalize}=require('../.build/core/export-settings.js');
 
 function createFrameExport({ffmpeg,filePath,format='mp4',settings={},audioTracks=[]}){
   const config=normalize(format,settings,{},settings.end??settings.duration??10);

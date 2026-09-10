@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const Editor=require('../.build/core/editor-state.js'),Project=require('../.build/core/project-model.js'),Layers=require('../.build/core/layer-commands.js');
+const source=Project.normalizeLayer({id:1,type:'video',name:'Vídeo',trackId:'video-track',start:2,end:8,sourceIn:1,sourceOut:7,mediaDuration:10,sourcePath:'original.mp4',proxyPath:'proxy.mp4',volume:73,pan:-20,fadeIn:.4,fadeOut:.8,effects:{sharpen:30},keyframes:[{time:2,values:{x:10},easing:'linear'},{time:8,values:{x:50},easing:'linear'}]},12);
+const follower=Project.normalizeLayer({id:2,type:'video',trackId:'video-track',start:8,end:10,keyframes:[{time:8,values:{opacity:10}}]},12),other=Project.normalizeLayer({id:3,start:8,end:10},12);
+const state=Editor.create({duration:12,layers:[source,follower,other]});
+const still=Layers.freezeFrame(state,{id:1,time:4,content:'data:image/png;base64,frame',stillId:10,rightId:11,mediaDuration:10});
+assert.equal(still.id,10);assert.equal(still.type,'image');assert.equal(still.sourcePath,undefined);assert.equal(still.proxyPath,undefined);assert.equal(still.effects.sharpen,30);assert.equal(still.volume,73);assert.equal(still.frozenFrame,true);assert.ok(Math.abs(still.x-23.3333)<.001);
+const left=state.layers.find(layer=>layer.id===1),right=state.layers.find(layer=>layer.id===11),shifted=state.layers.find(layer=>layer.id===2);
+assert.equal(left.end,4);assert.equal(left.sourceOut,3);assert.equal(right.start,6);assert.equal(right.end,10);assert.equal(right.sourceIn,3);assert.equal(shifted.start,10);assert.equal(shifted.end,12);assert.equal(shifted.keyframes[0].time,10);assert.equal(other.start,8);assert.equal(state.selection.selected,10);assert.equal(state.duration,12);
+const before=JSON.stringify(state);assert.throws(()=>Layers.freezeFrame(state,{id:11,time:7,content:'x',stillId:10,rightId:20,mediaDuration:10}),/duplicado/);assert.equal(JSON.stringify(state),before);
+const reverseState=Editor.create({duration:10,layers:[Project.normalizeLayer({id:4,type:'video',start:2,end:8,sourceIn:1,sourceOut:7,mediaDuration:10,reverse:true},10)]});
+Layers.freezeFrame(reverseState,{id:4,time:4,content:'frame',stillId:12,rightId:13,mediaDuration:10});assert.equal(reverseState.layers.find(layer=>layer.id===4).sourceIn,5);assert.equal(reverseState.layers.find(layer=>layer.id===13).sourceOut,5);
+console.log('PASS: freeze frame is atomic and preserves effects, timing, audio properties and reverse mapping');

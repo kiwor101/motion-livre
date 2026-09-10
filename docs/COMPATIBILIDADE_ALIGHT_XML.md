@@ -26,7 +26,9 @@ As mesmas ações aparecem no menu **Projeto** e no menu nativo **Arquivo**.
 - referências de mídia por `file:///` ou `am-internal:///`;
 - brilho/contraste, saturação, matiz, desfoque, nitidez, motion blur, glow, vinheta, chroma key e inversão.
 
-Efeitos não reconhecidos são mantidos como dados XML na camada para poderem ser reexportados, mas não recebem uma prévia visual idêntica. O relatório lista esses casos.
+Efeitos não reconhecidos são mantidos como dados estruturados na camada para poderem ser reexportados, mas não recebem uma prévia visual idêntica. O relatório lista esses casos. O identificador interno remove apenas o namespace `com.alightcreative.effects.` (ou `com.alightcreative.` quando aplicável); o identificador original completo continua armazenado para o round-trip.
+
+A pilha preserva a ordem e efeitos repetidos. Também são conservados `hidden`, `locallyApplied`, atributos adicionais, tipos de propriedade e keyframes de parâmetros — inclusive tempos negativos ou acima de `1` e curvas `cubicBezier`. Esses contratos preparam implementações futuras sem afirmar equivalência visual antes que cada efeito tenha seu próprio motor.
 
 ## Limites reais
 
@@ -41,6 +43,7 @@ Efeitos não reconhecidos são mantidos como dados XML na camada para poderem se
 - limite de 5.000 camadas e 10.000 keyframes por propriedade;
 - rejeição de `DOCTYPE` e entidades externas;
 - URLs HTTP/HTTPS de mídia não são carregadas automaticamente.
+- a importação valida a cena inteira antes de substituir o projeto aberto; falhas não devem deixar camadas parcialmente importadas.
 
 ## Formatos diferentes
 

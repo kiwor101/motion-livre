@@ -1,2 +1,2 @@
-const assert=require('node:assert/strict');const Quality=require('../renderer/preview-quality.js');
+const assert=require('node:assert/strict');const Quality=require('../.build/core/preview-quality.js');
 const quality=Quality.create({targetMs:16,maxPixels:1_000_000,minScale:.4});for(let i=0;i<20;i++)quality.record(40,1000+i*800);assert.ok(quality.scale<1);const limited=quality.dimensions(3840,2160,2);assert.ok(limited.width*limited.height<=1_000_000);for(let i=0;i<30;i++)quality.record(2,20000+i*800);assert.ok(quality.scale>.4);console.log('PASS: adaptive preview reduces load and respects the pixel budget');

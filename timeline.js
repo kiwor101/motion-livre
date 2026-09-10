@@ -1,11 +1,11 @@
 /* Tracks group independently editable clips; media remains in the existing renderer. */
 (() => {
   const timeline = $('#timeline'), head = $('#playhead'), layerWidth = 240, timelineGap = 20, header = layerWidth + timelineGap;let rulerPlayhead=null,activeCorner=null;
-  const pixelsPerSecond = () => 40*(state.timelineZoom||1);
+  const pixelsPerSecond = () => 40*MotionUiState.timelineZoom;
   const width = () => state.duration*pixelsPerSecond();
   const frame = () => 1/(state.composition?.fps||30);
   const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
-  const trackId = l => l.trackId ||= `track-${crypto.randomUUID()}`;
+  const trackId = l => MotionLayerCommands.trackIdFor(l);
   const groups = () => {
     const result = new Map();
     for(const l of [...state.layers].reverse()) {
@@ -16,14 +16,12 @@
   const timeText = t => `${Math.floor(t/60).toString().padStart(2,'0')}:${(t%60).toFixed(2).padStart(5,'0')}`;
   const rulerText = t => t===0?'0s':t%60===0?`${t/60}m`:String(t%60).padStart(2,'0');
   const clipIcon = type => ({video:'film',image:'image',audio:'music-2',text:'type',rect:'shapes',circle:'shapes',drawing:'pen-tool',path:'pen-tool',null:'key-round',camera:'maximize'}[type]||'layers');
-  const commit = () => {renderLayers();syncProps();setTime(state.time);pushHistory();markDirty()};
-  const overlap = (l,id,start,end) => state.layers.some(x=>x!==l&&trackId(x)===id&&start<(x.end??state.duration)-.00001&&end>(x.start||0)+.00001);
+  const commit = () => {renderLayers();syncProps();setTime(state.playback.time);pushHistory();markDirty()};
+  const overlap = (l,id,start,end) => !MotionLayerCommands.canPlaceClipOnTrack(state,{id:l.id,trackId:id,start,end});
   const toolbar = $('.timeline-controls');
   const tools=document.createElement('div');tools.className='timeline-edit-tools';
   tools.innerHTML='<button data-action="play" title="Reproduzir / pausar">▶ / ❚❚</button><button data-action="split" title="Dividir no cursor">✂ Dividir</button><button data-action="up" title="Mover clipe para a faixa acima">↑</button><button data-action="down" title="Mover clipe para a faixa abaixo">↓</button><button data-action="delete" title="Excluir clipe">Excluir</button><output id="timelinePosition"></output>';
   toolbar.prepend(tools);
-  state.beatMarkers=state.beatMarkers||[];state.beatSync=state.beatSync||{bpm:120,offset:0};
-  state.renderRange=state.renderRange||{start:0,end:state.duration};state.selectionAnchor=state.selectionAnchor||null;
   const allMarkerTimes=()=>[...(state.markers||[]),...(state.beatMarkers||[])];
   const extract=document.createElement('button');extract.dataset.action='extract-audio';extract.textContent='♫ Extrair áudio';extract.title='Extrair o áudio do vídeo selecionado';tools.insertBefore(extract,$('#timelinePosition'));
   const beatButton=document.createElement('button');beatButton.textContent='♩ Beat sync';beatButton.title='Gerar marcadores em uma grade de tempo';beatButton.dataset.tool='beats';tools.insertBefore(beatButton,$('#timelinePosition'));
@@ -35,26 +33,26 @@
   document.addEventListener('pointerdown',e=>{if(!beatPanel.hidden&&!beatPanel.contains(e.target)&&e.target!==beatButton)beatPanel.hidden=true});
   function estimateBeat(){const l=selected(),wave=l?.waveform;if(!l||!['audio','video'].includes(l.type)||!wave?.length)return toast('Selecione um clipe com waveform');const duration=l.mediaDuration||((l.end||state.duration)-(l.start||0))*(l.speed||1),secondsPerPoint=duration/wave.length;let best={score:-Infinity,bpm:120,lag:1};for(let bpm=60;bpm<=200;bpm+=.25){const lag=60/bpm/secondsPerPoint;if(lag<1||lag>=wave.length/2)continue;let score=0,count=0;for(let i=0;i+lag<wave.length;i++){const j=Math.round(i+lag);score+=(wave[i]||0)*(wave[j]||0);count++}score/=Math.max(1,count);if(score>best.score)best={score,bpm,lag}}const interval=60/best.bpm,sourceStart=l.sourceIn||0;let peak=0;for(let i=1;i<wave.length;i++)if(wave[i]>wave[peak])peak=i;const peakTimeline=(l.start||0)+(peak*secondsPerPoint-sourceStart)/(l.speed||1),offset=((peakTimeline%interval)+interval)%interval;beatBpm.value=best.bpm.toFixed(2);beatOffset.value=Math.max(0,offset).toFixed(3);toast(`Sugestão: ${best.bpm.toFixed(2)} BPM`)}
   function generateBeats(){const bpm=clamp(+beatBpm.value||120,30,300),offset=clamp(+beatOffset.value||0,0,state.duration);MotionProjectCommands.generateBeats(state,{bpm,offset});pushHistory();renderTimeline();markDirty();toast(`${state.beatMarkers.length} marcadores de beat sync gerados`)}
-  beatPanel.querySelector('[data-beat-analyze]').onclick=estimateBeat;beatPanel.querySelector('[data-beat-generate]').onclick=generateBeats;beatPanel.querySelector('[data-beat-clear]').onclick=()=>{state.beatMarkers=[];pushHistory();renderTimeline();markDirty();toast('Marcadores do beat sync removidos')};
-  function setRenderBoundary(kind){const value=+state.time.toFixed(4);if(!MotionProjectCommands.setRange(state,{edge:kind,time:value}))return toast('O início deve ficar antes do fim');pushHistory();renderTimeline();markDirty();toast(`Ponto de ${kind==='start'?'entrada':'saída'} da renderização: ${timeText(value)}`)}
+  beatPanel.querySelector('[data-beat-analyze]').onclick=estimateBeat;beatPanel.querySelector('[data-beat-generate]').onclick=generateBeats;beatPanel.querySelector('[data-beat-clear]').onclick=()=>{MotionProjectCommands.setMarkers(state,{kind:'beat',markers:[]});pushHistory();renderTimeline();markDirty();toast('Marcadores do beat sync removidos')};
+  function setRenderBoundary(kind){const value=+state.playback.time.toFixed(4);if(!MotionProjectCommands.setRange(state,{edge:kind,time:value}))return toast('O início deve ficar antes do fim');pushHistory();renderTimeline();markDirty();toast(`Ponto de ${kind==='start'?'entrada':'saída'} da renderização: ${timeText(value)}`)}
   function trimTimeline(side){if(!MotionProjectCommands.trimEmpty(state,{edge:side}))return toast('Não há espaço vazio para remover');syncComposition();commit();toast(`Espaço vazio do ${side==='start'?'início':'fim'} removido`)}
   const duplicate=document.createElement('button');duplicate.textContent='⧉ Duplicar';duplicate.title='Duplicar em nova camada acima';duplicate.dataset.action='duplicate';tools.insertBefore(duplicate,$('#timelinePosition'));
   duplicate.onclick=()=>$('#duplicateLayer').click();
-  $('#duplicateLayer').onclick=()=>{pushHistory();const copy=MotionLayerCommands.duplicate(state,state.selected,uid++);if(copy){commit();selectLayer(copy.id)}};
+  $('#duplicateLayer').onclick=()=>{pushHistory();const copy=MotionLayerCommands.duplicate(state,state.selection.selected,uid++);if(copy){commit();selectLayer(copy.id)}};
   function reorderTrack(source,target,before){pushHistory();if(MotionLayerCommands.reorderTrack(state,source,target,before))commit()}
   function trackControls(name,id,clips){
     const label=name.querySelector('.layer-title');label.textContent=clips[0].trackName||clips.at(-1).name;label.title='Duplo clique para renomear; arraste para reordenar';
-    label.onclick=e=>{e.stopPropagation();state.selected=clips[0].id;syncProps();position();timeline.querySelectorAll('[data-clip]').forEach(el=>el.classList.toggle('selected-clip',+el.dataset.clip===state.selected));$$('#stage .layer').forEach(el=>el.classList.toggle('selected',+el.dataset.id===state.selected))};
-    label.ondblclick=e=>{e.stopPropagation();if(clips.some(l=>l.locked))return;const input=document.createElement('input');input.value=label.textContent;input.className='track-rename';label.replaceWith(input);input.focus();input.select();let done=false;const finish=save=>{if(done)return;done=true;if(save&&input.value.trim()){pushHistory();clips.forEach(l=>l.trackName=input.value.trim());commit()}else renderTimeline()};input.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')finish(true);if(e.key==='Escape')finish(false)};input.onblur=()=>finish(true)};
+    label.onclick=e=>{e.stopPropagation();MotionSelectionCommands.selectOnly(state,clips[0].id);syncProps();position();timeline.querySelectorAll('[data-clip]').forEach(el=>el.classList.toggle('selected-clip',+el.dataset.clip===state.selection.selected));$$('#stage .layer').forEach(el=>el.classList.toggle('selected',+el.dataset.id===state.selection.selected))};
+    label.ondblclick=e=>{e.stopPropagation();if(clips.some(l=>l.locked))return;const input=document.createElement('input');input.value=label.textContent;input.className='track-rename';label.replaceWith(input);input.focus();input.select();let done=false;const finish=save=>{if(done)return;done=true;if(save&&input.value.trim()){pushHistory();MotionLayerCommands.setTrackProperty(state,{ids:clips.map(l=>l.id),key:'trackName',value:input.value});commit()}else renderTimeline()};input.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')finish(true);if(e.key==='Escape')finish(false)};input.onblur=()=>finish(true)};
     name.draggable=true;name.ondragstart=e=>{if(e.target.closest('input')||clips.some(l=>l.locked)){e.preventDefault();return}e.dataTransfer.setData('application/x-motion-track',id);e.dataTransfer.effectAllowed='move'};
     name.ondragover=e=>{if([...e.dataTransfer.types].includes('application/x-motion-track')){e.preventDefault();name.classList.add('track-reorder-target')}};
     name.ondragleave=()=>name.classList.remove('track-reorder-target');
     name.ondrop=e=>{e.preventDefault();e.stopPropagation();const source=e.dataTransfer.getData('application/x-motion-track');if(source)reorderTrack(source,id,e.clientY<name.getBoundingClientRect().top+name.clientHeight/2)};
   }
   const layersPanel=document.createElement('details');layersPanel.className='layers-panel';layersPanel.open=true;layersPanel.innerHTML='<summary>Camadas</summary><div class="layers-panel-list"></div>';$('.library').append(layersPanel);
-  function renderLayersPanel(){const list=layersPanel.querySelector('.layers-panel-list');list.replaceChildren();for(const [id,clips] of groups()){const row=document.createElement('div');row.className='panel-layer'+(clips.some(l=>l.id===state.selected)?' active':'');row.innerHTML='<span class="layer-title"></span>';row.onclick=()=>selectLayer(clips[0].id);trackControls(row,id,clips);list.append(row)}}
-  const resetProject=$('#newProject').onclick;$('#newProject').onclick=e=>{state.mediaLibrary=[];state.beatMarkers=[];state.beatSync={bpm:120,offset:0};state.renderRange={start:0,end:10};state.selectedIds.clear();renderMediaLibrary();resetProject(e)};
-  $('#deleteLayer').onclick=()=>{pushHistory();const removed=MotionLayerCommands.removeMany(state,state.selectedIds.size?state.selectedIds:[state.selected]);if(removed.length){commit();toast(removed.length+' clipes excluídos')}};
+  function renderLayersPanel(){const list=layersPanel.querySelector('.layers-panel-list');list.replaceChildren();for(const [id,clips] of groups()){const row=document.createElement('div');row.className='panel-layer'+(clips.some(l=>l.id===state.selection.selected)?' active':'');row.innerHTML='<span class="layer-title"></span>';row.onclick=()=>selectLayer(clips[0].id);trackControls(row,id,clips);list.append(row)}}
+  const resetProject=$('#newProject').onclick;$('#newProject').onclick=e=>{resetProject(e);renderMediaLibrary()};
+  $('#deleteLayer').onclick=()=>{pushHistory();const removed=MotionLayerCommands.removeMany(state,state.selection.selectedIds.size?state.selection.selectedIds:[state.selection.selected]);if(removed.length){commit();toast(removed.length+' clipes excluídos')}};
   for(const [action,label,title] of [['freeze','❄ Congelar','Inserir 2 segundos do quadro atual'],['reverse','↶ Reverso','Reproduzir o clipe de trás para frente'],['flip','↔ Espelhar','Espelhar horizontalmente']]){
     const button=document.createElement('button');button.dataset.action=action;button.textContent=label;button.title=title;
     if(action!=='freeze')button.setAttribute('aria-pressed','false');
@@ -66,11 +64,11 @@
     if(action==='freeze'){await freezeFrame(l);return}
     if(action==='reverse'&&l.type!=='video')return toast('Selecione um clipe de vídeo');
     if(action==='flip'&&['audio','null','camera'].includes(l.type))return toast('Selecione um clipe visual');
-    stop();pushHistory();const key=action==='reverse'?'reverse':'flipX';l[key]=!l[key];commit();selectLayer(l.id);
+    stop();pushHistory();const key=action==='reverse'?'reverse':'flipX';MotionProjectCommands.setProperties(state,{id:l.id,values:{[key]:!l[key]}});commit();selectLayer(l.id);
   });
   async function freezeFrame(l){
     if(l.type!=='video')return toast('Selecione um clipe de vídeo');
-    const t=state.time;if(t<(l.start||0)||t>=(l.end??state.duration))return toast('Posicione o cursor dentro do clipe');
+    const t=state.playback.time;if(t<(l.start||0)||t>=(l.end??state.duration))return toast('Posicione o cursor dentro do clipe');
     const original=JSON.stringify(l),video=document.createElement('video');video.muted=true;
     stop();tools.querySelector('[data-action="freeze"]').disabled=true;
     try{
@@ -80,20 +78,8 @@
       const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext('2d').drawImage(video,0,0);
       const content=canvas.toDataURL('image/png');
       if(!state.layers.includes(l)||JSON.stringify(l)!==original)return toast('O clipe mudou durante a captura. Tente novamente.');
-      pushHistory();const id=trackId(l),hold=2,right=structuredClone(l),still=structuredClone(l);
-      Object.assign(still,{id:uid++,type:'image',content,sourcePath:null,name:l.name+' · quadro congelado',frozenFrame:true,start:t,end:t+hold,keyframes:[],reverse:false,muted:true,mediaDuration:0,sourceIn:0,sourceOut:hold,waveform:[]});
-      // Freeze the clip's local animation without baking effects or parent transforms twice.
-      for(const key of ['x','y','depth','scale','rotation','opacity']){
-        const keys=(l.keyframes||[]).filter(k=>Number.isFinite(k.values?.[key]));
-        if(keys.length){const sample=interpolate({...l,parentId:null,type:'camera',transitionIn:'none',transitionOut:'none'},t);still[key]=sample[key]}
-      }
-      for(const other of state.layers){if(trackId(other)===id&&other!==l&&(other.start||0)>=t){other.start+=hold;other.end+=hold;other.keyframes=(other.keyframes||[]).map(k=>({...k,time:k.time+hold}))}}
-      right.id=uid++;right.start=t+hold;right.end+=hold;right.keyframes=(right.keyframes||[]).map(k=>({...k,time:k.time+hold}));
-      const cut=sourceTimeForLayer(l,t,video.duration);
-      if(l.reverse){right.sourceOut=cut;l.sourceIn=cut}else{right.sourceIn=cut;l.sourceOut=cut}
-      const index=state.layers.indexOf(l);l.end=t;
-      state.layers.splice(index+(t>(l.start||0)?1:0),t>(l.start||0)?0:1,still,right);
-      state.duration=Math.max(state.duration,...state.layers.map(x=>x.end||0));syncComposition();state.selected=still.id;commit();selectLayer(still.id);
+      pushHistory();const still=MotionLayerCommands.freezeFrame(state,{id:l.id,time:t,content,stillId:uid++,rightId:uid++,hold:2,mediaDuration:video.duration});
+      if(!still)return toast('O clipe mudou durante a captura. Tente novamente.');syncComposition();commit();selectLayer(still.id);
       toast('Quadro congelado por 2 segundos; ajuste pelas bordas');
     }catch{toast('Não foi possível capturar o quadro deste vídeo')}
     finally{video.removeAttribute('src');video.load();tools.querySelector('[data-action="freeze"]').disabled=false}
@@ -106,31 +92,28 @@
   function moveTrack(direction){
     const l=selected();if(!l||l.locked)return;
     const rows=groups(),i=rows.findIndex(([id])=>id===trackId(l)),target=rows[i+direction];
-    if(target&&overlap(l,target[0],l.start||0,l.end??state.duration))return toast('A faixa de destino já tem um clipe nesse intervalo');
-    pushHistory();l.trackId=target?.[0]||`track-${crypto.randomUUID()}`;
-    state.layers=state.layers.filter(x=>x!==l);
-    const anchor=target?.[1][0]||rows[i][1].find(x=>x!==l);
-    const at=anchor?state.layers.indexOf(anchor)+(direction<0?1:0):(direction<0?state.layers.length:0);
-    state.layers.splice(at,0,l);commit();
+    if(target&&overlap(l,target[0],l.start||0,l.end??state.duration))return toast('A faixa de destino está bloqueada ou já tem um clipe nesse intervalo');
+    const placement=target?{destinationTrackId:target[0]}:{newTrack:{id:`track-${crypto.randomUUID()}`,name:l.name,targetTrackId:rows[i][0],before:direction<0}};
+    pushHistory();if(MotionLayerCommands.moveClipToTrack(state,{id:l.id,placement}))commit();
   }
-  $('#splitAtPlayhead').onclick=()=>{const layer=selected();if(!layer||layer.locked)return;if(state.time<=(layer.start||0)||state.time>=(layer.end??state.duration))return toast('Posicione o cursor dentro do clipe');pushHistory();trackId(layer);const right=MotionLayerCommands.split(state,layer.id,state.time,uid++,MotionClips.splitClip);if(right){commit();selectLayer(right.id)}};
+  $('#splitAtPlayhead').onclick=()=>{const layer=selected();if(!layer||layer.locked)return;if(state.playback.time<=(layer.start||0)||state.playback.time>=(layer.end??state.duration))return toast('Posicione o cursor dentro do clipe');pushHistory();trackId(layer);const right=MotionLayerCommands.split(state,layer.id,state.playback.time,uid++);if(right){commit();selectLayer(right.id)}};
   const contextMenu=document.createElement('div');contextMenu.className='clip-context-menu';contextMenu.hidden=true;document.body.append(contextMenu);
   function closeContextMenu(){contextMenu.hidden=true;contextMenu.replaceChildren()}
   function showContextMenu(event,layer=null,markerRef=null){event.preventDefault();event.stopPropagation();closeContextMenu();if(layer)selectLayer(layer.id);const actions=markerRef
-    ?[['Remover marcador',()=>{const list=markerRef.type==='beat'?state.beatMarkers:state.markers;list.splice(markerRef.index,1);pushHistory();renderTimeline();markDirty()}]]
+    ?[['Remover marcador',()=>{MotionProjectCommands.removeMarker(state,{kind:markerRef.type,index:markerRef.index});pushHistory();renderTimeline();markDirty()}]]
     :[['Dividir no cursor',()=>$('#splitAtPlayhead').click()],['Duplicar em nova faixa',()=>$('#duplicateLayer').click()],...(layer?.type==='video'?[['Extrair áudio',()=>window.motionDetachAudio?.(layer)]]:[]),['Excluir clipe',()=>$('#deleteLayer').click()]];
     for(const [label,action] of actions){const button=document.createElement('button');button.textContent=label;button.onclick=()=>{closeContextMenu();action()};contextMenu.append(button)}contextMenu.hidden=false;contextMenu.style.left=`${Math.min(innerWidth-190,event.clientX)}px`;contextMenu.style.top=`${Math.max(8,Math.min(innerHeight-contextMenu.offsetHeight-10,event.clientY))}px`}
   document.addEventListener('pointerdown',e=>{if(!contextMenu.hidden&&!contextMenu.contains(e.target))closeContextMenu()});document.addEventListener('keydown',e=>{if(e.key==='Escape')closeContextMenu()});
-  function dragMarker(event,type,index){if(event.button!==0)return;event.preventDefault();event.stopPropagation();stop();const list=type==='beat'?state.beatMarkers:state.markers,marker=event.currentTarget;let next=list[index];const move=e=>{const r=timeline.getBoundingClientRect();next=clamp((e.clientX-r.left+timeline.scrollLeft-header)/pixelsPerSecond(),0,state.duration);if(state.snapTimeline&&!e.altKey)next=Math.round(next/frame())*frame();marker.style.left=`${header+next*pixelsPerSecond()}px`;marker.title=`${type==='beat'?'Beat sync':'Marcador manual'} · ${timeText(next)}`};const end=()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',end);list[index]=+next.toFixed(4);list.sort((a,b)=>a-b);pushHistory();renderTimeline();markDirty()};addEventListener('pointermove',move);addEventListener('pointerup',end)}
+  function dragMarker(event,type,index){if(event.button!==0)return;event.preventDefault();event.stopPropagation();stop();const list=type==='beat'?state.beatMarkers:state.markers,marker=event.currentTarget;let next=list[index];projectHistory.begin(snapshot());const move=e=>{const r=timeline.getBoundingClientRect();next=clamp((e.clientX-r.left+timeline.scrollLeft-header)/pixelsPerSecond(),0,state.duration);if(MotionUiState.snapTimeline&&!e.altKey)next=Math.round(next/frame())*frame();marker.style.left=`${header+next*pixelsPerSecond()}px`;marker.title=`${type==='beat'?'Beat sync':'Marcador manual'} · ${timeText(next)}`};const end=e=>{removeEventListener('pointermove',move);removeEventListener('pointerup',end);removeEventListener('pointercancel',end);if(e.type==='pointercancel')projectHistory.cancel();else{MotionProjectCommands.moveMarker(state,{kind:type,index,time:next});projectHistory.commit(snapshot());markDirty()}renderTimeline()};addEventListener('pointermove',move);addEventListener('pointerup',end);addEventListener('pointercancel',end)}
   function dragRenderBoundary(event,kind){
-    if(event.button!==0)return;event.preventDefault();event.stopPropagation();stop();
+    if(event.button!==0)return;event.preventDefault();event.stopPropagation();stop();projectHistory.begin(snapshot());
     const marker=event.currentTarget,range={...(state.renderRange||{start:0,end:state.duration})},gap=frame();let next=range[kind];
-    const move=e=>{const r=timeline.getBoundingClientRect(),min=kind==='start'?0:range.start+gap,max=kind==='start'?range.end-gap:state.duration;next=clamp((e.clientX-r.left+timeline.scrollLeft-header)/pixelsPerSecond(),min,max);if(state.snapTimeline&&!e.altKey)next=clamp(Math.round(next/frame())*frame(),min,max);marker.style.left=`${header+next*pixelsPerSecond()}px`;marker.title=`${kind==='start'?'Início':'Fim'} da renderização · ${timeText(next)}`};
-    const end=e=>{removeEventListener('pointermove',move);removeEventListener('pointerup',end);removeEventListener('pointercancel',end);if(e.type==='pointercancel')return renderTimeline();range[kind]=+next.toFixed(4);state.renderRange=range;pushHistory();renderTimeline();markDirty()};
+    const move=e=>{const r=timeline.getBoundingClientRect(),min=kind==='start'?0:range.start+gap,max=kind==='start'?range.end-gap:state.duration;next=clamp((e.clientX-r.left+timeline.scrollLeft-header)/pixelsPerSecond(),min,max);if(MotionUiState.snapTimeline&&!e.altKey)next=clamp(Math.round(next/frame())*frame(),min,max);marker.style.left=`${header+next*pixelsPerSecond()}px`;marker.title=`${kind==='start'?'Início':'Fim'} da renderização · ${timeText(next)}`};
+    const end=e=>{removeEventListener('pointermove',move);removeEventListener('pointerup',end);removeEventListener('pointercancel',end);if(e.type==='pointercancel')projectHistory.cancel();else{MotionProjectCommands.setRange(state,{edge:kind,time:+next.toFixed(4)});projectHistory.commit(snapshot());markDirty()}renderTimeline()};
     addEventListener('pointermove',move);addEventListener('pointerup',end);addEventListener('pointercancel',end);
   }
-  function selectClip(event,layer){const order=[...timeline.querySelectorAll('[data-clip]')].map(el=>+el.dataset.clip),anchor=state.selectionAnchor??state.selected;if(event.shiftKey&&anchor&&order.includes(anchor)){const a=order.indexOf(anchor),b=order.indexOf(layer.id);if(!event.ctrlKey)state.selectedIds.clear();for(const id of order.slice(Math.min(a,b),Math.max(a,b)+1))state.selectedIds.add(id);state.selected=layer.id}else if(event.ctrlKey){if(state.selected&&!state.selectedIds.size)state.selectedIds.add(state.selected);if(state.selectedIds.has(layer.id)){state.selectedIds.delete(layer.id);state.selected=[...state.selectedIds].at(-1)||null}else{state.selectedIds.add(layer.id);state.selected=layer.id}state.selectionAnchor=layer.id}else{state.selectedIds.clear();state.selectionAnchor=layer.id;state.selected=layer.id}renderTimeline();syncProps()}
-  function beginMarquee(event){if(event.button!==0)return;event.preventDefault();event.stopPropagation();stop();const start={x:event.clientX,y:event.clientY},additive=event.ctrlKey||event.shiftKey,box=document.createElement('div');box.className='selection-marquee';box.hidden=true;document.body.append(box);let dragged=false,current=start;const move=e=>{current={x:e.clientX,y:e.clientY};const left=Math.min(start.x,current.x),top=Math.min(start.y,current.y),right=Math.max(start.x,current.x),bottom=Math.max(start.y,current.y);dragged=dragged||Math.hypot(current.x-start.x,current.y-start.y)>5;if(!dragged)return;box.hidden=false;Object.assign(box.style,{left:`${left}px`,top:`${top}px`,width:`${right-left}px`,height:`${bottom-top}px`})};const end=()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',end);box.remove();if(!dragged){if(!additive)state.selectedIds.clear();const r=timeline.getBoundingClientRect(),time=clamp((current.x-r.left+timeline.scrollLeft-header)/pixelsPerSecond(),0,state.duration);setTime(Math.round(time/frame())*frame());renderTimeline();return}const area={left:Math.min(start.x,current.x),right:Math.max(start.x,current.x),top:Math.min(start.y,current.y),bottom:Math.max(start.y,current.y)};if(!additive)state.selectedIds.clear();for(const clip of timeline.querySelectorAll('[data-clip]')){const r=clip.getBoundingClientRect();if(r.right>=area.left&&r.left<=area.right&&r.bottom>=area.top&&r.top<=area.bottom)state.selectedIds.add(+clip.dataset.clip)}const ids=[...state.selectedIds];state.selected=ids.at(-1)||null;state.selectionAnchor=state.selected;renderTimeline();syncProps()};addEventListener('pointermove',move);addEventListener('pointerup',end)}
+  function selectClip(event,layer){const order=[...timeline.querySelectorAll('[data-clip]')].map(el=>+el.dataset.clip),anchor=MotionUiState.selectionAnchor??state.selection.selected;if(event.shiftKey&&anchor&&order.includes(anchor))MotionSelectionCommands.selectRange(state,{order,anchor,target:layer.id,additive:event.ctrlKey});else if(event.ctrlKey)MotionSelectionCommands.toggle(state,layer.id);else MotionSelectionCommands.selectOnly(state,layer.id);MotionUiState.selectionAnchor=layer.id;renderTimeline();syncProps()}
+  function beginMarquee(event){if(event.button!==0)return;event.preventDefault();event.stopPropagation();stop();const start={x:event.clientX,y:event.clientY},additive=event.ctrlKey||event.shiftKey,box=document.createElement('div');box.className='selection-marquee';box.hidden=true;document.body.append(box);let dragged=false,current=start;const move=e=>{current={x:e.clientX,y:e.clientY};const left=Math.min(start.x,current.x),top=Math.min(start.y,current.y),right=Math.max(start.x,current.x),bottom=Math.max(start.y,current.y);dragged=dragged||Math.hypot(current.x-start.x,current.y-start.y)>5;if(!dragged)return;box.hidden=false;Object.assign(box.style,{left:`${left}px`,top:`${top}px`,width:`${right-left}px`,height:`${bottom-top}px`})};const end=()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',end);box.remove();if(!dragged){if(!additive)MotionSelectionCommands.clearMultiple(state);const r=timeline.getBoundingClientRect(),time=clamp((current.x-r.left+timeline.scrollLeft-header)/pixelsPerSecond(),0,state.duration);setTime(Math.round(time/frame())*frame());renderTimeline();return}const area={left:Math.min(start.x,current.x),right:Math.max(start.x,current.x),top:Math.min(start.y,current.y),bottom:Math.max(start.y,current.y)},ids=[];for(const clip of timeline.querySelectorAll('[data-clip]')){const r=clip.getBoundingClientRect();if(r.right>=area.left&&r.left<=area.right&&r.bottom>=area.top&&r.top<=area.bottom)ids.push(+clip.dataset.clip)}MotionSelectionCommands.setMany(state,{ids,additive});MotionUiState.selectionAnchor=state.selection.selected;renderTimeline();syncProps()};addEventListener('pointermove',move);addEventListener('pointerup',end)}
   const thumbnails=new Map();let thumbnailQueue=Promise.resolve();
   function mediaEvent(video,event,action){return new Promise((resolve,reject)=>{
     const cleanup=()=>{clearTimeout(timer);video.removeEventListener(event,ok);video.removeEventListener('error',fail)};
@@ -172,19 +155,19 @@
       const row=document.createElement('div');row.className='track';row.dataset.track=id;row.style.width=`${header+w}px`;row.style.gridTemplateColumns=`${header}px ${w}px`;
       row.dataset.kind=clips.some(l=>['video','image'].includes(l.type))?'video':clips.every(l=>l.type==='audio')?'audio':'text';
       const name=document.createElement('div');name.className='track-name';
-      const representative=clips.find(l=>l.id===state.selected)||clips[0];
+      const representative=clips.find(l=>l.id===state.selection.selected)||clips[0];
       const audioClips=clips.filter(l=>l.type==='audio'||l.type==='video'),hasAudio=clips.some(l=>l.type==='audio'||l.type==='video'&&l.hasAudio);
       name.innerHTML=`<span class="layer-title">${escapeHtml(clips.at(-1).name)}</span><button data-lock title="Bloquear faixa">${clips.every(l=>l.locked)?'🔒':'🔓'}</button><button data-vis title="Ocultar faixa">${clips.some(l=>l.visible!==false)?'●':'○'}</button><button data-mute title="Silenciar faixa" ${hasAudio?'':'disabled'}>${hasAudio&&audioClips.every(l=>l.muted)?'🔇':'🔊'}</button><button data-multi title="Marcar clipes para precomposição">☐</button>`;
-      name.querySelector('[data-vis]').onclick=e=>{e.stopPropagation();pushHistory();const visible=!clips.some(l=>l.visible!==false);clips.forEach(l=>l.visible=visible);commit()};
-      name.querySelector('[data-lock]').onclick=e=>{e.stopPropagation();pushHistory();const locked=!clips.every(l=>l.locked);clips.forEach(l=>l.locked=locked);commit()};
-      name.querySelector('[data-mute]').onclick=e=>{e.stopPropagation();if(!hasAudio)return;pushHistory();const muted=!audioClips.every(l=>l.muted);audioClips.forEach(l=>l.muted=muted);commit()};
-      name.querySelector('[data-multi]').onclick=e=>{e.stopPropagation();const all=clips.every(l=>state.selectedIds.has(l.id));clips.forEach(l=>all?state.selectedIds.delete(l.id):state.selectedIds.add(l.id));renderTimeline()};
-      name.querySelector('[data-multi]').textContent=clips.every(l=>state.selectedIds.has(l.id))?'☑':'☐';
+      name.querySelector('[data-vis]').onclick=e=>{e.stopPropagation();pushHistory();const visible=!clips.some(l=>l.visible!==false);MotionLayerCommands.setTrackProperty(state,{ids:clips.map(l=>l.id),key:'visible',value:visible});commit()};
+      name.querySelector('[data-lock]').onclick=e=>{e.stopPropagation();pushHistory();const locked=!clips.every(l=>l.locked);MotionLayerCommands.setTrackProperty(state,{ids:clips.map(l=>l.id),key:'locked',value:locked});commit()};
+      name.querySelector('[data-mute]').onclick=e=>{e.stopPropagation();if(!hasAudio)return;pushHistory();const muted=!audioClips.every(l=>l.muted);MotionLayerCommands.setTrackProperty(state,{ids:audioClips.map(l=>l.id),key:'muted',value:muted});commit()};
+      name.querySelector('[data-multi]').onclick=e=>{e.stopPropagation();MotionSelectionCommands.toggleMany(state,clips.map(l=>l.id));renderTimeline()};
+      name.querySelector('[data-multi]').textContent=clips.every(l=>state.selection.selectedIds.has(l.id))?'☑':'☐';
       name.querySelector('span').onclick=()=>selectLayer(representative.id);
       trackControls(name,id,clips);
       const lane=document.createElement('div');lane.className='track-lane';lane.onpointerdown=e=>{if(e.target===lane)beginMarquee(e)};
       for(const l of clips){
-        const clip=document.createElement('div');clip.className='clip pro-clip'+(state.selected===l.id||state.selectedIds.has(l.id)?' selected-clip':'');clip.dataset.clip=l.id;geometry(clip,l);clip.style.opacity=l.visible===false?.35:1;
+        const clip=document.createElement('div');clip.className='clip pro-clip'+(state.selection.selected===l.id||state.selection.selectedIds.has(l.id)?' selected-clip':'');clip.dataset.clip=l.id;geometry(clip,l);clip.style.opacity=l.visible===false?.35:1;
         clip.dataset.kind=l.type;clip.title=`${l.name} · ${timeText((l.end??state.duration)-(l.start||0))}`;clip.style.setProperty('--clip-icon',`url("assets/icons/${clipIcon(l.type)}.svg")`);
         clip.innerHTML=`<div class="filmstrip"></div><span class="clip-label"><i class="clip-kind-icon"></i><span class="clip-title">${escapeHtml(l.name)}</span></span><i class="clip-handle left"></i><i class="clip-handle right"></i>`;
         for(const k of l.keyframes||[]){if(k.time<(l.start||0)||k.time>(l.end??state.duration))continue;const dot=document.createElement('i');dot.className='key-dot';dot.style.left=`${(k.time-(l.start||0))/((l.end??state.duration)-(l.start||0))*100}%`;clip.append(dot)}
@@ -198,14 +181,14 @@
     head.style.bottom='auto';head.style.height=`${Math.max(timeline.clientHeight,ruler.offsetHeight+[...timeline.querySelectorAll('.track')].reduce((sum,row)=>sum+row.offsetHeight,0))}px`;activeCorner.style.transform=`translateX(${timeline.scrollLeft}px)`;
     renderAudioMixer();renderLayersPanel();position();
   };
-  function position(){const left=header+state.time/state.duration*width();head.style.left=`${left}px`;if(rulerPlayhead)rulerPlayhead.style.left=`${left}px`;$('#timelinePosition').textContent=`${timeText(state.time)} / ${timeText(state.duration)}`;for(const [action,key] of [['reverse','reverse'],['flip','flipX']])tools.querySelector(`[data-action="${action}"]`).setAttribute('aria-pressed',String(!!selected()?.[key]))}
+  function position(){const left=header+state.playback.time/state.duration*width();head.style.left=`${left}px`;if(rulerPlayhead)rulerPlayhead.style.left=`${left}px`;$('#timelinePosition').textContent=`${timeText(state.playback.time)} / ${timeText(state.duration)}`;for(const [action,key] of [['reverse','reverse'],['flip','flipX']])tools.querySelector(`[data-action="${action}"]`).setAttribute('aria-pressed',String(!!selected()?.[key]))}
   const previousTime=setTime;setTime=function(t){previousTime(t);position()};
   function scrub(e){if(e.button!==0)return;e.preventDefault();stop();const update=p=>{const r=timeline.getBoundingClientRect();setTime(Math.round(clamp((p.clientX-r.left+timeline.scrollLeft-header)/width()*state.duration,0,state.duration)/frame())*frame())};update(e);const end=()=>{removeEventListener('pointermove',update);removeEventListener('pointerup',end);removeEventListener('pointercancel',end)};addEventListener('pointermove',update);addEventListener('pointerup',end);addEventListener('pointercancel',end)}
   head.onpointerdown=scrub;
   timeline.addEventListener('scroll',()=>{if(activeCorner)activeCorner.style.transform=`translateX(${timeline.scrollLeft}px)`});
   $('#stage').addEventListener('contextmenu',e=>{const element=e.target.closest('.layer'),layer=element&&state.layers.find(l=>l.id===+element.dataset.id);if(layer)showContextMenu(e,layer)});
   function edit(e,l){
-    if(e.button!==0)return;if(e.shiftKey||e.ctrlKey){e.preventDefault();e.stopPropagation();selectClip(e,l);return}if(l.locked)return;e.preventDefault();e.stopPropagation();state.selectedIds.clear();state.selectionAnchor=l.id;stop();pushHistory();
+    if(e.button!==0)return;if(e.shiftKey||e.ctrlKey){e.preventDefault();e.stopPropagation();selectClip(e,l);return}if(l.locked)return;e.preventDefault();e.stopPropagation();MotionSelectionCommands.clearMultiple(state);MotionUiState.selectionAnchor=l.id;stop();projectHistory.begin(snapshot());
     const mode=e.target.classList.contains('left')?'left':e.target.classList.contains('right')?'right':'move';
     const original=structuredClone(l),x=e.clientX,scroll=timeline.scrollLeft;
     selectLayer(l.id); // Selection rebuilds the timeline: always retrieve the new clip.
@@ -216,7 +199,7 @@
       last=p;let delta=(p.clientX-x+timeline.scrollLeft-scroll)/width()*state.duration;
       let value=(mode==='right'?original.end:original.start||0)+delta;
       value=Math.round(value/frame())*frame();
-      if(state.snapTimeline&&!p.altKey){const points=[0,state.time,state.duration,...allMarkerTimes(),...state.layers.filter(v=>v!==l).flatMap(v=>[v.start||0,v.end??state.duration])];let distance=8/width()*state.duration;for(const point of points){for(const offset of mode==='move'?[0,original.end-(original.start||0)]:[0]){const d=Math.abs(value+offset-point);if(d<distance){distance=d;value=point-offset}}}}
+      if(MotionUiState.snapTimeline&&!p.altKey){const points=[0,state.playback.time,state.duration,...allMarkerTimes(),...state.layers.filter(v=>v!==l).flatMap(v=>[v.start||0,v.end??state.duration])];let distance=8/width()*state.duration;for(const point of points){for(const offset of mode==='move'?[0,original.end-(original.start||0)]:[0]){const d=Math.abs(value+offset-point);if(d<distance){distance=d;value=point-offset}}}}
       const speed=l.speed||1,min=frame();
       if(mode==='move')Object.assign(l,MotionClips.moveClip(original,value,state.duration));
       else if(mode==='left'){
@@ -236,24 +219,24 @@
         else if(rows.length&&p.clientY<rows[0].getBoundingClientRect().top)newTrack={target:rows[0].dataset.track,before:true};
         if(newTrack)destination='new-track';
       }
-      valid=!overlap(l,destination,l.start,l.end)&&!state.layers.some(v=>v!==l&&trackId(v)===destination&&v.locked);
+      valid=Boolean(newTrack)||!overlap(l,destination,l.start,l.end);
       timeline.querySelectorAll('.drop-target').forEach(v=>v.classList.remove('drop-target'));if(row)row.classList.add('drop-target');
       clip.classList.toggle('invalid-drop',!valid);geometry(clip,l);
       guide.style.left=`${header+l.start/state.duration*width()}px`;guide.textContent=`${timeText(l.start)} → ${timeText(l.end)}${newTrack?' · nova camada '+(newTrack.before?'acima':'abaixo'):''}${valid?'':' · ocupado'}`;
-      syncProps();setTime(state.time);
+      syncProps();setTime(state.playback.time);
     }
     function scrollFrame(){const r=timeline.getBoundingClientRect();if(last.clientX>r.right-35)timeline.scrollLeft+=12;else if(last.clientX<r.left+header+25)timeline.scrollLeft-=12;update(last);animation=requestAnimationFrame(scrollFrame)}
     const end=p=>{cancelAnimationFrame(animation);removeEventListener('pointermove',update);removeEventListener('pointerup',end);removeEventListener('pointercancel',end);guide.remove();
-      if(!valid||p.type==='pointercancel')Object.assign(l,original);else {
-        if(newTrack){const rows=groups(),targetMembers=rows.find(r=>r[0]===newTrack.target)[1].filter(v=>v!==l);state.layers=state.layers.filter(v=>v!==l);l.trackId=`track-${crypto.randomUUID()}`;l.trackName=l.name;const indices=targetMembers.map(v=>state.layers.indexOf(v));const at=indices.length?(newTrack.before?Math.max(...indices)+1:Math.min(...indices)):state.layers.length;state.layers.splice(at,0,l)}
-        else if(destination!==trackId(l)){const target=state.layers.find(v=>trackId(v)===destination);l.trackId=destination;l.trackName=target?.trackName||target?.name;state.layers=state.layers.filter(v=>v!==l);state.layers.splice(state.layers.findIndex(v=>trackId(v)===destination)+1,0,l)}
-        state.duration=Math.max(state.duration,l.end);syncComposition();
-      }commit();};
+      const cancelled=!valid||p.type==='pointercancel';if(cancelled){Object.assign(l,original);projectHistory.cancel();renderLayers();syncProps();setTime(state.playback.time);return}else {
+        if(newTrack)MotionLayerCommands.moveClipToTrack(state,{id:l.id,placement:{newTrack:{id:`track-${crypto.randomUUID()}`,name:l.name,targetTrackId:newTrack.target,before:newTrack.before}}});
+        else if(destination!==trackId(l))MotionLayerCommands.moveClipToTrack(state,{id:l.id,placement:{destinationTrackId:destination}});
+        if(MotionProjectCommands.extendDurationTo(state,{end:l.end}))syncComposition();
+      }commit();projectHistory.commit(snapshot())};
     addEventListener('pointermove',update);addEventListener('pointerup',end);addEventListener('pointercancel',end);animation=requestAnimationFrame(scrollFrame);
   }
   $('.timeline-head').hidden=true;
   const zoom=$('#timelineZoom');zoom.min=.25;zoom.max=5;zoom.step=.05;
-  timeline.addEventListener('wheel',e=>{if(!e.altKey&&!e.shiftKey)return;e.preventDefault();const offset=e.clientX-timeline.getBoundingClientRect().left-header,anchor=(timeline.scrollLeft+offset)/pixelsPerSecond();state.timelineZoom=clamp((state.timelineZoom||1)*Math.exp(-e.deltaY*.002),.25,5);zoom.value=state.timelineZoom;renderTimeline();timeline.scrollLeft=Math.max(0,anchor*pixelsPerSecond()-offset)},{passive:false});
+  timeline.addEventListener('wheel',e=>{if(!e.altKey&&!e.shiftKey)return;e.preventDefault();const offset=e.clientX-timeline.getBoundingClientRect().left-header,anchor=(timeline.scrollLeft+offset)/pixelsPerSecond();MotionUiState.timelineZoom=clamp(MotionUiState.timelineZoom*Math.exp(-e.deltaY*.002),.25,5);zoom.value=MotionUiState.timelineZoom;renderTimeline();timeline.scrollLeft=Math.max(0,anchor*pixelsPerSecond()-offset)},{passive:false});
   new ResizeObserver(()=>{renderTimeline()}).observe(timeline);
   renderTimeline();
 })();

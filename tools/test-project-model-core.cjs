@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {createLayer,normalizeLayer,EFFECT_DEFAULTS}=require('../core/project-model.js');
+const {createLayer,normalizeLayer,EFFECT_DEFAULTS}=require('../.build/core/project-model.js');
 
 const layer=createLayer({id:7,type:'video',content:'clip.mp4',name:'Clipe',duration:12});
 assert.equal(layer.id,7);assert.equal(layer.end,12);assert.equal(layer.sourceOut,12);

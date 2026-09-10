@@ -65,17 +65,26 @@ Os componentes enviam comandos ao núcleo. Eles não contêm a matemática defin
 
 ## Núcleo entregue
 
-O núcleo mantém JavaScript independente de runtime para continuar reutilizável no Electron e em uma futura aplicação mobile. TypeScript fica na interface e pode avançar para o núcleo sem acoplá-lo ao Vue:
+O núcleo é TypeScript puro, independente de runtime, para continuar reutilizável no Electron e em uma futura aplicação mobile. A compilação CommonJS em `.build/core` atende aos testes Node e ao processo principal; a interface importa as mesmas fontes TS pelo Vite:
 
-- `core/project-model.js`: valores padrão e normalização de camadas e projetos carregados.
+- `src/core/project-model.ts`: contratos, valores padrão e normalização de camadas.
 - `src/core/time-mapping.ts`: conversão do tempo da timeline no tempo da mídia e recorte do áudio ao intervalo exportado.
-- `core/animation.js`: easing, keyframes, transições existentes, parenting, câmera e avaliação da cena.
+- `src/core/animation.ts`: easing, keyframes, transições existentes, parenting, câmera e avaliação da cena.
 - `src/core/history.ts`: histórico limitado e transacional de undo/redo sem dependência da interface.
 - `src/core/clip-commands.ts`: divisão, movimento e recorte de clipes, inclusive em reverso.
+- `src/core/project-commands.ts` e `src/core/layer-commands.ts`: propriedades, composição, marcadores, efeitos, vetores, agrupamento, precomposição, faixas e extração de áudio.
+- `src/core/selection-commands.ts`: seleção única, aditiva, por intervalo e por faixa sem gravações diretas da timeline.
+- `src/core/editor-state.ts`: estado de projeto com seleção e reprodução armazenadas em fatias distintas.
+- `src/core/project-session.ts`: serialização, validação e restauração portátil.
+- `src/core/media-commands.ts`: normalização de descritores, biblioteca e metadados de mídia.
+- `src/core/export-settings.ts` e `src/core/preview-quality.ts`: contratos de saída e política adaptativa da prévia.
+- `src/core/audio-export-plan.ts`: plano FFmpeg tipado, com alinhamento em samples e suporte à faixa completa de velocidades do projeto.
+- `src/renderer/webgl-presenter.ts`, `src/renderer/rasterizer.ts` e `src/renderer/composition-engine.ts`: apresentação WebGL2, rasterização e composição compartilhada por preview/exportação, importadas explicitamente pelo bundle.
+- `src/renderer/media-runtime.ts`, `src/renderer/export-controller.ts` e `src/renderer/preview-engine.ts`: ciclo de vida e sincronização das mídias, sessão isolada de exportação e agendamento adaptativo da prévia. As implementações JavaScript anteriores foram removidas.
 
 Esses módulos não acessam DOM, Electron ou Windows e possuem testes executáveis diretamente pelo Node.js.
 
-Os módulos TypeScript são importados pelo bundle da interface. Para testes Node, `pnpm build:core` os compila em `.build/core`; `pnpm test:core` executa essa compilação antes dos testes. Não existem mais implementações JavaScript manuais de histórico, mapeamento de tempo ou comandos de clipe. A exposição dos módulos no global em `src/ui/main.ts` é uma ponte temporária para os adaptadores ainda não migrados.
+Os módulos TypeScript são importados pelo bundle da interface. Para testes Node e uso no processo principal, `pnpm build:core` os compila em `.build/core`; desenvolvimento e distribuição compilam o núcleo antes de iniciar. Não existem implementações JavaScript manuais paralelas desses módulos. A exposição no global em `src/ui/main.ts` continua sendo uma ponte temporária para os adaptadores ainda não migrados.
 
 ## Validação local desta etapa (2026-09-09)
 
@@ -83,8 +92,9 @@ Os módulos TypeScript são importados pelo bundle da interface. Para testes Nod
 - Preview utiliza proxy; áudio de preview utiliza elemento separado com o original. Exportação utiliza uma cópia do projeto e uma sessão de mídia independente com sourcePath original, sem trocar o preview nem mover seu cursor. Projetos portáteis omitem proxyPath; ao abrir, a geração pode ser solicitada novamente com os metadados salvos.
 - WebGL: cache limitado, remoção imediata das texturas fora da composição, perda/restauração real de contexto e destruição do compositor testadas no Electron. Objetos do contexto perdido são esquecidos antes da reconstrução.
 - Resolução: smoke exportou um frame MP4 em 2560×1440 e 3840×2160, verificou dimensões pelo FFprobe, luminância e seleção do original com proxy distinto. Isso não constitui teste de estabilidade de exportações longas em 4K.
-- Áudio: FFmpeg real verificou duas faixas estéreo, volume relativo, pan, fades, duração e corte de intervalo. Os fades mantêm a posição no clipe quando o intervalo começa depois do início dele.
-- core/layer-commands.js passou a receber também inclusão de camadas e seleção das faixas de áudio para exportação; app.js continua sendo um adaptador legado com acesso ao estado global. A migração arquitetural ainda não está concluída.
+- Áudio: FFmpeg real verificou duas faixas estéreo, volume relativo, pan, fades, duração e corte de intervalo. Os fades mantêm a posição no clipe quando o intervalo começa depois do início dele. Cortes consecutivos sem mudanças são reunidos antes da exportação e um teste com AAC a 48 kHz verifica que não há queda de volume nas junções. O timestamp final é regenerado pela contagem de samples; um MP4 de produção com três segmentos fracionários é inspecionado pacote a pacote para impedir DTS repetido ou regressivo.
+- `src/core/layer-commands.ts` concentra inclusão, remoção, duplicação, reorganização e movimentação entre faixas, extração e seleção das faixas de áudio para exportação. A movimentação valida destino, bloqueio, sobreposição, intervalo, nome e ordem antes de substituir a lista; `app.js` continua sendo um adaptador legado com acesso ao estado global. A migração arquitetural ainda não está concluída.
+- Presets XML agora são convertidos em dados e aplicados por um único comando do núcleo. Efeitos, propriedades, ordem e pontos de máscara são validados em uma cópia da camada antes da substituição; reordenação e reset da pilha de efeitos também deixaram de escrever diretamente no adaptador.
 
 Comandos: pnpm test:core inclui tools/test-proxy-real.cjs e tools/test-export-mix.cjs. Para resoluções maiores, executar pnpm test:smoke com SMOKE_WIDTH=2560 / SMOKE_HEIGHT=1440 ou SMOKE_WIDTH=3840 / SMOKE_HEIGHT=2160 no ambiente. O smoke inclui perda/restauração WebGL e limites do cache.
 
@@ -92,7 +102,7 @@ Efeitos/shaders adicionais e render graph permanecem fora desta etapa. Versão m
 
 ## Continuação local da validação
 
-- Sessão de projeto: serialização e restauração compartilhadas em `core/project-session.js`; testes cobrem IDs, parenting, biblioteca não utilizada, organização e metadados de áudio. O smoke cobre duplicação, remoção, undo/redo, reabertura e reprodução do áudio original com proxy.
+- Sessão de projeto: serialização e restauração compartilhadas em `src/core/project-session.ts`; testes cobrem IDs, parenting, projetos mínimos antigos, biblioteca não utilizada, organização e metadados de áudio. O smoke cobre duplicação, remoção, undo/redo, reabertura e reprodução do áudio original com proxy.
 - Composição: um canvas de rasterização é reutilizado entre as camadas. `pnpm test:renderer` verifica orientação dos pixels, alpha RGBA, uso limitado de texturas e isolamento da cópia exportada.
 - Recuperação: falhas na preparação e limpeza do controlador liberam seu estado ocupado. Falhas no envio de frames também liberam a sessão no processo principal. Os testes verificam nova tentativa e preservação do erro original quando o cancelamento falha.
 - `pnpm test:core` inclui agora os testes de sessão, controlador, IPC e encoder real. O teste de IPC usa processos simulados; `tools/test-frame-export.cjs` e o smoke usam FFmpeg real.
@@ -104,10 +114,10 @@ Efeitos/shaders adicionais e render graph permanecem fora desta etapa. Versão m
 
 Primeiro pacote: comandos de edição e integridade do histórico (pontos 1 e 3 do plano).
 
-- `core/project-commands.js` centraliza propriedades básicas, parenting, edição de canais de keyframe, cortes pelos botões In/Out, restauração de corte, composição, intervalos, geração de beats e remoção de espaço vazio. O módulo opera com dados, sem DOM ou Electron.
+- `src/core/project-commands.ts` centraliza propriedades básicas, parenting, edição de canais de keyframe, cortes pelos botões In/Out, restauração de corte, composição, intervalos, marcadores, geração de beats, efeitos, vetores, agrupamento, precomposição e remoção de espaço vazio. O módulo opera com dados, sem DOM ou Electron.
 - Atualizar uma propriedade de keyframe mantém os outros canais e seu easing. Cortes pelos botões respeitam reverso e preservam volume, pan, mute, velocidade, origem, fades e organização.
 - A composição é validada antes de alterar o projeto. Encurtar a duração para antes do início de uma camada é rejeitado; camadas que cruzam o novo fim têm o recorte da mídia ajustado.
-- O histórico saiu do objeto de dados do editor e recebeu transações. Arraste de posição no palco gera uma única ação de undo; cancelamento restaura a posição. Outros gestos ainda precisam ser conectados a esse mecanismo.
+- O histórico saiu do objeto de dados do editor e recebeu transações. Arraste de posição no palco e edições de pontos de máscara/caminho geram uma única ação de undo; cancelamento restaura a posição ou a edição vetorial completa. Outros gestos ainda precisam ser conectados a esse mecanismo.
 - Removidos os handlers antigos de split e keyframe em `advanced.js` que eram substituídos depois da inicialização. A interface ainda possui adaptadores e não foi declarada migrada.
 - Validação: núcleo, TypeScript, build da interface, smoke com mídia real, teste Electron de edição e testes existentes de timeline, seleção/intervalos, áudio/beat sync e organização/reabertura de faixas.
 
@@ -128,7 +138,22 @@ Sequência restante:
 - [x] Mapeamento de tempo: contratos de clipe/intervalo compartilhados por preview e seleção do áudio exportado.
 - [x] Comandos de clipe: mover, dividir e recortar em TS, usados também pelo arraste da timeline; implementações antigas removidas.
 - [x] Correções encontradas na migração: movimento não compartilha objetos internos dos keyframes, cortes respeitam os limites da mídia e valores não finitos são rejeitados nos comandos.
-- [ ] Migrar modelo de projeto, comandos restantes e propriedade do estado para TS.
+- [x] Modelo, animação, sessão, configurações de exportação e qualidade de preview migrados para TS; fontes JavaScript paralelas removidas.
+- [x] Comandos de projeto, camada e mídia migrados para TS, incluindo efeitos, marcadores, vetores, faixas, precomposição, extração de áudio e biblioteca.
+- [x] Armazenamento de seleção, reprodução e opções transitórias de UI separado dos dados persistentes; todos os acessores planos de compatibilidade foram removidos.
+- [x] WebGL presenter, rasterizador e compositor migrados para TS e suas fontes JavaScript antigas removidas; o render graph e shaders dedicados ainda estão pendentes.
+- [x] Runtime de mídia, controlador de exportação e motor de preview migrados para TS; testes importam a compilação dessas fontes e os scripts antigos não são mais injetados sequencialmente.
+- [x] Seleção múltipla e congelamento de quadro passaram para comandos tipados; o freeze preserva propriedades, efeitos, tempo de origem, reverso e desloca clipes/keyframes posteriores de forma atômica.
+- [x] Plano de áudio do FFmpeg migrado de JavaScript para TypeScript; segmentos consecutivos equivalentes são consolidados e recortes/atrasos usam uma grade comum de samples.
+- [x] Reorganização e movimentação de clipes entre faixas centralizadas em comandos tipados; `timeline.js` não grava mais `trackId`, `trackName` nem reordena `state.layers` diretamente.
+- [x] Aplicação de presets XML e escritores da pilha de efeitos centralizados; presets inválidos não deixam alterações parciais na camada.
+- [x] Importação Alight substitui o projeto por um comando atômico do núcleo e preserva identificador interno/original, ordem, duplicatas, flags, atributos e keyframes dos efeitos externos sem exigir implementação visual.
+- [x] Criação de câmera/controle nulo, atribuição de waveform e reset completo de projeto centralizados em comandos tipados; câmeras bloqueadas não são desativadas implicitamente.
+- [x] Escritores de curvas auditados: seleção de easing e criação de keyframes usam comandos do núcleo, e o gráfico atual é somente leitura.
+- [x] Campos avançados, faixa configurada de exportação e extensão da duração pela timeline deixaram de gravar o projeto diretamente; a apresentação calcula o filtro visual sem alterar a camada e o handler antigo duplicado de presets foi removido.
+- [x] Edição de pontos de máscara e caminho conectada ao histórico transacional, incluindo undo/redo em uma etapa e cancelamento completo por Escape.
+- [x] Controles contínuos persistentes do inspector, corte, efeitos e mixer conectados a transações; múltiplos eventos de um mesmo arraste ou edição geram uma única entrada no histórico.
+- [x] Acessores planos de compatibilidade removidos; adaptadores e testes consomem `state.selection` e `state.playback` explicitamente.
 - [ ] Substituir a ponte global por dependências explícitas nos adaptadores/componentes.
 
 Essas conclusões são subtarefas dos pontos 1, 3 e 7; não encerram os oito itens principais.

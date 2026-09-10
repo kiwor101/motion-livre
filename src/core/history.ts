@@ -8,6 +8,7 @@ export interface History {
   undo(): string|null;
   redo(): string|null;
   reset(snapshot?: string): void;
+  inTransaction(): boolean;
   canUndo(): boolean;
   canRedo(): boolean;
   inspect(): HistoryState;
@@ -29,6 +30,7 @@ export function createHistory({limit=40}: HistoryOptions={}): History {
     undo(){if(!api.canUndo())return null;future.push(past.pop()!);return past.at(-1)!},
     redo(){if(!api.canRedo())return null;const snapshot=future.pop()!;past.push(snapshot);return snapshot},
     reset(snapshot){if(snapshot!==undefined)assertSnapshot(snapshot);past=snapshot===undefined?[]:[snapshot];future=[];transaction=null},
+    inTransaction(){return transaction!==null},
     canUndo(){return transaction===null&&past.length>1},
     canRedo(){return transaction===null&&future.length>0},
     inspect(){return {past:[...past],future:[...future],limit}}

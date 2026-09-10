@@ -1,5 +1,6 @@
 const {app,BrowserWindow,ipcMain}=require('electron');
 const path=require('node:path');
+require('./electron-test-runtime.cjs').isolateUserData(app,'editing-commands');
 ipcMain.handle('app:info',()=>({version:app.getVersion()}));ipcMain.handle('project:recover',()=>null);ipcMain.handle('project:autosave',()=>null);
 app.whenReady().then(async()=>{
   const window=new BrowserWindow({show:false,width:1500,height:1000,webPreferences:{preload:path.resolve(__dirname,'../desktop/preload.cjs'),backgroundThrottling:false}});
@@ -7,13 +8,14 @@ app.whenReady().then(async()=>{
     await window.loadFile(path.resolve(__dirname,'../index.html'));
     await window.webContents.executeJavaScript(`(async()=>{
       while(!window.motionUiReady)await new Promise(resolve=>setTimeout(resolve,10));await motionUiReady;
+      const {state,addLayer,selectLayer,beginDrag}=motionEditor,motionMedia=motionEditor.mediaRuntime,motionPreview=motionEditor.preview;
       const check=(value,message)=>{if(!value)throw Error(message)};
       check(!['selected','selectedIds','time','playing','started','audio','previewMuted'].some(key=>key in state),'Flat editor compatibility accessors still exist');
       const layer=addLayer('rect','','Camada de teste');await Promise.resolve();
       layer.keyframes=[{time:0,values:{x:10,y:20},easing:'linear'}];layer.x=35;selectLayer(layer.id);
       document.querySelector('#keyframeProperty').value='x';document.querySelector('#addKeyframe').click();
       check(layer.keyframes.some(key=>key.values.y===20),'Keyframe lost Y');
-      const beforeX=layer.x,beforeY=layer.y;pushHistory();
+      const beforeX=layer.x,beforeY=layer.y;motionEditor.pushHistory();
       const bounds=document.querySelector('#stage').getBoundingClientRect();
       beginDrag({button:0},layer);
       dispatchEvent(new PointerEvent('pointermove',{clientX:bounds.left+bounds.width*.65,clientY:bounds.top+bounds.height*.65}));await Promise.resolve();

@@ -2,10 +2,10 @@ const {app,BrowserWindow,ipcMain}=require('electron');
 const path=require('node:path'),os=require('node:os'),fs=require('node:fs/promises'),assert=require('node:assert/strict');
 const run=require('node:util').promisify(require('node:child_process').execFile);
 const {createFrameExport}=require('../desktop/frame-export.cjs'),Proxy=require('../desktop/proxy-cache.cjs');
+require('./electron-test-runtime.cjs').isolateUserData(app,'smoke');
 const width=Number(process.env.SMOKE_WIDTH)||640,height=Number(process.env.SMOKE_HEIGHT)||360,seconds=Number(process.env.SMOKE_SECONDS)||2;
 const ffmpeg=path.resolve(__dirname,'../vendor/ffmpeg/ffmpeg.exe'),ffprobe=path.resolve(__dirname,'../vendor/ffmpeg/ffprobe.exe');
 let directory,window,encoder,output,cache,original;const memory=[];let frames=0;
-app.setPath('userData',path.join(os.tmpdir(),'motion-livre-smoke'));
 ipcMain.handle('app:info',()=>({version:app.getVersion()}));
 ipcMain.handle('project:recover',()=>null);ipcMain.handle('project:autosave',()=>null);
 ipcMain.handle('media:proxy',(_e,{filePath,metadata})=>cache(filePath,metadata));
@@ -31,6 +31,7 @@ app.whenReady().then(async()=>{
     const check=(ok,message)=>{if(!ok)throw Error(message)};
     const wait=async(predicate)=>{for(let i=0;i<300;i++){if(predicate())return;await new Promise(r=>setTimeout(r,20))}throw Error('Timeout waiting for renderer: '+predicate.toString())};
     await wait(()=>!!window.motionUiReady);await motionUiReady;
+    const {state,addMediaDescriptor,renderLayers,selectLayer,addLayer,setTime,loadProjectData,resolveLayerContent}=motionEditor,motionMedia=motionEditor.mediaRuntime,motionPreview=motionEditor.preview,requestVideoProxy=(layer,metadata)=>motionMedia.proxy(layer,metadata);
     state.duration=${seconds+1};state.layers=[];state.mediaLibrary=[];
     const video=addMediaDescriptor({type:'video',name:'Vídeo principal',sourcePath:${JSON.stringify(original)},url:motionDesktop.fileUrl(${JSON.stringify(original)}),width:1920,height:1080,duration:${seconds+1},hasAudio:true});
     Object.assign(video,{volume:70,pan:-30,fadeIn:.2,fadeOut:.3,trackName:'Faixa principal'});
@@ -39,17 +40,17 @@ app.whenReady().then(async()=>{
     check(resolveLayerContent(video)!==motionDesktop.fileUrl(video.sourcePath),'Proxy not selected');
     const originalId=video.id,originalTrack=video.trackId,source=resolveLayerContent(video);
     const unused=document.createElement('canvas');unused.width=unused.height=4;addMediaDescriptor({type:'image',name:'Não usada',url:unused.toDataURL()},{createLayer:false});
-    pushHistory();selectLayer(video.id);document.querySelector('#duplicateLayer').click();await Promise.resolve();
+    motionEditor.pushHistory();selectLayer(video.id);document.querySelector('#duplicateLayer').click();await Promise.resolve();
     check(state.layers.length===2&&state.layers[1].trackId!==state.layers[0].trackId,'Duplicate track');
     document.querySelector('#deleteLayer').click();await Promise.resolve();check(state.layers.length===1,'Delete duplicate');
     document.querySelector('#undoBtn').click();await Promise.resolve();check(state.layers.length===2,'Undo delete');
     document.querySelector('#redoBtn').click();await Promise.resolve();check(state.layers.length===1,'Redo delete');
-    const saved=projectData();check(saved.layers[0].id===originalId&&!('proxyPath' in saved.layers[0]),'Portable IDs/proxy');
+    const saved=motionEditor.projectData();check(saved.layers[0].id===originalId&&!('proxyPath' in saved.layers[0]),'Portable IDs/proxy');
     loadProjectData(saved);check(state.layers[0].id===originalId&&state.layers[0].trackId===originalTrack,'Reload changed IDs');
     check(state.mediaLibrary.length===2&&state.layers[0].volume===70&&state.layers[0].pan===-30,'Reload lost metadata/library');
-    const loaded=state.layers[0];renderLayers();await wait(()=>motionMedia.get(loaded).readyState>=2);play();await new Promise(r=>setTimeout(r,150));
-    const audio=document.querySelector('.layer[data-id="'+loaded.id+'"] audio');check(audio&&audio.src===motionDesktop.fileUrl(loaded.sourcePath)&&!audio.paused,'Original preview audio missing');stop();
-    const oldVideo=motionMedia.get(loaded);pushHistory();selectLayer(loaded.id);document.querySelector('#deleteLayer').click();await Promise.resolve();check(motionMedia.size===0&&!oldVideo.getAttribute('src'),'Removed decoder retained');
+    const loaded=state.layers[0];renderLayers();await wait(()=>motionMedia.get(loaded).readyState>=2);document.querySelector('#playBtn').click();await new Promise(r=>setTimeout(r,150));
+    const audio=document.querySelector('.layer[data-id="'+loaded.id+'"] audio');check(audio&&audio.src===motionDesktop.fileUrl(loaded.sourcePath)&&!audio.paused,'Original preview audio missing');document.querySelector('#playBtn').click();
+    const oldVideo=motionMedia.get(loaded);motionEditor.pushHistory();selectLayer(loaded.id);document.querySelector('#deleteLayer').click();await Promise.resolve();check(motionMedia.size===0&&!oldVideo.getAttribute('src'),'Removed decoder retained');
     document.querySelector('#undoBtn').click();await Promise.resolve();check(state.layers.length===1,'Undo removed media');
     const title=addLayer('text','Motion Livre','Título');Object.assign(title,{color:'#ffffff',fontSize:72,keyframes:[{time:0,values:{x:25}},{time:${seconds},values:{x:75}}]});
     renderLayers();setTime(.25);await wait(()=>motionPreview.lastPresentOk===true);
@@ -67,13 +68,13 @@ app.whenReady().then(async()=>{
   assert.equal(video.width,width);assert.equal(video.height,height);assert.equal(Number(video.nb_read_frames),Math.ceil(seconds*24));assert.ok(audio);assert.ok(Math.abs(Number(data.format.duration)-seconds)<.1);
   const analysis=await run(ffmpeg,['-hide_banner','-i',output,'-vf',`select='eq(n,0)+eq(n,${Math.ceil(seconds*24)-1})',signalstats,metadata=print:file=-`,'-f','null','NUL'],{windowsHide:true});
   const luminance=[...analysis.stdout.matchAll(/lavfi\.signalstats\.YAVG=([\d.]+)/g)].map(m=>+m[1]);assert.equal(luminance.length,2);assert.ok(luminance.every(v=>v>30));
-  await window.webContents.executeJavaScript('(async()=>{motionPreview.destroy();await Promise.all([motionMedia.destroy(),motionMedia.destroy()]);await motionMedia.destroy()})()');
+  await window.webContents.executeJavaScript('(async()=>{motionEditor.preview.destroy();await Promise.all([motionEditor.mediaRuntime.destroy(),motionEditor.mediaRuntime.destroy()]);await motionEditor.mediaRuntime.destroy()})()');
   assert.deepEqual(errors,[]);if(memory.length>5)assert.ok(Math.max(...memory.slice(3))-Math.min(...memory.slice(3))<512*1024,'Renderer memory grew beyond 512 MB after warmup');assert.ok((await fs.readdir(directory)).every(file=>!file.endsWith('.partial')));
   console.log(`PASS: workflows + proxy audio + context recovery + production encoder ${width}x${height}, ${seconds}s, ${video.nb_read_frames} frames`);success=true;
- }catch(error){console.error(error.stack||error);if(window)console.error(await window.webContents.executeJavaScript('JSON.stringify({lost:motionPreview.contextLost,presented:motionPreview.lastPresentOk,glError:motionPreview.canvas.getContext("webgl2").getError(),textures:motionPreview.textureCount})').catch(()=>''))}
+ }catch(error){console.error(error.stack||error);if(window)console.error(await window.webContents.executeJavaScript('JSON.stringify({lost:motionEditor.preview.contextLost,presented:motionEditor.preview.lastPresentOk,glError:motionEditor.preview.canvas.getContext("webgl2").getError(),textures:motionEditor.preview.textureCount})').catch(()=>''))}
  finally{
   await encoder?.cancel();
-  process.exitCode=success?0:1;if(window&&!window.isDestroyed()){await window.webContents.executeJavaScript('motionPreview?.destroy();motionMedia?.destroy()').catch(()=>{});}
+  process.exitCode=success?0:1;if(window&&!window.isDestroyed()){await window.webContents.executeJavaScript('motionEditor?.preview.destroy();motionEditor?.mediaRuntime.destroy()').catch(()=>{});}
   if(directory)await fs.rm(directory,{recursive:true,force:true});
   if(success)app.quit();else app.exit(1);
  }

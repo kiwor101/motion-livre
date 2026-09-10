@@ -1,31 +1,66 @@
 /* Interoperabilidade clean-room com o formato público de cenas XML do Alight Motion. */
-(function(){
+import {createLayer} from '../../core/project-model';
+import {applyImportedProject} from '../../core/project-commands';
+import type {Composition,EditorState} from '../../core/editor-state';
+import type {AlightMediaReference,ExternalEffectInstance,ExternalEffectProperty,Layer,ProjectKeyframe} from '../../core/project-model';
+
+interface AlightReport {layers:number;keyframes:number;unsupportedEffects:Set<string>|string[];unresolvedMedia:string[];sourceVersion:string}
+interface CollectedLayer {node:Element;parentOriginalId:string|null}
+type AnimatedValues=Record<string,number>;
+type GeneratedProperty=readonly [string,string|number];
+type GeneratedEffect=Omit<ExternalEffectInstance,'sourceId'|'hidden'>&{sourceId?:string;hidden?:boolean};
+interface AlightApi {importScene(xml:string,options?:{silent?:boolean}):AlightReport;exportScene():string;lastExportReport:AlightReport|null}
+
+export interface AlightControllerContext {
+  state:EditorState;
+  uid:number;
+  syncComposition():void;
+  renderLayers():void;
+  syncProps():void;
+  setTime(time:number):void;
+  pushHistory():void;
+  markDirty():void;
+  toast(message:string):void;
+}
+
+interface AlightDesktopBridge {
+  fileUrl?(path:string):string;
+  saveAlight?(data:string,suggestedName:string):Promise<string|null>;
+  openAlight?():Promise<{data:string}|null>;
+  onMenu?(name:string,callback:()=>void):void;
+}
+
+export function installAlightController(context:AlightControllerContext):void {
   'use strict';
+
+  const activeContext=context,state=activeContext.state,desktop=window.motionDesktop as AlightDesktopBridge|undefined;
+  const $=<T extends HTMLElement=HTMLElement>(selector:string):T=>{const element=document.querySelector<T>(selector);if(!element)throw new Error(`Elemento ausente: ${selector}`);return element};
+  const syncComposition=()=>activeContext.syncComposition(),renderLayers=()=>activeContext.renderLayers(),syncProps=()=>activeContext.syncProps(),setTime=(time:number)=>activeContext.setTime(time),pushHistory=()=>activeContext.pushHistory(),markDirty=()=>activeContext.markDirty(),toast=(message:string)=>activeContext.toast(message);
 
   const MAX_XML_SIZE=10*1024*1024;
   const MAX_LAYERS=5000;
   const MAX_KEYFRAMES=10000;
   const LAYER_TAGS=new Set(['shape','text','drawing','color','group','audio','camera','null','media','image','video']);
   const KNOWN_LAYER_CHILDREN=new Set(['transform','fillColor','fillImage','gradient','content','path','property','effect','blendMode','stroke']);
-  const BLEND_BY_NUMBER={0:'normal',1:'multiply',2:'screen',6:'difference',7:'exclusion',8:'lighten',9:'darken',12:'color-burn',14:'color-dodge',16:'overlay',17:'soft-light',18:'hard-light',23:'hue',24:'saturation',25:'color',26:'luminosity'};
+  const BLEND_BY_NUMBER:Record<string,string>={0:'normal',1:'multiply',2:'screen',6:'difference',7:'exclusion',8:'lighten',9:'darken',12:'color-burn',14:'color-dodge',16:'overlay',17:'soft-light',18:'hard-light',23:'hue',24:'saturation',25:'color',26:'luminosity'};
   const DEFAULT_EFFECTS={brightness:100,contrast:100,saturation:100,hue:0,blur:0,grayscale:0,sepia:0,invert:0,glow:0,vignette:0,sharpen:0,chromaTolerance:0,motionBlur:0,redGain:100,greenGain:100,blueGain:100};
 
-  const clamp=(value,min,max)=>Math.max(min,Math.min(max,Number(value)||0));
-  const num=(value,fallback=0)=>{const parsed=Number(value);return Number.isFinite(parsed)?parsed:fallback};
-  const direct=(node,name)=>[...node.children].find(child=>child.tagName===name)||null;
-  const directAll=(node,name)=>[...node.children].filter(child=>child.tagName===name);
-  const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const round=value=>Math.round(value*1e6)/1e6;
-  const attributesOf=(node,excluded=[])=>Object.fromEntries([...node.attributes].filter(attribute=>!excluded.includes(attribute.name)).map(attribute=>[attribute.name,String(attribute.value).slice(0,2048)]));
-  const normalizeEffectId=value=>String(value||'').replace(/^com\.alightcreative\.(?:effects\.)?/i,'').slice(0,300);
+  const clamp=(value:unknown,min:number,max:number)=>Math.max(min,Math.min(max,Number(value)||0));
+  const num=(value:unknown,fallback=0)=>{const parsed=Number(value);return Number.isFinite(parsed)?parsed:fallback};
+  const direct=(node:Element,name:string)=>[...node.children].find(child=>child.tagName===name)||null;
+  const directAll=(node:Element,name:string)=>[...node.children].filter(child=>child.tagName===name);
+  const esc=(value:unknown)=>String(value??'').replace(/[&<>"']/g,char=>({"&":'&amp;',"<":'&lt;',">":'&gt;','"':'&quot;',"'":'&#39;'}[char]||char));
+  const round=(value:number)=>Math.round(value*1e6)/1e6;
+  const attributesOf=(node:Element,excluded:string[]=[])=>Object.fromEntries([...node.attributes].filter(attribute=>!excluded.includes(attribute.name)).map(attribute=>[attribute.name,String(attribute.value).slice(0,2048)]));
+  const normalizeEffectId=(value:unknown)=>String(value||'').replace(/^com\.alightcreative\.(?:effects\.)?/i,'').slice(0,300);
 
-  function assertSafeXml(xml){
+  function assertSafeXml(xml:string):void {
     if(typeof xml!=='string'||!xml.trim())throw new Error('O arquivo XML está vazio');
     if(new Blob([xml]).size>MAX_XML_SIZE)throw new Error('O XML excede o limite de 10 MB');
     if(/<!DOCTYPE|<!ENTITY/i.test(xml))throw new Error('DOCTYPE e entidades externas não são permitidos');
   }
 
-  function parseXml(xml){
+  function parseXml(xml:string):XMLDocument {
     assertSafeXml(xml);
     const doc=new DOMParser().parseFromString(xml,'application/xml');
     if(doc.querySelector('parsererror'))throw new Error('XML inválido ou malformado');
@@ -33,33 +68,33 @@
     return doc;
   }
 
-  function vector(value,count=2){
+  function vector(value:unknown,count=2):number[] {
     const parts=String(value||'').split(',').map(part=>num(part.trim(),0));
     while(parts.length<count)parts.push(0);
     return parts.slice(0,count);
   }
 
-  function argbToHex(value){
+  function argbToHex(value:unknown):string {
     const raw=String(value||'').trim();
     if(/^#[0-9a-f]{8}$/i.test(raw))return '#'+raw.slice(3);
     if(/^#[0-9a-f]{6}$/i.test(raw))return raw;
     return '#ffffff';
   }
 
-  function hexToArgb(value){
+  function hexToArgb(value:unknown):string {
     const raw=String(value||'#ffffff').trim();
     if(/^#[0-9a-f]{8}$/i.test(raw))return raw.toUpperCase();
     return /^#[0-9a-f]{6}$/i.test(raw)?('#FF'+raw.slice(1)).toUpperCase():'#FFFFFFFF';
   }
 
-  function normalizeEasing(value){
+  function normalizeEasing(value:unknown):string {
     const easing=String(value||'linear').trim();
     if(!easing||easing==='linear')return 'linear';
     const match=easing.match(/^cubicBezier\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)$/);
     return match?`cubicBezier ${match.slice(1).map(value=>num(value)).join(' ')}`:'linear';
   }
 
-  function localPathFromUri(uri){
+  function localPathFromUri(uri:string):string {
     try{
       const parsed=new URL(uri);
       if(parsed.protocol!=='file:')return '';
@@ -69,57 +104,57 @@
     }catch{return ''}
   }
 
-  function fileUri(path){
+  function fileUri(path:string|undefined):string {
     if(!path)return '';
-    if(window.motionDesktop?.fileUrl)return motionDesktop.fileUrl(path);
+    if(desktop?.fileUrl)return desktop.fileUrl(path);
     return 'file:///'+String(path).replace(/\\/g,'/').split('/').map(encodeURIComponent).join('/');
   }
 
-  function mediaType(uri,mime=''){
+  function mediaType(uri:string,mime=''):string {
     const probe=(mime+' '+uri).toLowerCase();
     if(/audio|\.(mp3|wav|aac|m4a|ogg|flac)(?:$|[?#])/.test(probe))return 'audio';
     if(/video|\.(mp4|mov|mkv|webm|avi)(?:$|[?#])/.test(probe))return 'video';
     return 'image';
   }
 
-  function baseLayer(id,type,content,name,duration){
-    return{...MotionProject.createLayer({id,type,content:content||'',name:name||type,duration}),alightEffects:[],alightProperties:[]};
+  function baseLayer(id:number,type:string,content:string,name:string,duration:number):Layer {
+    return{...createLayer({id,type,content:content||'',name:name||type,duration}),alightEffects:[],alightProperties:[]};
   }
 
-  function propertyData(node){
+  function propertyData(node:Element):ExternalEffectProperty {
     const keyframes=directAll(node,'kf').slice(0,MAX_KEYFRAMES).map(key=>({time:num(key.getAttribute('t')),value:String(key.getAttribute('v')||'').slice(0,2048),...(key.hasAttribute('e')?{easing:String(key.getAttribute('e')).slice(0,2048)}:{}),attributes:attributesOf(key,['t','v','e'])}));
     return{name:String(node.getAttribute('name')||'').slice(0,200),type:String(node.getAttribute('type')||'float').slice(0,80),value:node.hasAttribute('value')?String(node.getAttribute('value')).slice(0,2048):null,keyframes,attributes:attributesOf(node,['name','type','value'])};
   }
 
-  function propertyValue(property,fallback=0){
+  function propertyValue(property:ExternalEffectProperty|undefined,fallback=0):number {
     const value=property?.value??property?.keyframes?.[0]?.value;
     return num(String(value??fallback).split(',')[0],fallback);
   }
 
-  function upsertKey(layer,time){
+  function upsertKey(layer:Layer,time:number):ProjectKeyframe {
     let key=layer.keyframes.find(item=>Math.abs(item.time-time)<0.0005);
     if(!key){key={time:round(time),values:{},easings:{}};layer.keyframes.push(key)}
     return key;
   }
 
-  function importAnimated(layer,node,properties,mapper){
+  function importAnimated(layer:Layer,node:Element|null,properties:string[],mapper:(raw:string|null)=>AnimatedValues):void {
     if(!node)return;
-    const assign=(target,raw)=>{const values=mapper(raw);properties.forEach(property=>{if(Number.isFinite(values[property]))target[property]=values[property]})};
+    const assign=(target:Record<string,unknown>,raw:string|null)=>{const values=mapper(raw);properties.forEach(property=>{if(Number.isFinite(values[property]))target[property]=values[property]})};
     if(node.hasAttribute('value')){assign(layer,node.getAttribute('value'));return}
     const keys=directAll(node,'kf').slice(0,MAX_KEYFRAMES);
     keys.forEach((key,index)=>{
       const time=layer.start+clamp(key.getAttribute('t'),0,1)*Math.max(0.001,layer.end-layer.start),motionKey=upsertKey(layer,time);
       assign(motionKey.values,key.getAttribute('v'));
-      if(index>0){const easing=normalizeEasing(keys[index-1].getAttribute('e'));for(const property of properties)motionKey.easings[property]=easing;motionKey.easing=easing}
+      if(index>0){const easing=normalizeEasing(keys[index-1].getAttribute('e'));motionKey.easings??={};for(const property of properties)motionKey.easings[property]=easing;motionKey.easing=easing}
     });
     if(keys.length)assign(layer,keys[0].getAttribute('v'));
   }
 
-  function readEffect(layer,node,report){
+  function readEffect(layer:Layer,node:Element,report:AlightReport):void {
     const sourceId=String(node.getAttribute('id')||'').slice(0,300),effect={id:normalizeEffectId(sourceId),sourceId,locallyApplied:node.getAttribute('locallyApplied')!=='false',hidden:node.getAttribute('hidden')==='true',properties:directAll(node,'property').slice(0,500).map(propertyData),attributes:attributesOf(node,['id','locallyApplied','hidden']),extras:[...node.children].filter(child=>child.tagName!=='property').slice(0,100).map(child=>new XMLSerializer().serializeToString(child).slice(0,200000))};
-    layer.alightEffects.push(effect);
+    layer.alightEffects!.push(effect);
     const id=effect.id.toLowerCase(),props=new Map(effect.properties.map(property=>[property.name.toLowerCase(),property]));
-    const value=(names,fallback=0)=>{for(const name of names){if(props.has(name))return propertyValue(props.get(name),fallback)}return fallback};
+    const value=(names:string[],fallback=0)=>{for(const name of names){if(props.has(name))return propertyValue(props.get(name),fallback)}return fallback};
     let supported=true;
     if(id.includes('motionblur'))layer.effects.motionBlur=clamp(value(['tune','strength'],1)*10,0,30);
     else if(id.includes('blur'))layer.effects.blur=clamp(value(['strength','radius','amount'],.15)*100,0,30);
@@ -132,12 +167,12 @@
     else if(id.includes('hueshift')){const hue=value(['hue'],0);layer.effects.hue=clamp(Math.abs(hue)<=1?hue*360:hue,-180,180)}
     else if(id==='invert')layer.effects.invert=100;
     else supported=false;
-    if(!supported&&effect.sourceId)report.unsupportedEffects.add(effect.sourceId);
+    if(!supported&&effect.sourceId&&report.unsupportedEffects instanceof Set)report.unsupportedEffects.add(effect.sourceId);
   }
 
-  function collectLayerNodes(root){
-    const collected=[];
-    const walk=(parent,parentOriginalId=null)=>{
+  function collectLayerNodes(root:Element):CollectedLayer[] {
+    const collected:CollectedLayer[]=[];
+    const walk=(parent:Element,parentOriginalId:string|null=null):void=>{
       for(const child of parent.children){
         if(!LAYER_TAGS.has(child.tagName))continue;
         const isDefinition=child.tagName==='media'&&!child.hasAttribute('startTime')&&!child.hasAttribute('endTime');
@@ -151,8 +186,8 @@
     return collected;
   }
 
-  function mediaCatalog(root){
-    const catalog=new Map();
+  function mediaCatalog(root:Element):Map<string,AlightMediaReference> {
+    const catalog=new Map<string,AlightMediaReference>();
     for(const media of directAll(root,'media')){
       if(media.hasAttribute('startTime')||media.hasAttribute('endTime'))continue;
       const entry={uri:media.getAttribute('uri')||'',filename:media.getAttribute('filename')||'',mime:media.getAttribute('type')||'',title:media.getAttribute('title')||''};
@@ -161,20 +196,20 @@
     return catalog;
   }
 
-  function resolveMedia(node,catalog){
+  function resolveMedia(node:Element,catalog:Map<string,AlightMediaReference>):AlightMediaReference&{sourcePath:string;name:string} {
     const fill=direct(node,'fillImage'),reference=node.getAttribute('uri')||node.getAttribute('src')||node.getAttribute('fillImage')||fill?.getAttribute('value')||'';
     const entry=catalog.get(reference)||[...catalog.values()].find(item=>item.uri===reference||item.filename===reference)||{uri:reference,filename:node.getAttribute('label')||'',mime:node.getAttribute('type')||'',title:''};
     const uri=entry.uri||reference,sourcePath=localPathFromUri(uri);
     return{uri,sourcePath,mime:entry.mime||node.getAttribute('type')||'',filename:entry.filename||'',title:entry.title||'',name:entry.title||entry.filename||node.getAttribute('label')||'Mídia importada'};
   }
 
-  function pathPointsFromData(data,width,height){
-    const values=(String(data||'').match(/-?\d*\.?\d+(?:e[-+]?\d+)?/ig)||[]).map(Number),points=[];
+  function pathPointsFromData(data:unknown,width:number,height:number):Array<[number,number]> {
+    const values=(String(data||'').match(/-?\d*\.?\d+(?:e[-+]?\d+)?/ig)||[]).map(Number),points:Array<[number,number]>=[];
     for(let index=0;index+1<values.length&&points.length<1000;index+=2)points.push([clamp(values[index]/Math.max(1,width)*100,0,100),clamp(values[index+1]/Math.max(1,height)*100,0,100)]);
     return points;
   }
 
-  function parseLayer(node,catalog,composition,duration,report,id){
+  function parseLayer(node:Element,catalog:Map<string,AlightMediaReference>,composition:Composition,duration:number,report:AlightReport,id:number):Layer {
     const tag=node.tagName,shape=node.getAttribute('s')||'.rect',fillType=node.getAttribute('fillType')||'color',media=resolveMedia(node,catalog);
     let type=tag;
     if(tag==='shape'||tag==='color')type=fillType==='media'?mediaType(media.uri,media.mime):(shape.includes('circle')||shape.includes('ellipse')?'circle':direct(node,'path')?'path':'rect');
@@ -210,47 +245,47 @@
     return layer;
   }
 
-  function importScene(xml,options={}){
+  function importScene(xml:string,options:{silent?:boolean}={}):AlightReport {
     const doc=parseXml(xml),root=doc.documentElement;
     const width=clamp(root.getAttribute('width')||1920,64,7680),height=clamp(root.getAttribute('height')||1080,64,7680),fps=clamp(root.getAttribute('fps')||30,1,240),duration=clamp(num(root.getAttribute('totalTime'),10000)/1000,.05,3600);
     const composition={width,height,fps,background:argbToHex(root.getAttribute('bgcolor')||'#FF08090B')};
-    const report={layers:0,keyframes:0,unsupportedEffects:new Set(),unresolvedMedia:[],sourceVersion:root.getAttribute('amver')||'desconhecida'};
-    const catalog=mediaCatalog(root),items=collectLayerNodes(root),idMap=new Map(),parents=new Map();let nextId=uid;
-    const layers=items.map(item=>{const layer=parseLayer(item.node,catalog,composition,duration,report,nextId++),originalId=item.node.getAttribute('id');idMap.set(originalId,layer.id);if(item.parentOriginalId)parents.set(layer.id,item.parentOriginalId);return layer});
-    for(const layer of layers)if(parents.has(layer.id))layer.parentId=idMap.get(parents.get(layer.id))||null;
+    const report:AlightReport={layers:0,keyframes:0,unsupportedEffects:new Set<string>(),unresolvedMedia:[],sourceVersion:root.getAttribute('amver')||'desconhecida'};
+    const catalog=mediaCatalog(root),items=collectLayerNodes(root),idMap=new Map<string|null,number>(),parents=new Map<number,string>();let nextId=activeContext.uid;
+    const layers=items.map(item=>{const layer=parseLayer(item.node,catalog,composition,duration,report,nextId++),originalId=item.node.getAttribute('id');if(layer.id===undefined)throw new Error('Camada importada sem identificador');idMap.set(originalId,layer.id);if(item.parentOriginalId)parents.set(layer.id,item.parentOriginalId);return layer});
+    for(const layer of layers){if(layer.id===undefined)continue;const originalParent=parents.get(layer.id);if(originalParent)layer.parentId=idMap.get(originalParent)||null}
     const markers=directAll(root,'bookmark').slice(0,10000).map(node=>clamp(num(node.getAttribute('t'))/1000,0,duration)).sort((a,b)=>a-b),alightScene={attributes:attributesOf(root)};
-    MotionProjectCommands.applyImportedProject(state,{project:{duration,composition,layers,markers,alightScene}});uid=nextId;
-    $('#projectName').value=root.getAttribute('title')||'Cena XML importada';const ratio=width/height;$('#aspect').value=Math.abs(ratio-16/9)<.05?'16/9':Math.abs(ratio-9/16)<.05?'9/16':Math.abs(ratio-1)<.05?'1/1':'4/5';
+    applyImportedProject(state,{project:{duration,composition,layers,markers,alightScene}});activeContext.uid=nextId;
+    $<HTMLInputElement>('#projectName').value=root.getAttribute('title')||'Cena XML importada';const ratio=width/height;$<HTMLSelectElement>('#aspect').value=Math.abs(ratio-16/9)<.05?'16/9':Math.abs(ratio-9/16)<.05?'9/16':Math.abs(ratio-1)<.05?'1/1':'4/5';
     report.layers=layers.length;report.keyframes=layers.reduce((sum,layer)=>sum+layer.keyframes.length,0);report.unsupportedEffects=[...report.unsupportedEffects];
     syncComposition();renderLayers();syncProps();setTime(0);pushHistory();markDirty();
     if(!options.silent)showReport(report,'import');
     return report;
   }
 
-  function addStaticOrAnimated(doc,parent,name,layer,properties,format){
+  function addStaticOrAnimated(doc:XMLDocument,parent:Element,name:string,layer:Layer,properties:string[],format:(values:Record<string,number>)=>string):void {
     const node=doc.createElement(name),keys=(layer.keyframes||[]).filter(key=>properties.some(property=>Number.isFinite(key.values?.[property]))).sort((a,b)=>a.time-b.time),duration=Math.max(.001,(layer.end??state.duration)-(layer.start||0));
-    const valuesFor=key=>format(Object.fromEntries(properties.map(property=>[property,Number.isFinite(key?.values?.[property])?key.values[property]:layer[property]])));
+    const valuesFor=(key:ProjectKeyframe|undefined)=>format(Object.fromEntries(properties.map(property=>[property,Number.isFinite(key?.values?.[property])?key!.values[property]:Number(layer[property])])));
     if(keys.length>1){keys.forEach((key,index)=>{const frame=doc.createElement('kf');frame.setAttribute('t',String(round(clamp((key.time-(layer.start||0))/duration,0,1))));frame.setAttribute('v',valuesFor(key));const next=keys[index+1];if(next){const easing=next.easings?.[properties[0]]||next.easing||layer.easing||'linear';if(easing!=='linear')frame.setAttribute('e',easing)}node.append(frame)})}else node.setAttribute('value',valuesFor(keys[0]));
     parent.append(node);
   }
 
-  function appendProperty(doc,parent,property){
+  function appendProperty(doc:XMLDocument,parent:Element,property:ExternalEffectProperty):void {
     if(!property?.name)return;
     const node=doc.createElement('property');node.setAttribute('name',property.name);node.setAttribute('type',property.type||'float');
     for(const [name,value] of Object.entries(property.attributes||{}))if(!node.hasAttribute(name))node.setAttribute(name,String(value).slice(0,2048));
     if(property.value!==null&&property.value!==undefined)node.setAttribute('value',String(property.value));
-    else for(const key of property.keyframes||[]){const frame=doc.createElement('kf'),time=key.time??key.t,value=key.value??key.v,easing=key.easing??key.e;frame.setAttribute('t',String(Number.isFinite(Number(time))?time:0));frame.setAttribute('v',String(value??''));if(easing&&easing!=='linear')frame.setAttribute('e',easing);for(const [name,attribute] of Object.entries(key.attributes||{}))if(!frame.hasAttribute(name))frame.setAttribute(name,String(attribute).slice(0,2048));node.append(frame)}
+    else for(const key of property.keyframes||[]){const frame=doc.createElement('kf'),time=key.time,value=key.value,easing=key.easing;frame.setAttribute('t',String(Number.isFinite(Number(time))?time:0));frame.setAttribute('v',String(value??''));if(easing&&easing!=='linear')frame.setAttribute('e',easing);for(const [name,attribute] of Object.entries(key.attributes||{}))if(!frame.hasAttribute(name))frame.setAttribute(name,String(attribute).slice(0,2048));node.append(frame)}
     if(node.hasAttribute('value')||node.children.length)parent.append(node);
   }
 
-  function appendEffect(doc,parent,effect){
+  function appendEffect(doc:XMLDocument,parent:Element,effect:ExternalEffectInstance|GeneratedEffect):void {
     if(!effect?.id)return;
     const node=doc.createElement('effect'),sourceId=effect.sourceId||(/^com\./i.test(effect.id)?effect.id:`com.alightcreative.effects.${effect.id}`);node.setAttribute('id',sourceId);node.setAttribute('locallyApplied',effect.locallyApplied===false?'false':'true');if(effect.hidden)node.setAttribute('hidden','true');for(const [name,value] of Object.entries(effect.attributes||{}))if(!node.hasAttribute(name))node.setAttribute(name,String(value).slice(0,2048));for(const property of effect.properties||[])appendProperty(doc,node,property);for(const raw of effect.extras||[]){try{const extra=parseXmlFragment(raw);if(extra)node.append(doc.importNode(extra,true))}catch{}}parent.append(node);
   }
 
-  function generatedEffects(layer){
-    const fx={...DEFAULT_EFFECTS,...layer.effects},effects=[];
-    const add=(id,properties)=>effects.push({id,locallyApplied:true,properties:Object.entries(properties).map(([name,[type,value]])=>({name,type,value:String(value),keyframes:[]}))});
+  function generatedEffects(layer:Layer):GeneratedEffect[] {
+    const fx={...DEFAULT_EFFECTS,...layer.effects},effects:GeneratedEffect[]=[];
+    const add=(id:string,properties:Record<string,GeneratedProperty>)=>effects.push({id,locallyApplied:true,properties:Object.entries(properties).map(([name,[type,value]])=>({name,type,value:String(value),keyframes:[]}))});
     if(fx.brightness!==100||fx.contrast!==100)add('com.alightcreative.effects.brightcont',{brightness:['float',round((fx.brightness-100)/100)],contrast:['float',round((fx.contrast-100)/100)]});
     if(fx.saturation!==100)add('com.alightcreative.effects.satvib',{saturation:['float',round((fx.saturation-100)/100)],vib:['float',1]});
     if(fx.hue)add('com.alightcreative.effects.hueshift',{hue:['float',round(fx.hue/360)]});
@@ -264,16 +299,16 @@
     return effects;
   }
 
-  function pathData(layer){
+  function pathData(layer:Layer):string {
     if(layer.alightPath)return layer.alightPath;
     const points=layer.pathPoints||[];return points.map((point,index)=>`${index?'L':'M'} ${round(point[0]/100*state.composition.width)} ${round(point[1]/100*state.composition.height)}`).join(' ');
   }
 
-  function mediaInfo(layer){
-    const uri=fileUri(layer.sourcePath)||layer.alightMedia?.uri||'',filename=String(layer.sourcePath||layer.alightMedia?.filename||layer.name||'media').split(/[\\/]/).pop(),mime=layer.alightMedia?.mime||(layer.type==='video'?'video/mp4':layer.type==='audio'?'audio/mpeg':'image/png');return{uri,filename,mime};
+  function mediaInfo(layer:Layer):{uri:string;filename:string;mime:string} {
+    const uri=fileUri(layer.sourcePath)||layer.alightMedia?.uri||'',filename=String(layer.sourcePath||layer.alightMedia?.filename||layer.name||'media').split(/[\\/]/).pop()||'media',mime=layer.alightMedia?.mime||(layer.type==='video'?'video/mp4':layer.type==='audio'?'audio/mpeg':'image/png');return{uri,filename,mime};
   }
 
-  function exportLayer(doc,layer,index,exportedId){
+  function exportLayer(doc:XMLDocument,layer:Layer,index:number,exportedId:string):Element {
     let tag=layer.type==='text'?'text':layer.type==='audio'?'audio':layer.type==='camera'?'camera':layer.type==='null'?(layer.precomposition?'group':'null'):layer.alightTag||'shape';
     if(!LAYER_TAGS.has(tag)||['media','image','video','drawing','color'].includes(tag))tag='shape';
     const media=['image','video','audio'].includes(layer.type),node=doc.createElement(tag);node.setAttribute('id',exportedId);node.setAttribute('label',layer.name||`Camada ${index+1}`);node.setAttribute('startTime',String(Math.round((layer.start||0)*1000)));node.setAttribute('endTime',String(Math.round((layer.end??state.duration)*1000)));
@@ -295,37 +330,38 @@
     return node;
   }
 
-  function parseXmlFragment(raw){
+  function parseXmlFragment(raw:string):Element|null {
     if(/<!DOCTYPE|<!ENTITY/i.test(raw))return null;
     const parsed=new DOMParser().parseFromString(`<root>${raw}</root>`,'application/xml');return parsed.querySelector('parsererror')?null:parsed.documentElement.firstElementChild;
   }
 
-  function exportScene(){
-    const doc=document.implementation.createDocument('','scene'),root=doc.documentElement;for(const [name,value] of Object.entries(state.alightScene?.attributes||{}))root.setAttribute(name,String(value).slice(0,2048));root.setAttribute('title',$('#projectName').value||'Projeto Motion Livre');root.setAttribute('width',String(state.composition.width));root.setAttribute('height',String(state.composition.height));root.setAttribute('exportWidth',String(state.composition.width));root.setAttribute('exportHeight',String(state.composition.height));root.setAttribute('bgcolor',hexToArgb(state.composition.background));root.setAttribute('totalTime',String(Math.round(state.duration*1000)));root.setAttribute('fps',String(state.composition.fps));root.setAttribute('modifiedTime',String(Date.now()));if(!root.hasAttribute('amver'))root.setAttribute('amver','106');if(!root.hasAttribute('ffver'))root.setAttribute('ffver','101');if(!root.hasAttribute('am'))root.setAttribute('am','org.motionlivre.editor/0.0.0.1');if(!root.hasAttribute('amplatform'))root.setAttribute('amplatform','android');
+  function exportScene():string {
+    const doc=document.implementation.createDocument('','scene'),root=doc.documentElement;for(const [name,value] of Object.entries(state.alightScene?.attributes||{}))root.setAttribute(name,String(value).slice(0,2048));root.setAttribute('title',$<HTMLInputElement>('#projectName').value||'Projeto Motion Livre');root.setAttribute('width',String(state.composition.width));root.setAttribute('height',String(state.composition.height));root.setAttribute('exportWidth',String(state.composition.width));root.setAttribute('exportHeight',String(state.composition.height));root.setAttribute('bgcolor',hexToArgb(state.composition.background));root.setAttribute('totalTime',String(Math.round(state.duration*1000)));root.setAttribute('fps',String(state.composition.fps));root.setAttribute('modifiedTime',String(Date.now()));if(!root.hasAttribute('amver'))root.setAttribute('amver','106');if(!root.hasAttribute('ffver'))root.setAttribute('ffver','101');if(!root.hasAttribute('am'))root.setAttribute('am','org.motionlivre.editor/0.0.0.1');if(!root.hasAttribute('amplatform'))root.setAttribute('amplatform','android');
     const mediaUris=new Set();for(const layer of state.layers.filter(layer=>['image','video','audio'].includes(layer.type))){const info=mediaInfo(layer);if(!info.uri||mediaUris.has(info.uri))continue;mediaUris.add(info.uri);const media=doc.createElement('media');media.setAttribute('uri',info.uri);media.setAttribute('filename',info.filename);media.setAttribute('title',layer.name||info.filename);media.setAttribute('type',info.mime);root.append(media)}
     for(const marker of state.markers||[]){const bookmark=doc.createElement('bookmark');bookmark.setAttribute('t',String(Math.round(marker*1000)));root.append(bookmark)}
-    const usedIds=new Set(),exportIds=state.layers.map((layer,index)=>{let value=String(layer.alightId||index+1);if(!value||usedIds.has(value)){let suffix=index+1;while(usedIds.has(String(suffix)))suffix++;value=String(suffix)}usedIds.add(value);return value}),exported=state.layers.map((layer,index)=>exportLayer(doc,layer,index,exportIds[index])),byId=new Map(state.layers.map((layer,index)=>[layer.id,exported[index]]));state.layers.forEach((layer,index)=>{const parent=byId.get(layer.parentId);if(parent?.tagName==='group')parent.append(exported[index]);else root.append(exported[index])});
+    const usedIds=new Set<string>(),exportIds=state.layers.map((layer,index)=>{let value=String(layer.alightId||index+1);if(!value||usedIds.has(value)){let suffix=index+1;while(usedIds.has(String(suffix)))suffix++;value=String(suffix)}usedIds.add(value);return value}),exported=state.layers.map((layer,index)=>exportLayer(doc,layer,index,exportIds[index])),byId=new Map(state.layers.filter(layer=>layer.id!==undefined).map((layer,index)=>[layer.id!,exported[index]]));state.layers.forEach((layer,index)=>{const parent=layer.parentId===null?undefined:byId.get(layer.parentId);if(parent?.tagName==='group')parent.append(exported[index]);else root.append(exported[index])});
     const unsupported=state.layers.flatMap(layer=>{const fx={...DEFAULT_EFFECTS,...layer.effects};return[['grayscale',fx.grayscale],['sepia',fx.sepia],['RGB personalizado',fx.redGain!==100||fx.greenGain!==100||fx.blueGain!==100]].filter(([,active])=>active).map(([name])=>`${layer.name}: ${name}`)});
-    window.alightCompat.lastExportReport={layers:state.layers.length,keyframes:state.layers.reduce((sum,layer)=>sum+(layer.keyframes?.length||0),0),unsupportedEffects:unsupported,unresolvedMedia:state.layers.filter(layer=>['image','video','audio'].includes(layer.type)&&!layer.sourcePath).map(layer=>layer.name),sourceVersion:'106'};
+    api.lastExportReport={layers:state.layers.length,keyframes:state.layers.reduce((sum,layer)=>sum+(layer.keyframes?.length||0),0),unsupportedEffects:unsupported,unresolvedMedia:state.layers.filter(layer=>['image','video','audio'].includes(layer.type)&&!layer.sourcePath).map(layer=>layer.name),sourceVersion:'106'};
     return '<?xml version="1.0" encoding="UTF-8"?>\n'+new XMLSerializer().serializeToString(doc).replace(/></g,'>\n<')+'\n';
   }
 
-  function showReport(report,mode){
-    const unsupported=report.unsupportedEffects||[],unresolved=report.unresolvedMedia||[],body=$('#compatReportBody');body.innerHTML=`<p><strong>${mode==='export'?'Cena exportada':'Cena importada'}:</strong> ${report.layers} camada(s), ${report.keyframes} keyframe(s). Formato AM ${esc(report.sourceVersion)}.</p>${unsupported.length?`<h3>Efeitos preservados, sem prévia idêntica</h3><ul>${unsupported.slice(0,30).map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'<p>Os efeitos reconhecidos foram convertidos para a prévia do Motion Livre.</p>'}${unresolved.length?`<h3>Mídias para religar</h3><p>O XML referencia arquivos que não vêm embutidos. Importe essas mídias novamente no projeto:</p><ul>${unresolved.slice(0,30).map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}`;$('#compatReport').hidden=false;
+  function showReport(report:AlightReport,mode:'export'|'import'):void {
+    const unsupported=[...report.unsupportedEffects],unresolved=report.unresolvedMedia||[],body=$('#compatReportBody');body.innerHTML=`<p><strong>${mode==='export'?'Cena exportada':'Cena importada'}:</strong> ${report.layers} camada(s), ${report.keyframes} keyframe(s). Formato AM ${esc(report.sourceVersion)}.</p>${unsupported.length?`<h3>Efeitos preservados, sem prévia idêntica</h3><ul>${unsupported.slice(0,30).map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'<p>Os efeitos reconhecidos foram convertidos para a prévia do Motion Livre.</p>'}${unresolved.length?`<h3>Mídias para religar</h3><p>O XML referencia arquivos que não vêm embutidos. Importe essas mídias novamente no projeto:</p><ul>${unresolved.slice(0,30).map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}`;$('#compatReport').hidden=false;
   }
 
   async function saveScene(){
-    try{const xml=exportScene(),name=$('#projectName').value||'cena';if(window.motionDesktop?.saveAlight){const path=await motionDesktop.saveAlight(xml,name);if(!path)return}else{const anchor=document.createElement('a');anchor.href=URL.createObjectURL(new Blob([xml],{type:'application/xml'}));anchor.download=`${name}.xml`;anchor.click()}showReport(window.alightCompat.lastExportReport,'export');toast('Cena XML compatível exportada')}catch(error){console.error(error);toast(`Falha no XML: ${error.message}`)}
+    try{const xml=exportScene(),name=$<HTMLInputElement>('#projectName').value||'cena';if(desktop?.saveAlight){const path=await desktop.saveAlight(xml,name);if(!path)return}else{const anchor=document.createElement('a');anchor.href=URL.createObjectURL(new Blob([xml],{type:'application/xml'}));anchor.download=`${name}.xml`;anchor.click()}if(api.lastExportReport)showReport(api.lastExportReport,'export');toast('Cena XML compatível exportada')}catch(error){console.error(error);toast(`Falha no XML: ${error instanceof Error?error.message:String(error)}`)}
   }
 
   async function openScene(){
-    try{if(window.motionDesktop?.openAlight){const result=await motionDesktop.openAlight();if(result)importScene(result.data)}else $('#importAlightXml').click()}catch(error){console.error(error);toast(`Falha no XML: ${error.message}`)}
+    try{if(desktop?.openAlight){const result=await desktop.openAlight();if(result)importScene(result.data)}else $('#importAlightXml').click()}catch(error){console.error(error);toast(`Falha no XML: ${error instanceof Error?error.message:String(error)}`)}
   }
 
-  $('#exportAlightXml').onclick=saveScene;$('#menuExportAlight').onclick=saveScene;$('#menuImportAlight').onclick=openScene;
-  $('#importAlightXml').onchange=async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>MAX_XML_SIZE)throw new Error('O XML excede o limite de 10 MB');importScene(await file.text())}catch(error){console.error(error);toast(`Falha no XML: ${error.message}`)}finally{event.target.value=''}};
+  const api:AlightApi={importScene,exportScene,lastExportReport:null};
+  $('#exportAlightXml').onclick=()=>{void saveScene()};$('#menuExportAlight').onclick=()=>{void saveScene()};$('#menuImportAlight').onclick=()=>{void openScene()};
+  $<HTMLInputElement>('#importAlightXml').onchange=async event=>{const input=event.currentTarget as HTMLInputElement,file=input.files?.[0];if(!file)return;try{if(file.size>MAX_XML_SIZE)throw new Error('O XML excede o limite de 10 MB');importScene(await file.text())}catch(error){console.error(error);toast(`Falha no XML: ${error instanceof Error?error.message:String(error)}`)}finally{input.value=''}};
   $('#closeCompatReport').onclick=$('#acceptCompatReport').onclick=()=>$('#compatReport').hidden=true;
-  if(window.motionDesktop?.onMenu){motionDesktop.onMenu('alight-open',openScene);motionDesktop.onMenu('alight-save',saveScene)}
+  if(desktop?.onMenu){desktop.onMenu('alight-open',()=>{void openScene()});desktop.onMenu('alight-save',()=>{void saveScene()})}
 
-  window.alightCompat={importScene,exportScene,lastExportReport:null};
-})();
+  window.alightCompat=api;
+}

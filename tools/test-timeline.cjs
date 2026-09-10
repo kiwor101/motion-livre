@@ -57,7 +57,7 @@ const path=require('node:path');
    await page.locator('[data-action="freeze"]').click();
    await page.waitForFunction(()=>selected()?.type==='image');
    assert.deepEqual(await page.evaluate(()=>[selected().start,selected().end]),[2.5,4.5]);
-   assert.equal(await page.evaluate(()=>projectData().layers.find(l=>l.type==='image').content.startsWith('data:image/png')),true);
+   assert.equal(await page.evaluate(()=>motionLegacyContext.projectData().layers.find(l=>l.type==='image').content.startsWith('data:image/png')),true);
    assert.equal(await page.evaluate(()=>state.layers.find(l=>l.start===4.5).end),5);
   }
   assert.equal(await page.locator('.time-ruler span').nth(5).textContent(),'05');

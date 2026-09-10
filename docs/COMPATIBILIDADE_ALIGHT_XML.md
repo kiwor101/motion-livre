@@ -1,8 +1,16 @@
 # Compatibilidade Alight Motion XML
 
-O Motion Livre 0.0.0.1 inclui uma implementação independente do formato de cenas XML usado pelo Alight Motion. Ela foi desenvolvida para interoperabilidade a partir de documentação pública.
+O Motion Livre 0.0.1 inclui uma implementação independente do formato de cenas XML usado pelo Alight Motion. Ela foi desenvolvida para interoperabilidade a partir de documentação pública.
 
 Referência técnica utilizada: [alight-motion-xml-schema](https://github.com/boiniArun2006/alight-motion-xml-schema), disponibilizada sob licença MIT.
+
+## Papel do XML na arquitetura
+
+O estado central do editor pertence ao modelo TypeScript do Motion Livre. Projetos nativos completos são salvos em `.motion.json`; XML é a representação oficial de interoperabilidade e pode ser usado em presets quando sua estrutura trouxer vantagem.
+
+Ao gerar XML, cenas, camadas, propriedades, keyframes e efeitos com equivalente conhecido devem seguir a hierarquia, os nomes e a semântica do esquema compatível do Alight Motion. Dados exclusivos do Motion Livre devem ser extensões documentadas e identificáveis, sem redefinir elementos compatíveis. Essa regra permite aproveitar o formato como parte da arquitetura do Motion Livre sem prender o modelo interno às limitações de outro aplicativo.
+
+A compatibilidade é independente e baseada em documentação pública e testes. Ela não inclui código, shaders nem outros componentes proprietários.
 
 ## Como usar
 

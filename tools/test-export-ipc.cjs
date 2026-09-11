@@ -3,7 +3,7 @@ const {createRequire}=require('node:module'),{pathToFileURL}=require('node:url')
 (async()=>{
   const filename=path.resolve(__dirname,'../desktop/main.cjs'),nativeRequire=createRequire(filename),handlers=new Map();
   let failWrite=false,failFinish=false,failCancel=false,cancellations=0;
-  const electron={app:{isPackaged:false,setPath:()=>{},getVersion:()=> '0.0.1',whenReady:()=>new Promise(()=>{}),on:()=>{}},
+  const electron={app:{isPackaged:false,commandLine:{appendSwitch:()=>{}},setPath:()=>{},getVersion:()=> '0.0.1',whenReady:()=>new Promise(()=>{}),on:()=>{}},
     ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{showSaveDialog:async()=>({filePath:'test.mp4'})}};
   vm.runInNewContext(fs.readFileSync(filename,'utf8'),{__dirname:path.dirname(filename),process,Buffer,console:{error:()=>{}},
     require:name=>name==='electron'?electron:name==='./frame-export.cjs'?{createFrameExport:()=>({acceptsFrames:true,settings:{},

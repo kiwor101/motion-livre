@@ -3,6 +3,11 @@ const {app,BrowserWindow,dialog,ipcMain,Menu,session}=require('electron');
 // explicit recovery mode for machines with broken or outdated GPU drivers.
 const softwareRendering=process.env.MOTION_LIVRE_SOFTWARE_RENDERING==='1';
 if(softwareRendering){app.disableHardwareAcceleration();app.commandLine.appendSwitch('disable-gpu');app.commandLine.appendSwitch('disable-gpu-compositing')}
+// Chromium's accelerated video decoder can stop delivering frames from the
+// hidden media elements consumed by the compositor. Keep WebGL acceleration,
+// but use deterministic software video decoding until the accelerated path has
+// a runtime health check and automatic fallback. Proxies limit its CPU cost.
+require('./runtime-switches.cjs').configureVideoDecode(app);
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const {spawn}=require('node:child_process');
@@ -46,7 +51,7 @@ async function probeMediaFile(filePath){
   return await new Promise((resolve,reject)=>{
     const process=spawn(bundledTool('ffprobe'),['-v','error','-show_streams','-show_format','-of','json',filePath],{windowsHide:true});let stdout='',stderr='';
     process.stdout.on('data',chunk=>{stdout+=chunk;if(stdout.length>4*1024*1024)process.kill()});process.stderr.on('data',chunk=>stderr+=chunk);
-    process.on('error',reject);process.on('close',code=>{if(code!==0)return reject(new Error(stderr.trim()||`FFprobe finalizou com código ${code}`));try{const data=JSON.parse(stdout),video=(data.streams||[]).find(stream=>stream.codec_type==='video'),rotation=Number(video?.tags?.rotate??video?.side_data_list?.find(item=>Number.isFinite(Number(item.rotation)))?.rotation??0);resolve({duration:Number(data.format?.duration||video?.duration||0)||0,width:Number(video?.width||0)||0,height:Number(video?.height||0)||0,rotation:Number.isFinite(rotation)?rotation:0,hasAudio:(data.streams||[]).some(stream=>stream.codec_type==='audio')})}catch(error){reject(new Error(`Metadados de mídia inválidos: ${error.message}`))}});
+    process.on('error',reject);process.on('close',code=>{if(code!==0)return reject(new Error(stderr.trim()||`FFprobe finalizou com código ${code}`));try{const data=JSON.parse(stdout),video=(data.streams||[]).find(stream=>stream.codec_type==='video'),rotation=Number(video?.tags?.rotate??video?.side_data_list?.find(item=>Number.isFinite(Number(item.rotation)))?.rotation??0),rate=String(video?.avg_frame_rate||video?.r_frame_rate||'0/1').split('/').map(Number),fps=rate[1]?rate[0]/rate[1]:0;resolve({duration:Number(data.format?.duration||video?.duration||0)||0,width:Number(video?.width||0)||0,height:Number(video?.height||0)||0,rotation:Number.isFinite(rotation)?rotation:0,fps:Number.isFinite(fps)?fps:0,hasAudio:(data.streams||[]).some(stream=>stream.codec_type==='audio')})}catch(error){reject(new Error(`Metadados de mídia inválidos: ${error.message}`))}});
   });
 }
 
@@ -130,7 +135,7 @@ secureHandle('media:proxy',async(_event,{filePath,metadata={}})=>{
   return await createVideoProxy(filePath,metadata,stat);
 });
 secureHandle('export:cancel',async()=>{const current=frameExport;if(!current)return false;try{return await current.cancel()}finally{if(frameExport===current)frameExport=null}});
-secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={}})=>{
+secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={},videoPassthrough=null})=>{
   if(frameExport||exportStarting)throw new Error('Já existe uma exportação em andamento');
   exportStarting=true;
   try{
@@ -139,7 +144,8 @@ secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={}
     if(result.canceled||!result.filePath)return{started:false};
     const validAudio=[];
     for(const track of audioTracks.slice(0,128)){await ensureRegularFile(track.path,/\.(mp4|mov|mkv|webm|avi|m4v|mp3|wav|m4a|aac|ogg|flac)$/i);validAudio.push(track)}
-    frameExport=createFrameExport({ffmpeg:bundledTool('ffmpeg'),filePath:result.filePath,format,settings,audioTracks:validAudio});
+    let directVideo=null;if(videoPassthrough){await ensureRegularFile(videoPassthrough.path,/\.(mp4|mov|m4v)$/i);const metadata=await probeMediaFile(videoPassthrough.path),rotation=Math.abs(metadata.rotation)%180,width=rotation===90?metadata.height:metadata.width,height=rotation===90?metadata.width:metadata.height;if(width===settings.width&&height===settings.height&&Math.abs(metadata.fps-settings.fps)<.02){const start=Math.max(0,Number(videoPassthrough.start)||0);directVideo={path:videoPassthrough.path,start,copy:start<.001}}}
+    frameExport=createFrameExport({ffmpeg:bundledTool('ffmpeg'),filePath:result.filePath,format,settings,audioTracks:validAudio,videoPassthrough:directVideo});
     return{started:true,acceptsFrames:frameExport.acceptsFrames,filePath:result.filePath,settings:frameExport.settings};
   }finally{exportStarting=false}
 });

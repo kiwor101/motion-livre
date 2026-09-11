@@ -122,6 +122,7 @@ export interface Layer extends Record<string,unknown> {
   mediaWidth?:number;
   mediaHeight?:number;
   mediaRotation?:number;
+  mediaFps?:number;
   precomposition?:boolean;
   precompGroup?:string;
   frozenFrame?:boolean;

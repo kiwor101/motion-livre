@@ -2,11 +2,11 @@
 
 Registro: 2026-09-10. Branch conferida: `dev/emanueltk7`.
 
-## Situação ao interromper
+## Situação atual
 
-**Há correções locais e um novo teste de reprodução aprovado, mas a tarefa ainda não está concluída.** Faltam a checagem TypeScript da última versão, regressões existentes e revisão mais ampla do compartilhamento de mídia. O usuário pediu este registro para continuar em outra sessão.
+**A correção foi concluída e validada em 2026-09-11.** O diagnóstico histórico e as limitações permanecem registrados abaixo para futuras melhorias do decoder acelerado.
 
-A migração da interface já estava concluída e suas alterações estavam majoritariamente no staging antes desta tarefa. As correções desta investigação estão fora do staging. Preserve ambos. Não houve commit, push, PR, publicação ou alteração da versão `0.0.1`. Não reiniciar a migração nem descartar a árvore existente.
+A migração e a primeira versão destas correções foram incluídas no commit `bf0d36b` da branch `dev/emanueltk7`. A conclusão de 2026-09-11, incluindo o fallback estável do decoder, permanece como alteração local até nova autorização compatível para commit/push. Não houve PR, merge, publicação ou alteração da versão `0.0.1` nesta conclusão.
 
 ## Relato e objetivo
 
@@ -57,12 +57,14 @@ A exigência é investigar o algoritmo antes de corrigir: preview fiel e rápido
 - Exibir os vídeos-fonte por CSS foi somente diagnóstico. O CSS artificial foi removido do teste.
 - Houve tentativa de criar um contêiner de decoders atrás de um canvas opaco. Ela passou uma vez e falhou em repetição; foi removida. **Não recriar essa tentativa como se fosse a solução final.**
 - As alterações temporárias em `renderer/preview-engine.css` foram revertidas ao conteúdo anterior; pode aparecer aviso de finais de linha, mas o último diff não tinha mudança funcional nesse CSS.
-- Não foi mantida nenhuma flag para desligar GPU ou decoder acelerado.
+- Nenhuma tentativa desliga a GPU ou o compositor WebGL. A decisão final sobre a decodificação de vídeo está registrada logo abaixo.
 - Não interpretar um teste intermediário aprovado como aprovação da versão final. Houve falhas intermediárias explícitas, que motivaram a aquisição de `VideoFrame`.
+
+Após novas repetições em 2026-09-11, o caminho acelerado voltou a travar inclusive no vídeo sem cortes, chegando a aproximadamente 4,7 segundos de atraso enquanto o áudio continuava. A conclusão acima foi revisada: o produto mantém WebGL/GPU para composição, mas desativa somente a decodificação acelerada de vídeo em `desktop/main.cjs`. O fallback por software passou cinco execuções consecutivas do teste específico. `MOTION_LIVRE_HARDWARE_VIDEO_DECODE=1` permite reativar o caminho acelerado para desenvolvimento e futura validação; ele ainda não deve ser usado como padrão sem detecção de falha e fallback automático.
 
 ## Teste novo e evidência obtida
 
-Arquivo novo, ainda não adicionado ao staging: `tools/test-preview-cuts.cjs`.
+O teste permanente está em `tools/test-preview-cuts.cjs` e faz parte de `pnpm test:renderer`.
 
 Executar:
 
@@ -97,25 +99,28 @@ Passaram:
 - `git diff --check` e `node --check tools/test-preview-cuts.cjs` após as últimas alterações de código.
 - `pnpm check:ui` e `pnpm build:renderer` numa versão intermediária, **anterior** à mudança final de `VideoFrame`.
 
-**Não passaram por nova execução final:** checagem TypeScript completa, build do renderer, suíte do núcleo, testes Electron existentes e smoke/exportação. As últimas tentativas de `check:ui` e `build:renderer` fora do sandbox retornaram `Rejected (rejected by user)` no momento da interrupção. Antes disso, ferramentas de compilação recebiam EPERM no sandbox e funcionavam com execução autorizada fora dele. Não apresentar a interrupção como erro de tipos, nem afirmar que a última versão já foi aprovada por esses comandos.
+Em 2026-09-11 também passaram `pnpm check:ui`, `pnpm build:renderer`, `pnpm test:core` e `pnpm test:renderer`, agora incluindo o teste específico além dos três testes Electron existentes. O cenário de preview passou cinco vezes consecutivas usando o fallback aplicado ao aplicativo. O smoke final passou em 640×360, 2 segundos e 48 frames, cobrindo áudio original com proxy, recuperação do contexto WebGL e encoder de produção.
 
-## O que falta para terminar
+## Resultado final e trabalho futuro
 
-1. Ler `AGENTS.md`, `CONTRIBUTING.md`, arquitetura e este registro; conferir branch e diff. Preservar staging da migração. A árvore não está limpa: não sincronizar automaticamente com pull/merge.
-2. Revisar o algoritmo de compartilhamento: mudanças de intervalo que criam sobreposição, troca de fonte/proxy, exclusão de proprietários, IDs mantidos ao reabrir projeto e integridade de `members`/`containers`. As buscas sobre os mapas ainda têm custo que pode crescer com muitos clipes; avaliar antes de ampliar o escopo ou prometer escalabilidade.
-3. Confirmar que getters e atualizações de UI não criam/repartem registros inesperadamente durante reprodução. Revisar também observadores/listeners na liberação de registros.
-4. Rodar `pnpm check:ui`, `pnpm build:renderer` e, quando necessário, `pnpm build:core`. A compilação em `.build/renderer` ainda pode estar anterior à versão final.
-5. Executar regressões relevantes existentes: `tools/test-media-lifecycle.cjs`, testes de clipes, sessão, áudio e controlador de exportação; depois os testes Electron `test-renderer-contracts.cjs`, `test-editing-commands.cjs` e `test-alight-xml.cjs`, e `tools/smoke-renderer.cjs` com FFmpeg real. Não iniciar vários testes gráficos simultaneamente.
-6. Validar `VideoFrame` na exportação, transparência, efeitos que leem pixels e recuperação de contexto; garantir fechamento dos frames também nos erros. Não assumir que o build do Vite substitui essa validação.
-7. Ampliar a regressão de playback com saltos/scrub para trás, cortes não contíguos, velocidades diferentes, reverso, camadas simultâneas, fades/pan/volume, mute global, undo/redo e salvar/reabrir. Testar remoção/extração de áudio também nesses fluxos.
-8. Repetir o teste de reprodução final após qualquer correção necessária; se houver intermitência, manter o diagnóstico aberto. Validar, se disponível, o vídeo/projeto real do usuário.
-9. Medir pixels do preview e transições de áudio com mais precisão se os testes indicarem dúvida; não aumentar tolerâncias para forçar aprovação.
-10. Revisar o diff final e atualizar este registro com o que efetivamente passou. Somente então apresentar a correção como concluída. Commit/push/publicação continuam dependendo de autorização compatível.
+O defeito relatado está corrigido e coberto por teste reproduzível. O aplicativo usa um decoder por fonte para cortes sequenciais, mantém decoders separados para camadas simultâneas, separa o áudio original da superfície visual e não reconstrói a timeline por eventos de mídia. A composição continua na GPU pelo WebGL2; somente a decodificação acelerada de vídeo usa fallback por software, porque o caminho acelerado falhou de forma repetível e intermitente neste ambiente.
+
+Como evolução, implementar uma verificação de saúde do decoder que detecte ausência de novos frames e reinicie o aplicativo automaticamente no fallback. Somente depois de essa troca automática passar pelos mesmos testes o decoder acelerado deve voltar a ser o padrão. Também convém ampliar os testes para scrub para trás, cortes não contíguos, velocidades diferentes, reverso, múltiplos vídeos simultâneos e transições exatas de fades. Essas ampliações não bloqueiam a correção do cenário relatado.
 
 ## Arquivos para revisão
 
-Alterados nesta investigação: `src/renderer/media-runtime.ts`, `src/renderer/rasterizer.ts`, `src/ui/app-controller.ts`, `src/ui/editing/advanced-controller.ts`, `src/ui/main.ts`, `src/ui/stage/stage-controller.ts`.
+Alterados nesta investigação: `desktop/main.cjs`, `desktop/runtime-switches.cjs`, `src/renderer/media-runtime.ts`, `src/renderer/rasterizer.ts`, `src/ui/app-controller.ts`, `src/ui/editing/advanced-controller.ts`, `src/ui/main.ts`, `src/ui/stage/stage-controller.ts` e `tools/smoke-renderer.cjs`.
 
-Novos nesta investigação: `tools/test-preview-cuts.cjs` e este documento.
+O teste específico e este documento já constam no commit `bf0d36b`; `desktop/runtime-switches.cjs` foi acrescentado na conclusão de 2026-09-11.
 
-Use `git diff` para isolar as correções fora do staging; `git diff --cached` contém principalmente a migração anterior. Não adicionar todos os arquivos indiscriminadamente.
+Use `git diff` para revisar as alterações posteriores ao commit `bf0d36b`. Não adicionar todos os arquivos indiscriminadamente.
+
+## Fullscreen e continuidade vertical da exportação — 2026-09-11
+
+O fullscreen mantinha `24px` de margem lateral e reservava `110px` da altura para os controles, embora os controles já sejam sobrepostos ao vídeo. `studio.css` agora permite que o palco ocupe toda a largura ou toda a altura disponível, preservando a proporção da composição. Em uma tela com a mesma proporção da composição, o palco preenche as duas dimensões.
+
+Também havia uma divergência no limite dos cortes: o preview considera o fim de cada clipe exclusivo, mas `src/renderer/rasterizer.ts` ainda desenhava o clipe quando `time === end`. Assim, no instante exato de um corte, dois clipes adjacentes podiam ser enviados juntos ao quadro exportado. A rasterização agora usa o intervalo `start <= time < end`, igual ao preview e aos comandos de edição.
+
+`tools/test-renderer-contracts.cjs` passou a verificar que o palco em fullscreen preenche ao menos uma dimensão da viewport e que cinco trechos contíguos com a mesma posição mantêm o centro vertical idêntico em todos os dez quadros exportados. Passaram `pnpm build:renderer`, `pnpm test:renderer`, `node --check` nos JavaScript alterados e `git diff --check`. A primeira execução da suíte Electron dentro da sandbox falhou antes de carregar a interface porque o processo de GPU encerrou; a repetição fora da sandbox passou integralmente.
+
+A reserva de espaço no fullscreen e a sobreposição no instante do corte estão confirmadas e corrigidas. O salto vertical persistente descrito no arquivo exportado não se reproduziu no cenário sintético de cinco cortes. Se ele continuar no projeto original, será necessário testar o arquivo de projeto correspondente para verificar valores de `y`, keyframes, câmera, parentesco ou diferenças entre os trechos; não há evidência suficiente para atribuir uma dessas causas sem esse estado salvo.

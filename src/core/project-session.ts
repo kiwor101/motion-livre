@@ -51,7 +51,7 @@ export function decode(data:unknown):ProjectDocument {
   for(const layer of layers)if(layer.parentId!==null&&!ids.has(layer.parentId))layer.parentId=null;
   const library=new Map<string,DataRecord>();
   const savedLibrary=Array.isArray(data.mediaLibrary)?data.mediaLibrary.filter(isRecord):[];
-  const layerMedia=layers.filter(layer=>['image','video','audio'].includes(layer.type)).map(layer=>({type:layer.type,url:layer.content,sourcePath:layer.sourcePath,name:layer.name,duration:layer.mediaDuration,width:layer.mediaWidth,height:layer.mediaHeight,hasAudio:layer.hasAudio,waveform:layer.waveform}));
+  const layerMedia=layers.filter(layer=>['image','video','audio'].includes(layer.type)).map(layer=>({type:layer.type,url:layer.content,sourcePath:layer.sourcePath,name:layer.name,duration:layer.mediaDuration,width:layer.mediaWidth,height:layer.mediaHeight,rotation:layer.mediaRotation,fps:layer.mediaFps,hasAudio:layer.hasAudio,waveform:layer.waveform}));
   for(const entry of [...savedLibrary,...layerMedia]){
     const key=typeof entry.sourcePath==='string'&&entry.sourcePath?entry.sourcePath:typeof entry.url==='string'?entry.url:'';
     if(key&&!library.has(key))library.set(key,portable(entry));

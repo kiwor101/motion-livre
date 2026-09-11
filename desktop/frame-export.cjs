@@ -4,23 +4,25 @@ const {randomUUID}=require('node:crypto');
 const {audioMix}=require('../.build/core/audio-export-plan.js');
 const {normalize}=require('../.build/core/export-settings.js');
 
-function createFrameExport({ffmpeg,filePath,format='mp4',settings={},audioTracks=[]}){
+function createFrameExport({ffmpeg,filePath,format='mp4',settings={},audioTracks=[],videoPassthrough=null}){
   const config=normalize(format,settings,{},settings.end??settings.duration??10);
-  const acceptsFrames=format!=='mp3',temporary=`${filePath}.${randomUUID()}.partial`;
+  const acceptsFrames=format!=='mp3'&&!videoPassthrough,temporary=`${filePath}.${randomUUID()}.partial`;
   const inputs=audioTracks.flatMap(track=>['-i',track.path]);
-  const mix=audioMix(audioTracks,{inputOffset:acceptsFrames?1:0});
+  const mix=audioMix(audioTracks,{inputOffset:acceptsFrames||videoPassthrough?1:0});
   if(format==='mp3'&&!mix)throw new Error('Nenhum canal de áudio ativo para exportar');
   const args=['-y','-hide_banner','-loglevel','error','-filter_complex_threads','2','-filter_threads','2'];
-  if(acceptsFrames)args.push('-f','rawvideo','-pixel_format','rgba','-video_size',`${config.width}x${config.height}`,'-framerate',String(config.fps),'-i','pipe:0');
+  if(videoPassthrough)args.push(...(videoPassthrough.start?['-ss',String(videoPassthrough.start)]:[]),'-t',String(config.duration),'-i',videoPassthrough.path);
+  else if(acceptsFrames)args.push('-f','rawvideo','-pixel_format','rgba','-video_size',`${config.width}x${config.height}`,'-framerate',String(config.fps),'-i','pipe:0');
   if(!['png','gif'].includes(format)){
     args.push(...inputs);
     if(mix)args.push('-filter_complex',`${mix};[aout]apad,atrim=duration=${config.duration}[audio]`);
-    if(acceptsFrames)args.push('-map','0:v:0');
+    if(acceptsFrames||videoPassthrough)args.push('-map','0:v:0');
     if(mix)args.push('-map','[audio]');
   }
   if(format==='png')args.push('-frames:v','1','-c:v','png','-f','image2');
   else if(format==='gif')args.push('-vf','fps=15,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse','-loop','0','-f','gif');
   else if(format==='mp3')args.push('-c:a','libmp3lame','-b:a',config.audioBitrate,'-f','mp3');
+  else if(videoPassthrough)args.push(...(videoPassthrough.copy?['-c:v','copy']:['-c:v','libx264','-preset','veryfast','-threads','4','-crf',String(config.quality),'-pix_fmt','yuv420p']),...(mix?['-c:a','aac','-b:a',config.audioBitrate]:['-an']),'-movflags','+faststart','-f',format);
   else if(format==='webm')args.push('-c:v','libvpx-vp9','-crf',String(config.quality),'-b:v','0','-pix_fmt',config.transparent?'yuva420p':'yuv420p','-c:a','libopus','-b:a',config.audioBitrate,'-f','webm');
   else args.push('-c:v','libx264','-preset','medium','-threads','4','-rc-lookahead','10','-crf',String(config.quality),'-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a',config.audioBitrate,'-f',format);
   args.push(temporary);

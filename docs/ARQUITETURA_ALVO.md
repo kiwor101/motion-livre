@@ -171,6 +171,12 @@ Comandos: pnpm test:core inclui tools/test-proxy-real.cjs e tools/test-export-mi
 
 Efeitos/shaders adicionais e render graph permanecem fora desta etapa. Versão mantida em 0.0.1.
 
+### Compatibilidade temporária da decodificação de preview — 2026-09-11
+
+O compositor continua acelerado pela GPU em WebGL2. A decodificação acelerada de vídeo do Chromium ficou temporariamente desativada por padrão porque, neste ambiente Windows, deixou de entregar frames de forma intermitente enquanto o áudio e o relógio continuavam avançando. O problema foi reproduzido inclusive sem cortes e não ocorreu em cinco execuções consecutivas com o decoder por software. Proxies limitam o custo dessa compatibilidade; exportação e mídias originais não são alteradas.
+
+`MOTION_LIVRE_HARDWARE_VIDEO_DECODE=1` existe para validação do caminho acelerado. Ele só deve voltar a ser padrão depois que houver detecção reproduzível de ausência de frames, fallback automático e testes de estabilidade equivalentes. Essa exceção não autoriza desativar WebGL, criar uma segunda composição ou degradar silenciosamente o arquivo exportado.
+
 ## Continuação local da validação
 
 - Sessão de projeto: serialização e restauração compartilhadas em `src/core/project-session.ts`; testes cobrem IDs, parenting, projetos mínimos antigos, biblioteca não utilizada, organização e metadados de áudio. O smoke cobre duplicação, remoção, undo/redo, reabertura e reprodução do áudio original com proxy.
@@ -263,3 +269,7 @@ Essas conclusões são subtarefas dos pontos 1, 3 e 7; não encerram os oito ite
 ## Conferência do encerramento — 2026-09-10
 
 A substituição dos sete adaptadores foi conferida no código local. Passaram a checagem TypeScript, o build da UI, a suíte do núcleo, os três testes Electron de integração e o smoke com FFmpeg (640×360, 2 segundos, 48 frames). Comandos e limitações estão em [HANDOFF_MIGRACAO_LEGADO.md](HANDOFF_MIGRACAO_LEGADO.md). As alterações continuam sem commit.
+
+## Exportação rápida sem perda — 2026-09-11
+
+`src/core/smart-export.ts` reconhece composições MP4/MOV formadas por cortes contínuos de um único vídeo sem alteração visual. Quando resolução, rotação e FPS coincidem, o processo principal confirma os metadados com FFprobe e envia a mídia diretamente ao FFmpeg, sem gerar RGBA nem trafegar quadros por IPC. Se o trecho começa no primeiro quadro, o fluxo original de vídeo é copiado sem recompressão. Se houve corte no início, o FFmpeg recodifica diretamente o intervalo para manter início e duração exatos, sem passar pelo compositor do Electron. Mute, volume, pan e fades continuam sendo aplicados pelo plano de áudio. Efeitos, keyframes, transformações, mudança de velocidade, lacunas, sobreposições ou metadados incompatíveis mantêm automaticamente a renderização completa pelo compositor.

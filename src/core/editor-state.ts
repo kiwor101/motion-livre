@@ -19,6 +19,7 @@ export interface MediaLibraryEntry extends Record<string,unknown> {
   width?:number;
   height?:number;
   rotation?:number;
+  fps?:number;
   hasAudio?:boolean;
   waveform?:number[];
 }

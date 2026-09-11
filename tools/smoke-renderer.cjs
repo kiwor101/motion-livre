@@ -3,6 +3,7 @@ const path=require('node:path'),os=require('node:os'),fs=require('node:fs/promis
 const run=require('node:util').promisify(require('node:child_process').execFile);
 const {createFrameExport}=require('../desktop/frame-export.cjs'),Proxy=require('../desktop/proxy-cache.cjs');
 require('./electron-test-runtime.cjs').isolateUserData(app,'smoke');
+require('../desktop/runtime-switches.cjs').configureVideoDecode(app);
 const width=Number(process.env.SMOKE_WIDTH)||640,height=Number(process.env.SMOKE_HEIGHT)||360,seconds=Number(process.env.SMOKE_SECONDS)||2;
 const ffmpeg=path.resolve(__dirname,'../vendor/ffmpeg/ffmpeg.exe'),ffprobe=path.resolve(__dirname,'../vendor/ffmpeg/ffprobe.exe');
 let directory,window,encoder,output,cache,original;const memory=[];let frames=0;

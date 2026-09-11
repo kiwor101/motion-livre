@@ -3,7 +3,7 @@ const path=require('node:path');
 require('./electron-test-runtime.cjs').isolateUserData(app,'renderer-contracts');
 ipcMain.handle('app:info',()=>({version:app.getVersion()}));ipcMain.handle('project:recover',()=>null);ipcMain.handle('project:autosave',()=>null);
 app.whenReady().then(async()=>{
-  const window=new BrowserWindow({show:false,webPreferences:{preload:path.resolve(__dirname,'../desktop/preload.cjs'),backgroundThrottling:false}});
+  const window=new BrowserWindow({show:true,webPreferences:{preload:path.resolve(__dirname,'../desktop/preload.cjs'),backgroundThrottling:false}});
   try{
     await window.loadFile(path.resolve(__dirname,'../index.html'));
     await window.webContents.executeJavaScript(`(async()=>{
@@ -15,6 +15,11 @@ app.whenReady().then(async()=>{
       check(playheadHead.display==='block'&&playheadHead.content!=='none','Playhead head is not attached to its stem');
       const modal=document.getElementById('exportSettings'),transport=document.querySelector('.stage>.transport');modal.hidden=false;
       check(Number(getComputedStyle(modal).zIndex)>Number(getComputedStyle(transport).zIndex),'Player controls render above modal');modal.hidden=true;
+      document.getElementById('previewFullscreen').click();for(let index=0;index<50&&!document.fullscreenElement;index++)await new Promise(resolve=>setTimeout(resolve,20));
+      check(document.fullscreenElement?.classList.contains('stage-wrap'),'Preview did not enter fullscreen');
+      const fullscreenStage=document.getElementById('stage').getBoundingClientRect();
+      check(innerWidth-fullscreenStage.width<2||innerHeight-fullscreenStage.height<2,'Fullscreen reserves unused space around matching composition');
+      await document.exitFullscreen();
       const probe=motionEditor.addLayer('image','data:image/gif;base64,R0lGODlhAQABAAAAACw=','Visibility probe'),probeImage=document.querySelector('.stage>.layer>img');
       check(probe&&probeImage&&getComputedStyle(probeImage).visibility==='hidden','Raw media renders above unified compositor');motionEditor.state.layers=[];motionEditor.renderLayers();
       const timed=MotionProject.normalizeLayer({id:700,type:'rect',start:0,end:6},12);Object.assign(motionEditor.state,{layers:[timed],duration:12,renderRange:{start:0,end:12}});motionEditor.renderLayers();motionEditor.setTime(3);document.querySelector('[data-action="trim-end"]').click();
@@ -33,6 +38,10 @@ app.whenReady().then(async()=>{
       const pending=controller.run('mp4',project,{width:64,height:64,fps:2,end:1});
       let rejected=false;try{await controller.run('mp4',project)}catch{rejected=true}check(rejected,'Concurrent export accepted');await pending;
       check(seen.length===2&&seen.every(p=>p[0]>245&&p[2]<5),'Export changed after editing source project');check(!controller.busy,'Export retained session');
+      Object.assign(project,{duration:5,composition:{width:64,height:64,fps:2},layers:Array.from({length:5},(_,index)=>MotionProject.normalizeLayer({id:index+1,type:'rect',color:'#ff0000',x:50,y:40,scale:180,start:index,end:index+1},5))});
+      const exportedY=[];bridge.writeExportFrame=async bytes=>{let weighted=0,count=0;for(let y=0;y<64;y++)for(let x=0;x<64;x++){const offset=(y*64+x)*4;if(bytes[offset]>220&&bytes[offset+1]<30&&bytes[offset+2]<30){weighted+=y;count++}}if(!count)throw Error('Exported position probe is absent');exportedY.push(weighted/count)};
+      await controller.run('mp4',project,{width:64,height:64,fps:2,end:5});
+      check(exportedY.length===10&&Math.max(...exportedY)-Math.min(...exportedY)<.01,'Export changes Y position at a cut boundary');
       bridge.writeExportFrame=async()=>{throw Error('encoder failure')};let failed=false;try{await controller.run('mp4',project,{width:64,height:64,fps:2,end:1})}catch{failed=true}check(failed&&cancelled===1&&!controller.busy,'Failure did not release session');
       await motionMedia.destroy();motionPreview.destroy();
     })()`);

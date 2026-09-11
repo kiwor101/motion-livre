@@ -2,6 +2,7 @@ const {app,BrowserWindow,ipcMain}=require('electron');
 const path=require('node:path'),fs=require('node:fs/promises'),os=require('node:os');
 const run=require('node:util').promisify(require('node:child_process').execFile);
 require('./electron-test-runtime.cjs').isolateUserData(app,'preview-cuts');
+require('../desktop/runtime-switches.cjs').configureVideoDecode(app);
 for(const [name,result] of [['app:info',{version:app.getVersion()}],['project:recover',null],['project:autosave',null]])ipcMain.handle(name,()=>result);
 ipcMain.handle('media:proxy',(_event,{filePath})=>({proxied:false,path:filePath}));
 let window,directory,success=false;
@@ -64,5 +65,4 @@ app.whenReady().then(async()=>{
   }catch(error){console.error(error)}
   finally{if(window&&!window.isDestroyed()){await window.webContents.executeJavaScript('motionEditor.preview.destroy();motionEditor.mediaRuntime.destroy()').catch(()=>{});}if(directory)await fs.rm(directory,{recursive:true,force:true});if(success)app.quit();else app.exit(1)}
 });
-
 

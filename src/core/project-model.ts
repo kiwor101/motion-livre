@@ -126,6 +126,8 @@ export interface Layer extends Record<string,unknown> {
   precomposition?:boolean;
   precompGroup?:string;
   frozenFrame?:boolean;
+  frozenSourcePath?:string;
+  frozenSourceTime?:number;
   glowColor?:string;
   chromaColor?:string;
   alightId?:string;

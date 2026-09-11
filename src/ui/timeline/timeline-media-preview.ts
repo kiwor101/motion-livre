@@ -2,6 +2,7 @@ import type {Layer} from '../../core/project-model';
 
 interface TimelineMediaPreviewContext {
   resolveLayerContent(layer:Layer):string;
+  resolveCaptureContent?(layer:Layer):string;
   sourceTimeForLayer(layer:Layer,time:number,mediaDuration?:number):number;
 }
 
@@ -12,6 +13,15 @@ function mediaEvent(video:HTMLVideoElement,event:'loadeddata'|'seeked',action:()
     const cleanup=()=>{clearTimeout(timer);video.removeEventListener(event,ok);video.removeEventListener('error',fail)};
     const ok=()=>{cleanup();resolve()},fail=()=>{cleanup();reject(new Error('Mídia indisponível'))};
     const timer=window.setTimeout(fail,8000);video.addEventListener(event,ok,{once:true});video.addEventListener('error',fail,{once:true});action();
+  });
+}
+
+function presentedFrame(video:HTMLVideoElement):Promise<void> {
+  return new Promise(resolve=>{
+    let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve()};
+    const timer=window.setTimeout(finish,500);
+    if(typeof video.requestVideoFrameCallback==='function')video.requestVideoFrameCallback(()=>finish());
+    else requestAnimationFrame(()=>requestAnimationFrame(finish));
   });
 }
 
@@ -47,8 +57,8 @@ export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):
   const captureFrame=async(layer:Layer,time:number):Promise<{content:string;mediaDuration:number}>=>{
     const video=document.createElement('video');video.muted=true;
     try{
-      await mediaEvent(video,'loadeddata',()=>{video.src=context.resolveLayerContent(layer)});const source=clamp(context.sourceTimeForLayer(layer,time,video.duration),0,Math.max(0,video.duration-.001));
-      if(Math.abs(video.currentTime-source)>.001)await mediaEvent(video,'seeked',()=>{video.currentTime=source});const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;const drawing=canvas.getContext('2d');if(!drawing)throw new Error('Canvas de captura indisponível');drawing.drawImage(video,0,0);return{content:canvas.toDataURL('image/png'),mediaDuration:video.duration};
+      await mediaEvent(video,'loadeddata',()=>{video.src=(context.resolveCaptureContent||context.resolveLayerContent)(layer)});const source=clamp(context.sourceTimeForLayer(layer,time,video.duration),0,Math.max(0,video.duration-.001));
+      if(Math.abs(video.currentTime-source)>.001){await mediaEvent(video,'seeked',()=>{video.currentTime=source});await presentedFrame(video)}const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;const drawing=canvas.getContext('2d');if(!drawing)throw new Error('Canvas de captura indisponível');drawing.drawImage(video,0,0);return{content:canvas.toDataURL('image/png'),mediaDuration:video.duration};
     }finally{video.removeAttribute('src');video.load()}
   };
   return{preview,captureFrame};

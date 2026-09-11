@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {passthroughVideo}=require('../.build/core/smart-export.js');
+const {ffmpegVideoPlan,passthroughVideo}=require('../.build/core/smart-export.js');
 const {normalizeLayer}=require('../.build/core/project-model.js');
 const {normalize}=require('../.build/core/export-settings.js');
 
@@ -14,4 +14,8 @@ assert.equal(passthroughVideo(project([clip(0,5,0,{mediaFps:25})]),'mp4',setting
 assert.deepEqual(passthroughVideo(project([clip(0,5,0,{mediaFps:undefined})]),'mp4',settings),{path:'C:\\video.mp4',start:0});
 assert.deepEqual(passthroughVideo(project([clip(0,3,1)]),'mp4',normalize('mp4',{end:3},project([]).composition,3)),{path:'C:\\video.mp4',start:1});
 assert.equal(passthroughVideo(project([clip(0,5,0,{effects:{brightness:90}})]),'mp4',settings),null);
+const edited=project([clip(0,2,0,{speed:2,sourceOut:4}),normalizeLayer({id:9,type:'image',frozenFrame:true,frozenSourcePath:'C:\\video.mp4',frozenSourceTime:4,mediaWidth:1920,mediaHeight:1080,start:2,end:4},5),clip(4,5,4)]);
+const plan=ffmpegVideoPlan(edited,'mp4',settings);assert.equal(plan.segments.length,3);assert.deepEqual(plan.segments.map(segment=>[segment.sourceStart,segment.sourceDuration,segment.duration,segment.speed,segment.freeze]),[[0,4,2,2,false],[4,1/30,2,1,true],[4,1,1,1,false]]);
+assert.equal(ffmpegVideoPlan(project([clip(0,5,0,{effects:{brightness:90}})]),'mp4',settings),null);
+assert.equal(ffmpegVideoPlan(project([clip(0,5,0,{mediaWidth:1280})]),'mp4',settings),null);
 console.log('PASS: lossless video passthrough accepts only continuous, unmodified, matching media');

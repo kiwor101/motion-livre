@@ -104,10 +104,10 @@ export function create({document,bridge,onChange=()=>{},onSourceChange=onChange,
     if(exporting)return;
     const solo=state.layers.some(layer=>['audio','video'].includes(layer.type)&&layer.solo);
     const owners=new Map<MediaRecord,Layer>();
-    for(const layer of state.layers){const record=layer.id===undefined?null:records.get(layer.id);if(record&&(!owners.has(record)||state.playback.time>=layer.start&&state.playback.time<layer.end))owners.set(record,layer)}
+    for(const layer of state.layers){const record=layer.id===undefined?null:records.get(layer.id);if(!record)continue;const current=owners.get(record),active=state.playback.time>=layer.start&&state.playback.time<layer.end,currentActive=current&&state.playback.time>=current.start&&state.playback.time<current.end;if(!current||active&&!currentActive||!currentActive&&!active&&layer.start>=state.playback.time&&(current.start<state.playback.time||layer.start<current.start))owners.set(record,layer)}
     for(const [record,layer] of owners){
       if(record.type==='image'||record.type==='drawing')continue;
-      const active=state.playback.time>=layer.start&&state.playback.time<layer.end,wasActive=record.active,audible=record.audio||record.visual;if(!(audible instanceof HTMLMediaElement))continue;
+      const active=state.playback.time>=layer.start&&state.playback.time<layer.end,upcoming=state.playback.playing&&layer.start>state.playback.time&&layer.start-state.playback.time<=.5,wasActive=record.active,audible=record.audio||record.visual;if(!(audible instanceof HTMLMediaElement))continue;
       graph(record,audible);
       const local=state.playback.time-layer.start,remaining=layer.end-state.playback.time,fade=Math.max(0,Math.min(1,layer.fadeIn?local/layer.fadeIn:1,layer.fadeOut?remaining/layer.fadeOut:1));
       const gain=active&&(layer.type!=='video'||layer.hasAudio!==false)&&!state.playback.previewMuted&&!layer.muted&&(!solo||layer.solo)?Math.max(0,Math.min(2,layer.volume/100))*fade:0;
@@ -119,8 +119,8 @@ export function create({document,bridge,onChange=()=>{},onSourceChange=onChange,
         if(element.playbackRate!==rate)element.playbackRate=rate;
         // Only the active owner controls the shared decoder. Contiguous cuts
         // keep playing; scrubs and changes in source time still perform a seek.
-        if(active&&element.readyState>=1){
-          const target=Math.min(Math.max(0,element.duration-.001),sourceTimeForLayer(layer,state.playback.time,element.duration));
+        if((active||upcoming)&&element.readyState>=1){
+          const target=Math.min(Math.max(0,element.duration-.001),sourceTimeForLayer(layer,active?state.playback.time:layer.start,element.duration));
           const tolerance=state.playback.playing&&wasActive&&!layer.reverse?Math.max(.04,2/(state.composition.fps||30)):.001;
           if(!element.seeking&&Math.abs(element.currentTime-target)>tolerance)element.currentTime=target;
         }

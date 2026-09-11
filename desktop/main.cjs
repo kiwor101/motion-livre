@@ -135,7 +135,7 @@ secureHandle('media:proxy',async(_event,{filePath,metadata={}})=>{
   return await createVideoProxy(filePath,metadata,stat);
 });
 secureHandle('export:cancel',async()=>{const current=frameExport;if(!current)return false;try{return await current.cancel()}finally{if(frameExport===current)frameExport=null}});
-secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={},videoPassthrough=null})=>{
+secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={},videoPassthrough=null,videoPlan=null})=>{
   if(frameExport||exportStarting)throw new Error('Já existe uma exportação em andamento');
   exportStarting=true;
   try{
@@ -145,7 +145,8 @@ secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={}
     const validAudio=[];
     for(const track of audioTracks.slice(0,128)){await ensureRegularFile(track.path,/\.(mp4|mov|mkv|webm|avi|m4v|mp3|wav|m4a|aac|ogg|flac)$/i);validAudio.push(track)}
     let directVideo=null;if(videoPassthrough){await ensureRegularFile(videoPassthrough.path,/\.(mp4|mov|m4v)$/i);const metadata=await probeMediaFile(videoPassthrough.path),rotation=Math.abs(metadata.rotation)%180,width=rotation===90?metadata.height:metadata.width,height=rotation===90?metadata.width:metadata.height;if(width===settings.width&&height===settings.height&&Math.abs(metadata.fps-settings.fps)<.02){const start=Math.max(0,Number(videoPassthrough.start)||0);directVideo={path:videoPassthrough.path,start,copy:start<.001}}}
-    frameExport=createFrameExport({ffmpeg:bundledTool('ffmpeg'),filePath:result.filePath,format,settings,audioTracks:validAudio,videoPassthrough:directVideo});
+    let plan=null;if(!directVideo&&videoPlan&&Array.isArray(videoPlan.segments)&&videoPlan.segments.length>0&&videoPlan.segments.length<=256){const segments=[];for(const segment of videoPlan.segments){await ensureRegularFile(segment.path,/\.(mp4|mov|mkv|webm|avi|m4v)$/i);const values=['sourceStart','sourceDuration','duration','speed'].map(key=>Number(segment[key]));if(values.some(value=>!Number.isFinite(value)||value<0)||values[1]<=0||values[2]<=0||values[3]<.0625||values[3]>16)throw new Error('Plano de vídeo inválido');segments.push({path:segment.path,sourceStart:values[0],sourceDuration:values[1],duration:values[2],speed:values[3],freeze:Boolean(segment.freeze)})}plan={segments}}
+    frameExport=createFrameExport({ffmpeg:bundledTool('ffmpeg'),filePath:result.filePath,format,settings,audioTracks:validAudio,videoPassthrough:directVideo,videoPlan:plan});
     return{started:true,acceptsFrames:frameExport.acceptsFrames,filePath:result.filePath,settings:frameExport.settings};
   }finally{exportStarting=false}
 });

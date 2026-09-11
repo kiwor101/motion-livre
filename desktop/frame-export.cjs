@@ -4,25 +4,29 @@ const {randomUUID}=require('node:crypto');
 const {audioMix}=require('../.build/core/audio-export-plan.js');
 const {normalize}=require('../.build/core/export-settings.js');
 
-function createFrameExport({ffmpeg,filePath,format='mp4',settings={},audioTracks=[],videoPassthrough=null}){
+function createFrameExport({ffmpeg,filePath,format='mp4',settings={},audioTracks=[],videoPassthrough=null,videoPlan=null}){
   const config=normalize(format,settings,{},settings.end??settings.duration??10);
-  const acceptsFrames=format!=='mp3'&&!videoPassthrough,temporary=`${filePath}.${randomUUID()}.partial`;
+  const planned=videoPlan?.segments?.length?videoPlan:null,acceptsFrames=format!=='mp3'&&!videoPassthrough&&!planned,temporary=`${filePath}.${randomUUID()}.partial`;
+  const plannedSources=[],planSegments=[];if(planned)for(const segment of planned.segments){let source=plannedSources.find(item=>item.path===segment.path);if(!source){source={path:segment.path,start:segment.sourceStart,end:segment.sourceStart+segment.sourceDuration,count:0,index:plannedSources.length};plannedSources.push(source)}source.start=Math.min(source.start,segment.sourceStart);source.end=Math.max(source.end,segment.sourceStart+segment.sourceDuration);planSegments.push({...segment,input:source});source.count++}
   const inputs=audioTracks.flatMap(track=>['-i',track.path]);
-  const mix=audioMix(audioTracks,{inputOffset:acceptsFrames||videoPassthrough?1:0});
+  const videoInputCount=planned?plannedSources.length:acceptsFrames||videoPassthrough?1:0,mix=audioMix(audioTracks,{inputOffset:videoInputCount});
   if(format==='mp3'&&!mix)throw new Error('Nenhum canal de áudio ativo para exportar');
   const args=['-y','-hide_banner','-loglevel','error','-filter_complex_threads','2','-filter_threads','2'];
   if(videoPassthrough)args.push(...(videoPassthrough.start?['-ss',String(videoPassthrough.start)]:[]),'-t',String(config.duration),'-i',videoPassthrough.path);
+  else if(planned)for(const source of plannedSources)args.push('-ss',String(source.start),'-t',String(source.end-source.start),'-i',source.path);
   else if(acceptsFrames)args.push('-f','rawvideo','-pixel_format','rgba','-video_size',`${config.width}x${config.height}`,'-framerate',String(config.fps),'-i','pipe:0');
   if(!['png','gif'].includes(format)){
     args.push(...inputs);
-    if(mix)args.push('-filter_complex',`${mix};[aout]apad,atrim=duration=${config.duration}[audio]`);
-    if(acceptsFrames||videoPassthrough)args.push('-map','0:v:0');
+    const videoFilters=planned?[...plannedSources.flatMap(source=>source.count>1?[`[${source.index}:v]split=${source.count}${Array.from({length:source.count},(_,index)=>`[s${source.index}_${index}]`).join('')}`]:[]),...planSegments.map((segment,index)=>{const siblings=planSegments.filter(item=>item.input===segment.input),label=segment.input.count>1?`s${segment.input.index}_${siblings.indexOf(segment)}`:`${segment.input.index}:v`,relative=segment.sourceStart-segment.input.start;return segment.freeze?`[${label}]trim=start=${relative}:duration=${Math.max(segment.sourceDuration,.001)},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=${segment.duration},trim=duration=${segment.duration},fps=${config.fps},scale=${config.width}:${config.height}:flags=lanczos,setsar=1[v${index}]`:`[${label}]trim=start=${relative}:duration=${segment.sourceDuration},setpts=(PTS-STARTPTS)/${segment.speed},trim=duration=${segment.duration},fps=${config.fps},scale=${config.width}:${config.height}:flags=lanczos,setsar=1[v${index}]`}),`${planSegments.map((_,index)=>`[v${index}]`).join('')}concat=n=${planSegments.length}:v=1:a=0[video]`].join(';'):'';
+    const filters=[videoFilters,mix,mix?'[aout]apad,atrim=duration='+config.duration+'[audio]':''].filter(Boolean).join(';');if(filters)args.push('-filter_complex',filters);
+    if(planned)args.push('-map','[video]');else if(acceptsFrames||videoPassthrough)args.push('-map','0:v:0');
     if(mix)args.push('-map','[audio]');
   }
   if(format==='png')args.push('-frames:v','1','-c:v','png','-f','image2');
   else if(format==='gif')args.push('-vf','fps=15,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse','-loop','0','-f','gif');
   else if(format==='mp3')args.push('-c:a','libmp3lame','-b:a',config.audioBitrate,'-f','mp3');
-  else if(videoPassthrough)args.push(...(videoPassthrough.copy?['-c:v','copy']:['-c:v','libx264','-preset','veryfast','-threads','4','-crf',String(config.quality),'-pix_fmt','yuv420p']),...(mix?['-c:a','aac','-b:a',config.audioBitrate]:['-an']),'-movflags','+faststart','-f',format);
+  else if(videoPassthrough)args.push(...(videoPassthrough.copy?['-c:v','copy']:['-c:v','libx264','-preset','medium','-threads','4','-crf',String(config.quality),'-pix_fmt','yuv420p']),...(mix?['-c:a','aac','-b:a',config.audioBitrate]:['-an']),'-movflags','+faststart','-f',format);
+  else if(planned)args.push('-frames:v',String(config.frameCount),'-c:v','libx264','-preset','medium','-threads','4','-crf',String(config.quality),'-pix_fmt','yuv420p',...(mix?['-c:a','aac','-b:a',config.audioBitrate]:['-an']),'-movflags','+faststart','-f',format);
   else if(format==='webm')args.push('-c:v','libvpx-vp9','-crf',String(config.quality),'-b:v','0','-pix_fmt',config.transparent?'yuva420p':'yuv420p','-c:a','libopus','-b:a',config.audioBitrate,'-f','webm');
   else args.push('-c:v','libx264','-preset','medium','-threads','4','-rc-lookahead','10','-crf',String(config.quality),'-pix_fmt','yuv420p','-movflags','+faststart','-c:a','aac','-b:a',config.audioBitrate,'-f',format);
   args.push(temporary);

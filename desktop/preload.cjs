@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('motionDesktop',{
   fileUrl:localFileUrl,
   probeMedia:path=>ipcRenderer.invoke('media:probe',path),
   createProxy:(filePath,metadata)=>ipcRenderer.invoke('media:proxy',{filePath,metadata}),
-  beginFrameExport:(format,name,audioTracks,settings,videoPassthrough)=>ipcRenderer.invoke('export:begin',{format,name,audioTracks,settings,videoPassthrough}),
+  beginFrameExport:(format,name,audioTracks,settings,videoPassthrough,videoPlan)=>ipcRenderer.invoke('export:begin',{format,name,audioTracks,settings,videoPassthrough,videoPlan}),
   writeExportFrame:bytes=>ipcRenderer.invoke('export:frame',bytes),
   finishFrameExport:()=>ipcRenderer.invoke('export:finish'),
   cancelExport:()=>ipcRenderer.invoke('export:cancel'),

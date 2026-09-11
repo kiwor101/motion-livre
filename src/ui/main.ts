@@ -95,6 +95,7 @@ const ready=(async()=>{
   installAlightController(legacy);
   const timelineMedia=createTimelineMediaPreview({
     resolveLayerContent:legacy.resolveLayerContent as (layer:import('../core/project-model').Layer)=>string,
+    resolveCaptureContent:(layer:import('../core/project-model').Layer)=>(legacy.mediaRuntime as import('../renderer/media-runtime').MediaRuntime).original(layer),
     sourceTimeForLayer:legacy.sourceTimeForLayer as (layer:import('../core/project-model').Layer,time:number,mediaDuration?:number)=>number
   });
   installPreviewFullscreenController({toast:legacy.toast as (message:string)=>void});

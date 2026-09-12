@@ -1,5 +1,5 @@
 <template>
-  <div id="mediaDropOverlay" class="media-drop-overlay"><strong>Solte para adicionar à composição</strong><span>Vídeos e imagens serão importados como novas camadas</span></div>
+  <div id="mediaDropOverlay" class="media-drop-overlay"><strong>Solte para importar ao projeto</strong><span>Vídeos, imagens e áudios serão adicionados como novas camadas</span></div>
   <div id="toast" class="toast"></div>
   <div id="projectMenu" class="popup" hidden><button id="menuExport">Exportar JSON</button><button id="menuImport">Importar JSON</button><button id="menuExportAlight">Exportar Alight XML</button><button id="menuImportAlight">Importar Alight XML</button><button id="menuFeatures">Mapa de recursos</button></div>
   <div id="exportMenu" class="popup export-popup" hidden><strong>Formato de saída</strong><button data-export-format="mp4">MP4 · H.264 + AAC (recomendado)</button><button data-export-format="mov">MOV · H.264 + AAC</button><button data-export-format="webm">WebM / transparência</button><button data-export-format="gif">GIF animado</button><button data-export-format="png">PNG do frame atual</button><button data-export-format="mp3">Somente áudio MP3</button></div>

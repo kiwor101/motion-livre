@@ -23,7 +23,7 @@ export function installStudioController(legacy:StudioControllerContext):void {
     button.style.setProperty('--icon',`url("assets/icons/${name}.svg")`);
     if(label){button.dataset.tooltip=label;button.setAttribute('aria-label',label);button.removeAttribute('title')}
   };
-  const actions:Record<string,[string,string]>={play:['play','Reproduzir / pausar'],split:['scissors','Dividir no cursor'],duplicate:['copy','Duplicar em camada acima'],delete:['trash-2','Excluir clipe'],freeze:['snowflake','Congelar quadro'],reverse:['rotate-ccw','Reproduzir ao contrário'],flip:['flip-horizontal-2','Espelhar horizontalmente'],up:['arrow-up','Mover para cima'],down:['arrow-down','Mover para baixo']};
+  const actions:Record<string,[string,string]>={split:['scissors','Dividir no cursor'],duplicate:['copy','Duplicar em camada acima'],delete:['trash-2','Excluir clipe'],freeze:['snowflake','Congelar quadro'],reverse:['rotate-ccw','Reproduzir ao contrário'],flip:['reflect-horizontal','Espelhar horizontalmente'],up:['arrow-up','Mover para cima'],down:['arrow-down','Mover para baixo']};
   for(const [action,[name,label]] of Object.entries(actions))icon(document.querySelector(`[data-action="${action}"]`),name,label);
   for(const [id,name,label] of [['undoBtn','undo-2','Desfazer · Ctrl+Z'],['redoBtn','redo-2','Refazer · Ctrl+Y'],['toStart','skip-back','Voltar ao início'],['playBtn','play','Reproduzir / pausar · Espaço'],['muteBtn','volume-2','Silenciar preview'],['previewFullscreen','maximize','Tela cheia'],['addMarker','bookmark-plus','Adicionar marcador'],['clearMarkers','bookmark-x','Limpar marcadores']])icon($('#'+id),name,label);
   for(const [panel,name] of Object.entries({media:'folder-open',text:'type',audio:'music-2',shape:'shapes',effects:'sparkles',cut:'scissors',animation:'key-round',project:'settings-2',draw:'pen-tool'})){
@@ -43,11 +43,9 @@ export function installStudioController(legacy:StudioControllerContext):void {
   function align(){const r=$('#stage').getBoundingClientRect(),ratio=options.value==='stage'?r.width/r.height:ratioOf(options.value),w=Math.min(r.width,r.height*ratio),h=w/ratio;guides.style.width=w+'px';guides.style.height=h+'px';const label=guides.querySelector('span');if(label)label.textContent=options.selectedOptions[0].text}
   grid.onclick=()=>{const active=grid.getAttribute('aria-pressed')!=='true';grid.setAttribute('aria-pressed',String(active));guides.hidden=!active;options.hidden=!active;align()};options.onchange=align;new ResizeObserver(align).observe($('#stage'));
   document.addEventListener('motion:scenechange',refreshTransport);
-  function refreshTransport(){icon($('#playBtn'),state.playback.playing?'pause':'play');icon(document.querySelector('[data-action="play"]'),state.playback.playing?'pause':'play');icon($('#muteBtn'),$('#muteBtn').textContent==='🔇'?'volume-x':'volume-2')}
+  function refreshTransport(){icon($('#playBtn'),state.playback.playing?'pause':'play');icon($('#muteBtn'),$('#muteBtn').textContent==='🔇'?'volume-x':'volume-2')}
   new MutationObserver(refreshTransport).observe($('#playBtn'),{childList:true});new MutationObserver(refreshTransport).observe($('#muteBtn'),{childList:true});
   document.addEventListener('fullscreenchange',()=>{const active=document.fullscreenElement===wrap;icon($('#previewFullscreen'),active?'minimize':'maximize',active?'Sair da tela cheia · Esc':'Tela cheia')});
-  // Space controls playback in fullscreen too, without stealing input field keystrokes.
-  document.addEventListener('keydown',e=>{const target=e.target as Element|null;if(document.fullscreenElement===wrap&&e.code==='Space'&&!target?.matches('input,select,textarea')){e.preventDefault();e.stopImmediatePropagation();$('#playBtn').click()}},true);
   const zoom=$('#timelineZoom');zoom.title='Zoom · Alt ou Shift + roda do mouse';
   for(const [name,factor,label] of [['zoom-out',.8,'Diminuir zoom'],['zoom-in',1.25,'Aumentar zoom']] as const){const b=document.createElement('button');icon(b,name,label);b.onclick=()=>{zoom.value=String(Math.max(.25,Math.min(5,uiState.timelineZoom*factor)));zoom.dispatchEvent(new Event('input',{bubbles:true}))};zoom.parentElement?.insertAdjacentElement(name==='zoom-out'?'beforebegin':'afterend',b)}
   const snap=$('#snapTimeline'),snapLabel=snap.closest<HTMLElement>('label');if(!snapLabel)throw new Error('Controle de encaixe sem rótulo');snapLabel.classList.add('snap-toggle');snapLabel.style.setProperty('--icon','url("assets/icons/magnet.svg")');snapLabel.title='Encaixe magnético';snap.setAttribute('aria-label','Encaixe magnético');
@@ -55,7 +53,6 @@ export function installStudioController(legacy:StudioControllerContext):void {
   const toolGroup=(name:string,nodes:Array<Node|null>)=>{const group=document.createElement('div');group.className=`timeline-tool-group ${name}`;nodes.filter((node):node is Node=>Boolean(node)).forEach(node=>group.append(node));return group};
   const action=(key:string)=>timelineTools.querySelector(`[data-action="${key}"]`),zoomLabel=zoom.closest('label');
   timelineTools.replaceChildren(
-    toolGroup('playback-tools',[action('play')]),
     toolGroup('edit-tools',[action('split'),action('duplicate'),action('up'),action('down'),action('delete')]),
     toolGroup('clip-tools',[action('freeze'),action('reverse'),action('flip'),action('extract-audio')]),
     toolGroup('range-tools',[action('range-in'),action('range-out'),action('trim-start'),action('trim-end')]),

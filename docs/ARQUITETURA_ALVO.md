@@ -21,6 +21,8 @@ O produto deve buscar estes resultados:
 
 Preview fluido e exportação fiel são objetivos diferentes: o preview pode reduzir trabalho visual de forma reversível, enquanto a exportação deve recalcular a cena completa no nível de qualidade solicitado. Nenhuma otimização de preview pode substituir, modificar ou degradar os arquivos de origem usados na exportação.
 
+Proxies permanecem permitidos para manter a edição responsiva, sobretudo com mídia 4K, e nunca podem ser usados como fonte da exportação final. Entretanto, depender de proxy para projetos leves ou mídias abaixo de 1080p não é o resultado arquitetural desejado: nesses casos, travamentos devem ser investigados como possível excesso de decodificação, sincronização, cópias, reconstrução de interface ou composição. A melhoria do preview sem proxy fica registrada como trabalho futuro e não compete com o foco atual na exportação. Ela passa a ser urgente se o preview voltar a impedir a edição normal, a validação visual ou a medição confiável do pipeline de exportação.
+
 Esses objetivos devem ser verificados com métricas e testes reproduzíveis: tempo de frame, uso e liberação de memória, frames perdidos ou duplicados, timestamps, sincronização entre áudio e vídeo, equivalência visual entre preview e exportação e inspeção de arquivos 2K/4K produzidos pelo encoder real. Os limites de hardware e complexidade de projeto usados em cada validação devem ser registrados; não declarar desempenho universal sem essas condições.
 
 ## Estratégia obrigatória de exportação rápida
@@ -37,6 +39,66 @@ A exportação deve possuir uma etapa de planejamento que analise, por trecho, c
 Decodificação, composição, codificação e gravação devem operar progressivamente e, quando seguro, em pipeline paralelo com filas limitadas. A busca por velocidade não autoriza cortes imprecisos, mudança silenciosa de codec ou qualidade, junções incompatíveis, perda de frames, timestamps inválidos nem dessincronização. Se a cópia direta ou a renderização parcial não puder garantir o arquivo final, o planejador deve selecionar automaticamente o caminho completo e confiável.
 
 Projetos simples — como cortes, remoção de trechos, música e poucos efeitos localizados — devem ser o principal caso de otimização e buscar exportação muito mais rápida que o tempo real em hardware compatível. O aplicativo deve informar o caminho selecionado e permitir medir tempo total, trechos copiados/renderizados, encoder utilizado e motivos de fallback. Não prometer exportação instantânea para todo projeto 2K/4K.
+
+### Custo proporcional, sem penhasco de fallback
+
+A exportação não pode ser implementada como uma decisão binária entre “cópia instantânea” e “renderização integral lenta”. A presença de uma imagem, efeito, texto, transição, sobreposição ou outro recurso ainda não atendido pelo caminho direto não deve, por si só, enviar toda a duração da composição para o caminho mais caro. O custo adicional deve ser aproximadamente proporcional à duração, à área, às camadas e às operações que realmente precisam gerar pixels novos.
+
+O planejador deve decompor a timeline em segmentos e o quadro em dependências de composição, classificando cada região como:
+
+1. mídia que pode ser copiada ou remultiplexada sem alteração;
+2. mídia que só exige reconstrução de áudio ou timestamps;
+3. trecho que pode reutilizar cache válido;
+4. trecho ou camada que precisa ser decodificado e composto;
+5. pequena região de transição entre caminhos, recodificada somente quando necessária para manter cortes, GOPs e timestamps exatos;
+6. composição integral, usada apenas quando as dependências visuais realmente alcançarem todo o quadro ou toda a duração.
+
+Adicionar uma edição localizada deve acrescentar somente o trabalho dessa edição e das dependências afetadas. Duas edições independentes podem acrescentar dois custos locais; não devem provocar repetidamente o custo fixo de renderizar o projeto inteiro. Segmentos processados e copiados precisam ser reunidos sem emendas visíveis, mudança de qualidade, frames extras ou ausentes, timestamps regressivos e dessincronização de áudio.
+
+Quando todos os pixels precisarem ser recalculados, o caminho completo também deve ser rápido. Ele deve usar composição e efeitos na GPU, filas limitadas e sobrepostas de decodificação/composição/codificação, encoder de hardware validado quando disponível e fallback de software configurado para usar o paralelismo real da máquina. Não limitar permanentemente o encoder a uma quantidade fixa e baixa de threads. A seleção de encoder deve considerar disponibilidade real, resolução, codec, pixel format, qualidade e resultado de um teste funcional, pois listar NVENC, Quick Sync ou AMF no FFmpeg não comprova que o hardware e o driver conseguem usá-lo.
+
+O caminho de produção deve evitar cópias e travessias desnecessárias. Em especial, ler cada quadro 2K/4K da GPU para a RAM, materializá-lo como RGBA e enviá-lo integralmente por IPC antes da codificação é um fallback de compatibilidade, não a arquitetura final de alto desempenho. Um quadro RGBA 3840×2160 ocupa aproximadamente 31,6 MiB; a 30 fps, esse caminho movimenta cerca de 949 MiB/s antes de contar cópias adicionais, áudio ou trabalho do encoder. A evolução deve buscar superfícies de GPU compartilhadas, codificação próxima ao compositor ou outra ponte nativa de baixa cópia. Enquanto isso não existir, reduzir a quantidade de quadros que atravessa esse caminho é obrigatório.
+
+Cache de renderização deve ser incremental e identificado pelo conteúdo: mídia de origem, intervalo, parâmetros, efeitos, dependências, resolução, FPS, perfil de cor e versão do motor. Uma alteração invalida somente os resultados que dependem dela. O cache nunca substitui o original como fonte de qualidade e não pode ser reutilizado quando sua validade não estiver comprovada.
+
+#### Renderização antecipada em segundo plano
+
+Como otimização complementar e de última prioridade, o editor pode preparar em segundo plano segmentos estáveis da timeline enquanto o usuário não estiver interagindo. Esse mecanismo não substitui a obrigação de tornar rápido o pipeline de exportação sob demanda e não deve ser necessário para esconder um fallback integral ineficiente. Primeiro devem ser implementados e medidos smart rendering, composição parcial, cache incremental, paralelismo, encoder de hardware e redução das transferências GPU–CPU–IPC.
+
+Um segmento só pode ser antecipado quando suas dependências estiverem completas e seu identificador de conteúdo estiver definido. Qualquer alteração em mídia, duração, ordem, efeito, keyframe, áudio, resolução, FPS, codec, perfil de cor ou versão do motor invalida somente os segmentos dependentes. O trabalho deve ser preemptivo: iniciar apenas com recursos ociosos, possuir limites baixos configuráveis de CPU, GPU, memória e disco e pausar imediatamente diante de reprodução, scrub, edição, exportação solicitada, uso elevado do sistema, bateria ou pressão térmica. A interface deve informar e permitir desativar a atividade; não executar processamento pesado de forma oculta ou surpreendente.
+
+Os resultados antecipados devem usar um formato intermediário compatível com a qualidade final ou conservar dados suficientes para uma união sem nova perda. Não concatenar arquivos comprimidos arbitrários: codec, parâmetros, GOP, time base, pixel format, resolução, perfil de cor e áudio precisam permitir uma junção determinística, sem recompressão adicional, ruído, emendas, frames extras ou ausentes e timestamps inválidos. Se a configuração final escolhida pelo usuário diferir da configuração do cache, o planejador deve descartar ou reaproveitar somente as partes comprovadamente compatíveis.
+
+O benefício deve ser medido separando exportação com cache frio, cache parcialmente aquecido e cache totalmente aquecido. O tempo gasto antecipadamente, consumo de energia, ocupação de disco, taxa de invalidação e tempo final economizado também fazem parte da métrica; deslocar minutos de processamento para antes do clique não conta, sozinho, como tornar o motor mais rápido.
+
+### Metas e medição de desempenho
+
+O desempenho deve ser tratado como requisito de produto, não como consequência eventual da implementação. Para cada cenário de referência, registrar duração da timeline, resolução, FPS, codec, número de cortes, camadas, efeitos, hardware, encoder, cache quente/frio, tempo total e tempo gasto em planejamento, decodificação, composição, transferência e codificação.
+
+Os testes de referência devem incluir, no mínimo:
+
+- vídeo intacto e cortes compatíveis, com expectativa de tempo dominado por leitura e gravação do arquivo;
+- vídeo com áudio alterado, sem recodificação visual;
+- uma imagem ou texto sobreposto durante um intervalo curto, verificando que apenas esse intervalo acrescenta custo visual;
+- vários efeitos localizados e transições, verificando crescimento proporcional do tempo;
+- composição que altera todos os quadros, medindo separadamente GPU, transferência e encoder;
+- os mesmos cenários em 1080p, 2K e 4K, com inspeção de qualidade, ruído, frames, timestamps e sincronização.
+
+Metas como exportar projetos extensos em poucos segundos devem orientar benchmarks e decisões técnicas, mas precisam ser vinculadas ao hardware, ao codec e ao tipo de edição medidos. Resultados de outros editores são referência competitiva; não devem ser atribuídos a uma única técnica sem confirmar se houve smart rendering, cache prévio, proxies de edição, encoder de hardware ou recodificação completa. O Motion Livre deve perseguir desempenho equivalente pelo resultado observado, sem alegar equivalência antes de medi-la nas mesmas condições.
+
+### Escalonamento por capacidade do computador
+
+O motor deve detectar e aproveitar os recursos disponíveis — incluindo NVENC, Quick Sync, AMF, quantidade de núcleos, memória e capacidades da GPU — sem transformar hardware de alto desempenho em requisito para uma exportação aceitável. Uma RTX recente e memória abundante devem reduzir ainda mais o tempo, mas não podem esconder cópias redundantes, serialização desnecessária, renderização integral evitável ou limites artificiais do caminho de software.
+
+A linha de base competitiva deve incluir computadores modestos, com pouca memória e GPU integrada ou dedicada antiga. Neles, o planejador deve preservar as mesmas decisões de cópia, remux, cache e renderização parcial; ajustar filas, paralelismo e memória ao recurso realmente disponível; e usar software eficiente quando o encoder de hardware estiver ausente ou falhar. A diferença esperada entre máquinas deve vir principalmente dos trechos que realmente exigem processamento, não dos trechos que poderiam ter sido copiados ou reutilizados.
+
+Os benchmarks devem ser executados por classes de hardware, incluindo ao menos uma configuração de entrada com 8 GB de RAM e gráfico integrado ou GPU antiga, uma configuração intermediária e uma configuração moderna com encoder dedicado. A aprovação da arquitetura não pode se apoiar somente no melhor equipamento disponível. Cada resultado deve identificar o caminho escolhido e separar tempo de cópia, composição e codificação, permitindo distinguir ganho algorítmico de força bruta do computador.
+
+#### Primeira validação real do custo proporcional — 2026-09-11
+
+Um projeto salvo de 17,32 segundos e 520 frames a 30 fps, com vídeo em velocidade 2×, cortes, dois freezes e música, levou 44,66 segundos no fallback integral. A telemetria atribuiu 16,93 segundos à preparação da mídia, 0,77 segundo à composição, 2,16 segundos à leitura da GPU, 16,43 segundos à transferência de frames e 0,09 segundo à finalização. O compositor foi acionado porque aproximadamente 1,087 segundo de fundo vazio após a última camada visual ainda não era representável pelo plano FFmpeg.
+
+Depois que espaços vazios passaram a ser segmentos explícitos da cor de fundo, o mesmo projeto selecionou `plan` com `h264_nvenc`. Preparação de mídia no renderer, composição, leitura da GPU e transferência por IPC ficaram em zero; a finalização real do FFmpeg levou aproximadamente 1,29 segundo. O relatório antigo indicou 6,43 segundos totais porque a medição começava antes do diálogo de salvamento, validação e sondagem inicial do encoder; a telemetria foi separada depois dessa validação para não confundir interação/preparação com processamento da exportação. O resultado comprova este cenário e este hardware, não substitui os benchmarks das demais classes de máquina e tipos de edição.
 
 ## Requisito de interoperabilidade com Alight Motion XML
 
@@ -272,10 +334,14 @@ A substituição dos sete adaptadores foi conferida no código local. Passaram a
 
 ## Exportação rápida sem perda — 2026-09-11
 
-`src/core/smart-export.ts` reconhece composições MP4/MOV formadas por cortes contínuos de um único vídeo sem alteração visual. Quando resolução, rotação e FPS coincidem, o processo principal confirma os metadados com FFprobe e envia a mídia diretamente ao FFmpeg, sem gerar RGBA nem trafegar quadros por IPC. Se o trecho começa no primeiro quadro, o fluxo original de vídeo é copiado sem recompressão. Se houve corte no início, o FFmpeg recodifica diretamente o intervalo para manter início e duração exatos, sem passar pelo compositor do Electron. Mute, volume, pan e fades continuam sendo aplicados pelo plano de áudio. Efeitos, keyframes, transformações, mudança de velocidade, lacunas, sobreposições ou metadados incompatíveis mantêm automaticamente a renderização completa pelo compositor.
+`src/core/smart-export.ts` reconhece composições MP4/MOV formadas por cortes contínuos de um único vídeo sem alteração visual. Quando resolução, rotação e FPS coincidem, o processo principal confirma os metadados com FFprobe e envia a mídia diretamente ao FFmpeg, sem gerar RGBA nem trafegar quadros por IPC. Se o trecho começa no primeiro quadro, o fluxo original de vídeo pode ser copiado sem recompressão. Se houve corte no início, o FFmpeg recodifica diretamente o intervalo para manter início e duração exatos, sem passar pelo compositor do Electron. Mute, volume, pan e fades continuam sendo aplicados pelo plano de áudio. Efeitos, keyframes, transformações, imagens e sobreposições marcam somente seus intervalos como composição; mudança de velocidade, freezes e lacunas têm segmentos diretos próprios quando representáveis.
 
 ### Plano adaptativo único por segmentos — 2026-09-11
 
-A exportação continua sendo uma operação única para o usuário, mas o plano interno passou a preservar o caminho direto do FFmpeg em timelines sequenciais com cortes, velocidade e quadros congelados. Cada segmento declara origem, intervalo e velocidade; segmentos do mesmo arquivo compartilham uma única entrada e um único decoder, o FFmpeg ajusta os timestamps, concatena a sequência e limita o resultado ao total exato de quadros da composição. O compositor RGBA permanece como fallback somente quando a imagem exige efeitos, transformações, keyframes, sobreposições ou outros recursos que o plano ainda não representa.
+A exportação continua sendo uma operação única para o usuário, mas o plano interno preserva o caminho direto do FFmpeg em timelines com cortes, velocidade, quadros congelados, lacunas e edições visuais localizadas. Cada segmento declara origem, intervalo, velocidade e limites exatos de frames. Os segmentos sem alteração são reconstruídos diretamente pelo FFmpeg; somente os intervalos que exigem efeitos, textos, transformações, keyframes, imagens, sobreposições ou outros recursos visuais recebem quadros RGBA do compositor. Esses quadros são enviados em sequência por uma única entrada e recortados de volta aos seus respectivos intervalos antes da concatenação final. A existência de um trecho composto não autoriza mais converter todos os frames do projeto em RGBA.
+
+O progresso de composição mede apenas os frames caros solicitados pelo plano híbrido, enquanto o relatório final conserva o total de frames do arquivo. A concatenação deve permanecer alinhada à grade de FPS; testes de produção verificam um resultado de 25 frames formado por 10 frames diretos e 15 compostos. O fallback integral continua disponível apenas quando não for possível construir ou validar um plano segmentado seguro.
+
+Camadas estáticas acima de um vídeo ou freeze direto — inicialmente texto, imagem, forma e desenho sem keyframes, transição, parenting ou modo de mesclagem dependente do fundo — são rasterizadas uma única vez com transparência. O processo principal valida e grava esse PNG em arquivo temporário, o FFmpeg o aplica sobre o segmento correspondente e o temporário é removido no sucesso, falha ou cancelamento. Isso preserva a aparência do compositor sem transferir novamente um quadro RGBA completo para cada instante em que a sobreposição permanece igual. Camadas animadas ou relações que não satisfaçam essas condições continuam usando composição quadro a quadro.
 
 Qualidade é uma restrição do plano: nenhuma exportação usa proxy; trechos intactos compatíveis continuam copiados sem recompressão; segmentos que precisam ser processados mantêm resolução, FPS e CRF solicitados, com redimensionamento Lanczos. O freeze é capturado em PNG a partir do arquivo original, nunca do proxy, e guarda caminho e instante de origem para que futuras exportações possam reconstruí-lo diretamente do vídeo original.

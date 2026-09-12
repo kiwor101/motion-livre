@@ -85,8 +85,6 @@ const ready=(async()=>{
   });
   installProfessionalMediaController({
     state:legacy.state as import('../core/editor-state').EditorState,
-    importMedia:legacy.importMedia as (file:File)=>Promise<import('../core/project-model').Layer|null|undefined>,
-    replaceImportMedia:callback=>{legacy.importMedia=callback},
     addMediaDescriptor:legacy.addMediaDescriptor as (descriptor:import('../core/editor-state').MediaLibraryEntry)=>import('../core/project-model').Layer|null,
     renderTimeline:legacy.renderTimeline as ()=>void,renderLayers:legacy.renderLayers as ()=>void,selectLayer:legacy.selectLayer as (id:number)=>void,switchPanel:legacy.switchPanel as (name:string)=>void,pushHistory:legacy.pushHistory as ()=>void,markDirty:legacy.markDirty as ()=>void,
     bridge:window.motionDesktop as {getPathForFile?(file:File):string}|undefined

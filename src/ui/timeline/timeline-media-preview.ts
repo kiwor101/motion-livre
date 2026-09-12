@@ -34,7 +34,7 @@ export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):
   const thumbnails=new Map<string,Promise<string[]>>();let queue:Promise<void>=Promise.resolve();
   const preview=(layer:Layer,element:HTMLElement)=>{
     if(layer.type!=='video'&&layer.type!=='image')return;const source=context.resolveLayerContent(layer);if(!source)return;
-    const key=JSON.stringify([source,layer.sourceIn,layer.sourceOut,layer.reverse,layer.start,layer.end,layer.speed]);
+    const clipWidth=Number.parseFloat(element.closest<HTMLElement>('[data-clip]')?.style.width||'')||element.getBoundingClientRect().width||56,sampleCount=layer.type==='image'?1:clamp(Math.ceil(clipWidth/56),1,16),key=JSON.stringify([source,layer.sourceIn,layer.sourceOut,layer.reverse,layer.start,layer.end,layer.speed,sampleCount]);
     if(!thumbnails.has(key)){
       const job=queue.then(async()=>{
         if(layer.type==='image')return[source];
@@ -42,8 +42,8 @@ export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):
         try{
           await mediaEvent(video,'loadeddata',()=>{video.src=source});
           const canvas=document.createElement('canvas');canvas.width=128;canvas.height=72;const drawing=canvas.getContext('2d');if(!drawing)throw new Error('Canvas de miniatura indisponível');const images:string[]=[];
-          for(let index=0;index<8;index++){
-            const time=clamp(context.sourceTimeForLayer(layer,layer.start+(layer.end-layer.start)*index/8,video.duration),0,Math.max(0,video.duration-.001));
+          for(let index=0;index<sampleCount;index++){
+            const time=clamp(context.sourceTimeForLayer(layer,layer.start+(layer.end-layer.start)*(index+.5)/sampleCount,video.duration),0,Math.max(0,video.duration-.001));
             if(Math.abs(video.currentTime-time)>.001)await mediaEvent(video,'seeked',()=>{video.currentTime=time});drawing.drawImage(video,0,0,128,72);images.push(canvas.toDataURL('image/jpeg',.65));
           }
           return images;

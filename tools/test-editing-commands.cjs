@@ -12,6 +12,7 @@ app.whenReady().then(async()=>{
       const check=(value,message)=>{if(!value)throw Error(message)};
       check(!['selected','selectedIds','time','playing','started','audio','previewMuted'].some(key=>key in state),'Flat editor compatibility accessors still exist');
       const layer=addLayer('rect','','Camada de teste');await Promise.resolve();
+      check(document.querySelector('#propX').value==='960'&&document.querySelector('#propY').value==='540','Position controls do not expose centered composition pixels');
       layer.keyframes=[{time:0,values:{x:10,y:20},easing:'linear'}];layer.x=35;selectLayer(layer.id);
       document.querySelector('#keyframeProperty').value='x';document.querySelector('#addKeyframe').click();
       check(layer.keyframes.some(key=>key.values.y===20),'Keyframe lost Y');
@@ -25,7 +26,9 @@ app.whenReady().then(async()=>{
       document.querySelector('#undoBtn').click();await Promise.resolve();
       check(state.layers[0].x===beforeX&&state.layers[0].y===beforeY,'Drag did not undo in one step');
       document.querySelector('#redoBtn').click();await Promise.resolve();check(state.layers[0].x===moved,'Drag redo failed');
-      let current=state.layers[0];beginDrag({button:0},current);
+      current=state.layers[0];beginDrag(new PointerEvent('pointerdown',{button:0,clientX:bounds.left+bounds.width*.2,clientY:bounds.top+bounds.height*.2}),current);
+      dispatchEvent(new PointerEvent('pointermove',{clientX:bounds.left+bounds.width*.25,clientY:bounds.top+bounds.height*.25}));await Promise.resolve();dispatchEvent(new PointerEvent('pointerup'));await Promise.resolve();check(Math.abs(current.x-(moved+5))<1,'Drag snapped the layer center to the pointer');document.querySelector('#undoBtn').click();await Promise.resolve();
+      current=state.layers[0];beginDrag({button:0},current);
       dispatchEvent(new PointerEvent('pointermove',{clientX:bounds.left,clientY:bounds.top}));await Promise.resolve();
       dispatchEvent(new PointerEvent('pointercancel'));await Promise.resolve();check(current.x===moved,'Cancelled drag persisted');
       const opacityInput=document.querySelector('#propOpacity'),originalOpacity=current.opacity;opacityInput.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));opacityInput.value='80';opacityInput.dispatchEvent(new Event('input',{bubbles:true}));await Promise.resolve();opacityInput.value='55';opacityInput.dispatchEvent(new Event('input',{bubbles:true}));await Promise.resolve();opacityInput.dispatchEvent(new Event('change',{bubbles:true}));await Promise.resolve();check(state.layers.find(item=>item.id===current.id).opacity===55,'Continuous property gesture did not apply');document.querySelector('#undoBtn').click();await Promise.resolve();check(state.layers.find(item=>item.id===current.id).opacity===originalOpacity,'Continuous property gesture did not undo in one step');document.querySelector('#redoBtn').click();await Promise.resolve();check(state.layers.find(item=>item.id===current.id).opacity===55,'Continuous property gesture redo failed');current=state.layers.find(item=>item.id===current.id);

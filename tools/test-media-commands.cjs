@@ -1,9 +1,11 @@
 const assert=require('node:assert/strict');
 const Editor=require('../.build/core/editor-state.js'),Project=require('../.build/core/project-model.js'),Media=require('../.build/core/media-commands.js');
 const state=Editor.create({layers:[Project.createLayer({id:1,type:'video',duration:10})]});
-const source={type:'video',url:'blob:preview',name:'Clipe',sourcePath:'C:/original.mp4',duration:14,width:1920,height:1080,rotation:0,hasAudio:true,waveform:[.2,.5]};
+const source={type:'video',url:'blob:preview',name:'Clipe',sourcePath:'C:/original.mp4',duration:14,width:1920,height:1080,rotation:0,fps:30000/1001,hasAudio:true,waveform:[.2,.5]};
 assert.equal(Media.addToLibrary(state,source),true);assert.equal(Media.addToLibrary(state,source),false);
-const layer=Media.configureLayer(state,{id:1,source});assert.equal(layer.sourcePath,'C:/original.mp4');assert.equal(layer.content,'blob:preview');assert.equal(layer.volume,100);assert.equal(state.duration,14);assert.equal(state.renderRange.end,14);
+const layer=Media.configureLayer(state,{id:1,source});assert.equal(layer.sourcePath,'C:/original.mp4');assert.equal(layer.content,'blob:preview');assert.equal(layer.volume,100);assert.equal(layer.fitMode,'cover');assert.equal(layer.mediaFps,30000/1001);assert.equal(state.composition.fps,30000/1001);assert.deepEqual([layer.x,layer.y,layer.anchorX,layer.anchorY,layer.scale,layer.rotation,layer.cropX,layer.cropY],[50,50,50,50,100,0,0,0]);assert.equal(state.duration,14);assert.equal(state.renderRange.end,14);
+const square=Editor.create({layers:[Project.createLayer({id:2,type:'video',duration:10})],composition:{width:1080,height:1080,fps:30,background:'#08090b'}});assert.equal(Media.configureLayer(square,{id:2,source}).fitMode,'cover');assert.equal(square.layers[0].x,50);assert.equal(square.layers[0].y,50);
+assert.deepEqual(square.composition,{width:1080,height:1080,fps:30,background:'#08090b'});
 Media.replaceLibrary(state,[source,{...source,url:'blob:other'}]);assert.equal(state.mediaLibrary.length,1);
 assert.throws(()=>Media.addToLibrary(state,{type:'other',url:'x',name:'Inválida'}));
 console.log('PASS: media descriptors, library deduplication and layer metadata are centralized');

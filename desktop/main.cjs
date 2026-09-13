@@ -1,4 +1,4 @@
-const {app,BrowserWindow,dialog,ipcMain,Menu,session}=require('electron');
+const {app,BrowserWindow,dialog,ipcMain,Menu,powerSaveBlocker,session}=require('electron');
 // Hardware acceleration is the default for the composition engine. Keep an
 // explicit recovery mode for machines with broken or outdated GPU drivers.
 const softwareRendering=process.env.MOTION_LIVRE_SOFTWARE_RENDERING==='1';
@@ -23,6 +23,9 @@ if(!app.isPackaged)app.setPath('userData',path.join(__dirname,'..','.runtime-dat
 let mainWindow;
 let exportStarting=false;
 let frameExport=null;
+let exportPowerBlocker=null;
+const startExportPowerBlocker=()=>{if(exportPowerBlocker===null)exportPowerBlocker=powerSaveBlocker.start('prevent-app-suspension')};
+const stopExportPowerBlocker=()=>{if(exportPowerBlocker!==null){if(powerSaveBlocker.isStarted(exportPowerBlocker))powerSaveBlocker.stop(exportPowerBlocker);exportPowerBlocker=null}};
 let createVideoProxy;
 const DISPLAY_VERSION=app.getVersion();
 const projectFilter=[{name:'Projeto Motion Livre',extensions:['motion.json','json']}];
@@ -136,7 +139,7 @@ secureHandle('media:proxy',async(_event,{filePath,metadata={}})=>{
   })});
   return await createVideoProxy(filePath,metadata,stat);
 });
-secureHandle('export:cancel',async()=>{const current=frameExport;if(!current)return false;try{return await current.cancel()}finally{if(frameExport===current)frameExport=null}});
+secureHandle('export:cancel',async()=>{const current=frameExport;if(!current){stopExportPowerBlocker();return false}try{return await current.cancel()}finally{if(frameExport===current)frameExport=null;stopExportPowerBlocker()}});
 secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={},videoPassthrough=null,videoPlan=null})=>{
   if(frameExport||exportStarting)throw new Error('Já existe uma exportação em andamento');
   exportStarting=true;let overlayFiles=[];
@@ -147,9 +150,9 @@ secureHandle('export:begin',async(_event,{format,name,audioTracks=[],settings={}
     const validAudio=[];
     for(const track of audioTracks.slice(0,128)){await ensureRegularFile(track.path,/\.(mp4|mov|mkv|webm|avi|m4v|mp3|wav|m4a|aac|ogg|flac)$/i);validAudio.push(track)}
     let directVideo=null;if(videoPassthrough){await ensureRegularFile(videoPassthrough.path,/\.(mp4|mov|m4v)$/i);const metadata=await probeMediaFile(videoPassthrough.path),rotation=Math.abs(metadata.rotation)%180,width=rotation===90?metadata.height:metadata.width,height=rotation===90?metadata.width:metadata.height;if(width===settings.width&&height===settings.height&&Math.abs(metadata.fps-settings.fps)<.02){const start=Math.max(0,Number(videoPassthrough.start)||0);directVideo={path:videoPassthrough.path,start,copy:start<.001}}}
-    let plan=null;if(!directVideo&&videoPlan&&Array.isArray(videoPlan.segments)&&videoPlan.segments.length>0&&videoPlan.segments.length<=512){const segments=[];let fallbackFrame=0,totalOverlayBytes=0;for(const segment of videoPlan.segments){const color=typeof segment.color==='string'&&/^#[0-9a-f]{6}$/i.test(segment.color)?segment.color:null,composite=Boolean(segment.composite),overlay=segment.overlayBytes instanceof Uint8Array?segment.overlayBytes:null;if(overlay){totalOverlayBytes+=overlay.byteLength;if(!overlay.byteLength||overlay.byteLength>64*1024*1024||totalOverlayBytes>256*1024*1024)throw new Error('Sobreposição de exportação acima do limite')}if(!color&&!composite)await ensureRegularFile(segment.path,/\.(mp4|mov|mkv|webm|avi|m4v)$/i);const values=['sourceStart','sourceDuration','duration','speed'].map(key=>Number(segment[key])),startFrame=Number.isInteger(segment.startFrame)?Number(segment.startFrame):fallbackFrame,endFrame=Number.isInteger(segment.endFrame)?Number(segment.endFrame):startFrame+Math.max(1,Math.round(values[2]*settings.fps)),timelineStart=Number.isFinite(Number(segment.timelineStart))?Number(segment.timelineStart):settings.start+startFrame/settings.fps;if(values.some(value=>!Number.isFinite(value)||value<0)||values[1]<=0||values[2]<=0||values[3]<.0625||values[3]>16||startFrame<0||endFrame<=startFrame)throw new Error('Plano de vídeo inválido');let overlayPath=null;if(overlay){const directory=path.join(app.getPath('userData'),'export-overlays');await fs.mkdir(directory,{recursive:true});overlayPath=path.join(directory,`${randomUUID()}.png`);await fs.writeFile(overlayPath,overlay);overlayFiles.push(overlayPath)}segments.push({path:color||composite?'':segment.path,sourceStart:values[0],sourceDuration:values[1],duration:values[2],speed:values[3],freeze:Boolean(segment.freeze),timelineStart,startFrame,endFrame,...(color?{color}:{}),...(composite?{composite:true}:{}),...(overlayPath?{overlayPath}:{})});fallbackFrame=endFrame}plan={segments}}
+    let plan=null;if(!directVideo&&videoPlan&&Array.isArray(videoPlan.segments)&&videoPlan.segments.length>0&&videoPlan.segments.length<=512){const segments=[];let fallbackFrame=0,totalOverlayBytes=0;for(const segment of videoPlan.segments){const color=typeof segment.color==='string'&&/^#[0-9a-f]{6}$/i.test(segment.color)?segment.color:null,background=typeof segment.background==='string'&&/^#[0-9a-f]{6}$/i.test(segment.background)?segment.background:'#000000',fitMode=['contain','cover','fill'].includes(segment.fitMode)?segment.fitMode:null,composite=Boolean(segment.composite),overlay=segment.overlayBytes instanceof Uint8Array?segment.overlayBytes:null;if(overlay){totalOverlayBytes+=overlay.byteLength;if(!overlay.byteLength||overlay.byteLength>64*1024*1024||totalOverlayBytes>256*1024*1024)throw new Error('Sobreposição de exportação acima do limite')}if(!color&&!composite)await ensureRegularFile(segment.path,/\.(mp4|mov|mkv|webm|avi|m4v)$/i);const values=['sourceStart','sourceDuration','duration','speed'].map(key=>Number(segment[key])),startFrame=Number.isInteger(segment.startFrame)?Number(segment.startFrame):fallbackFrame,endFrame=Number.isInteger(segment.endFrame)?Number(segment.endFrame):startFrame+Math.max(1,Math.round(values[2]*settings.fps)),timelineStart=Number.isFinite(Number(segment.timelineStart))?Number(segment.timelineStart):settings.start+startFrame/settings.fps;if(values.some(value=>!Number.isFinite(value)||value<0)||values[1]<=0||values[2]<=0||values[3]<.0625||values[3]>16||startFrame<0||endFrame<=startFrame)throw new Error('Plano de vídeo inválido');let overlayPath=null;if(overlay){const directory=path.join(app.getPath('userData'),'export-overlays');await fs.mkdir(directory,{recursive:true});overlayPath=path.join(directory,`${randomUUID()}.png`);await fs.writeFile(overlayPath,overlay);overlayFiles.push(overlayPath)}segments.push({path:color||composite?'':segment.path,sourceStart:values[0],sourceDuration:values[1],duration:values[2],speed:values[3],freeze:Boolean(segment.freeze),timelineStart,startFrame,endFrame,...(fitMode?{fitMode,background}:{}),...(color?{color}:{}),...(composite?{composite:true}:{}),...(overlayPath?{overlayPath}:{})});fallbackFrame=endFrame}plan={segments}}
     const ffmpeg=bundledTool('ffmpeg'),videoEncoder=['mp4','mov'].includes(format)&&!directVideo?.copy?await selectVideoEncoder(ffmpeg,settings.width,settings.height):null;
-    frameExport=createFrameExport({ffmpeg,filePath:result.filePath,format,settings,audioTracks:validAudio,videoPassthrough:directVideo,videoPlan:plan,videoEncoder,cleanupFiles:overlayFiles});overlayFiles=[];
+    frameExport=createFrameExport({ffmpeg,filePath:result.filePath,format,settings,audioTracks:validAudio,videoPassthrough:directVideo,videoPlan:plan,videoEncoder,cleanupFiles:overlayFiles});overlayFiles=[];startExportPowerBlocker();
     const mode=format==='mp3'?'audio':directVideo?.copy?'copy':directVideo?'trim':plan?'plan':'compositor';
     return{started:true,acceptsFrames:frameExport.acceptsFrames,frameRanges:plan?.segments.filter(segment=>segment.composite).map(segment=>({start:segment.startFrame,end:segment.endFrame}))||[],filePath:result.filePath,settings:frameExport.settings,mode,encoder:directVideo?.copy?'copy':videoEncoder?.name||'none'};
   }catch(error){await Promise.all(overlayFiles.map(file=>fs.rm(file,{force:true})));throw error}finally{exportStarting=false}
@@ -158,13 +161,13 @@ secureHandle('export:frame',async(_event,bytes)=>{
   const current=frameExport;if(!current)throw new Error('Nenhuma exportação ativa');
   try{await current.write(bytes);return true}catch(error){
     try{await current.cancel()}catch(cleanupError){console.error(cleanupError)}
-    finally{if(frameExport===current)frameExport=null}
+    finally{if(frameExport===current)frameExport=null;stopExportPowerBlocker()}
     throw error;
   }
 });
 secureHandle('export:finish',async()=>{
   const current=frameExport;if(!current)throw new Error('Nenhuma exportação ativa');
-  try{return await current.finish()}catch(error){try{await current.cancel()}catch(cleanupError){console.error(cleanupError)}throw error}finally{if(frameExport===current)frameExport=null}
+  try{return await current.finish()}catch(error){try{await current.cancel()}catch(cleanupError){console.error(cleanupError)}throw error}finally{if(frameExport===current)frameExport=null;stopExportPowerBlocker()}
 });
 secureHandle('app:info',()=>({version:DISPLAY_VERSION,platform:process.platform,userData:app.getPath('userData'),softwareRendering,hardwareAcceleration:app.isHardwareAccelerationEnabled(),gpuFeatures:app.getGPUFeatureStatus()}));
 

@@ -3,7 +3,7 @@
     <h2>Composição</h2><p>Configurações do projeto e fundo.</p>
     <label>Largura<input id="compWidth" type="number" value="1920" min="64" max="7680"></label>
     <label>Altura<input id="compHeight" type="number" value="1080" min="64" max="7680"></label>
-    <label>FPS<select id="compFps"><option>24</option><option selected>30</option><option>60</option></select></label>
+    <label>FPS<select id="compFps"><option>23.976</option><option>24</option><option>25</option><option>29.97</option><option selected>30</option><option>50</option><option>59.94</option><option>60</option></select></label>
     <label>Duração (s)<input id="compDuration" type="number" value="10" min="1" max="600"></label>
     <label>Fundo<input id="compBackground" type="color" value="#08090b"></label>
     <button id="applyComposition" class="wide">Aplicar composição</button>

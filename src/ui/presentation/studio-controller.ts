@@ -8,6 +8,9 @@ export interface StudioControllerContext {
   stop():void;
   syncComposition():void;
   renderTimeline():void;
+  renderLayers():void;
+  pushHistory():void;
+  markDirty():void;
 }
 const $=<T extends UiElement=UiElement>(selector:string):T=>{const element=document.querySelector<T>(selector);if(!element)throw new Error(`Elemento ausente: ${selector}`);return element};
 const $$=<T extends UiElement=UiElement>(selector:string):T[]=>[...document.querySelectorAll<T>(selector)];
@@ -18,8 +21,16 @@ export function installStudioController(legacy:StudioControllerContext):void {
   const state=legacy.state;
   const setTime=legacy.setTime;
   const stop=legacy.stop;
+  const materialIcons:Record<string,string>={
+    'scissors':'content_cut','copy':'content_copy','trash-2':'delete','snowflake':'ac_unit','rotate-ccw':'replay','reflect-horizontal':'flip','arrow-up':'arrow_upward','arrow-down':'arrow_downward',
+    'undo-2':'undo','redo-2':'redo','skip-back':'skip_previous','skip-forward':'skip_next','play':'play_arrow','pause':'pause','volume-2':'volume_up','volume-x':'volume_off','maximize':'fullscreen','minimize':'fullscreen_exit',
+    'bookmark-plus':'bookmark_add','bookmark-x':'bookmark_remove','folder-open':'folder_open','type':'text_fields','music-2':'music_note','shapes':'shapes','sparkles':'auto_awesome','key-round':'animation','settings-2':'tune','pen-tool':'draw',
+    'plus':'add','save':'save','download':'download','grid-3x3':'grid_on','zoom-out':'zoom_out','zoom-in':'zoom_in','magnet':'align_horizontal_center',
+    'eye':'visibility','eye-off':'visibility_off','lock-keyhole':'lock','lock-keyhole-open':'lock_open','square':'check_box_outline_blank','square-check':'check_box'
+  };
   const icon=(button:HTMLElement|null,name:string,label?:string|null)=>{
     if(!button)return;button.dataset.icon=name;button.classList.add('icon-button');
+    button.dataset.materialIcon=materialIcons[name]||name.replaceAll('-','_');
     button.style.setProperty('--icon',`url("assets/icons/${name}.svg")`);
     if(label){button.dataset.tooltip=label;button.setAttribute('aria-label',label);button.removeAttribute('title')}
   };
@@ -29,12 +40,17 @@ export function installStudioController(legacy:StudioControllerContext):void {
   for(const [panel,name] of Object.entries({media:'folder-open',text:'type',audio:'music-2',shape:'shapes',effects:'sparkles',cut:'scissors',animation:'key-round',project:'settings-2',draw:'pen-tool'})){
     const button=$(`[data-panel="${panel}"]`);if(button){const label=button.textContent.replace(button.querySelector('span')?.textContent||'','').trim();icon(button,name,label);const title=document.createElement('span');title.className='tool-label';title.textContent=label;button.replaceChildren(title)}}
   const topbar=$('.topbar'),mainTools=$('.tools');topbar.insertBefore(mainTools,$('.top-actions'));
-  for(const [id,name] of [['newProject','plus'],['saveProject','save'],['projectFile','folder-open'],['exportBtn','download']]){const b=$('#'+id);b.classList.add('labeled-icon');b.style.setProperty('--icon',`url("assets/icons/${name}.svg")`)}
-  const transport=$('.transport'),wrap=$('.stage-wrap'),stage=$('#stage'),stageToolbar=$('.stage-toolbar');stage.prepend(stageToolbar);stage.append(transport);transport.append($('.preview-tools'));
+  for(const [id,name] of [['newProject','plus'],['saveProject','save'],['projectFile','folder-open'],['exportBtn','download']]){const b=$('#'+id);b.classList.add('labeled-icon');b.dataset.materialIcon=materialIcons[name]||name.replaceAll('-','_');b.style.setProperty('--icon',`url("assets/icons/${name}.svg")`)}
+  const transport=$('.transport'),wrap=$('.stage-wrap'),stage=$('#stage'),stageArea=$('.stage-area'),stageToolbar=$('.stage-toolbar');stageArea.prepend(stageToolbar);stageArea.append(transport);transport.append($('.preview-tools'));
   $('#muteBtn').onclick=()=>{state.playback.previewMuted=!state.playback.previewMuted;$('#muteBtn').textContent=state.playback.previewMuted?'🔇':'🔊';$$('#stage video,#stage audio').forEach(v=>{const id=Number(v.parentElement?.dataset.id),l=state.layers.find(layer=>layer.id===id);v.muted=state.playback.previewMuted||!!l?.muted});setTime(state.playback.time)};
-  function fitPreview(){if(document.fullscreenElement)return;const ratio=ratioOf($('#aspect').value),w=Math.max(1,Math.min((wrap.clientWidth-28)*.78,(wrap.clientHeight-28)*ratio));stage.style.aspectRatio=$('#aspect').value;stage.style.width=w+'px';stage.style.height=w/ratio+'px'}
-  new ResizeObserver(fitPreview).observe(wrap);$('#aspect').addEventListener('change',fitPreview);$('#fitStage').addEventListener('click',fitPreview);
-  fitPreview();document.addEventListener('fullscreenchange',fitPreview);
+  function fitPreview(){if(document.fullscreenElement)return;const ratio=ratioOf($('#aspect').value),w=Math.max(1,Math.min(wrap.clientWidth,wrap.clientHeight*ratio));stage.style.aspectRatio=$('#aspect').value;stage.style.width=w+'px';stage.style.height=w/ratio+'px'}
+  function fitPreviewColumn(){const workspace=$('.workspace'),widescreenWidth=Math.max(420,(stageArea.clientHeight-124)*(16/9));workspace.style.setProperty('--preview-column-width',widescreenWidth+'px');fitPreview()}
+  new ResizeObserver(fitPreviewColumn).observe(stageArea);new ResizeObserver(fitPreview).observe(wrap);$('#aspect').addEventListener('change',fitPreview);
+  fitPreviewColumn();document.addEventListener('fullscreenchange',fitPreview);
+  const resolutionButton=$('#resolutionButton'),resolutionMenu=$('#resolutionMenu'),widthInput=document.querySelector<HTMLInputElement>('#compositionWidth')!,heightInput=document.querySelector<HTMLInputElement>('#compositionHeight')!,aspect=$('#aspect');
+  function syncResolutionButton(){const width=Math.round(state.composition.width||1920),height=Math.round(state.composition.height||1080);resolutionButton.textContent=`${width} × ${height}`;widthInput.value=String(width);heightInput.value=String(height)}
+  function setResolution(width:number,height:number){width=Math.max(64,Math.min(7680,Math.round(width/2)*2));height=Math.max(64,Math.min(4320,Math.round(height/2)*2));state.composition.width=width;state.composition.height=height;const targetRatio=width/height;for(const layer of state.layers)if((layer.type==='video'||layer.frozenFrame)&&layer.fitMode==='contain'){const rotation=Math.abs(Number(layer.mediaRotation)||0)%180,mediaWidth=rotation===90?layer.mediaHeight:layer.mediaWidth,mediaHeight=rotation===90?layer.mediaWidth:layer.mediaHeight;if(mediaWidth&&mediaHeight&&Math.abs(mediaWidth/mediaHeight-targetRatio)>.001)layer.fitMode='cover'}let value=width===height?'1/1':Math.abs(targetRatio-16/9)<.001?'16/9':Math.abs(targetRatio-9/16)<.001?'9/16':Math.abs(targetRatio-4/5)<.001?'4/5':`${width}/${height}`;let custom=aspect.querySelector<HTMLOptionElement>('[data-custom]');if(![...aspect.querySelectorAll('option')].some(option=>option.value===value)){custom=document.createElement('option');custom.dataset.custom='true';aspect.append(custom)}if(custom){custom.value=value;custom.textContent=value.replace('/',':')}aspect.value=value;aspect.dispatchEvent(new Event('change'));legacy.syncComposition();legacy.renderLayers();legacy.pushHistory();legacy.markDirty();syncResolutionButton();resolutionMenu.hidden=true;resolutionButton.setAttribute('aria-expanded','false')}
+  resolutionButton.onclick=()=>{resolutionMenu.hidden=!resolutionMenu.hidden;resolutionButton.setAttribute('aria-expanded',String(!resolutionMenu.hidden))};resolutionMenu.addEventListener('pointerdown',event=>event.stopPropagation());resolutionMenu.querySelectorAll<HTMLElement>('[data-resolution]').forEach(button=>button.onclick=event=>{event.stopPropagation();const [width,height]=button.dataset.resolution!.split('x').map(Number);setResolution(width,height)});$('#applyResolution').onclick=event=>{event.stopPropagation();setResolution(Number(widthInput.value),Number(heightInput.value))};document.addEventListener('pointerdown',event=>{const path=event.composedPath();if(!resolutionMenu.hidden&&!path.includes(resolutionMenu)&&!path.includes(resolutionButton)){resolutionMenu.hidden=true;resolutionButton.setAttribute('aria-expanded','false')}});document.addEventListener('motion:scenechange',syncResolutionButton);syncResolutionButton();
   const end=document.createElement('button');end.id='toEnd';icon(end,'skip-forward','Ir ao fim');end.onclick=()=>{stop();setTime(state.duration)};transport.insertBefore(end,$('#timeLabel'));
   const grid=document.createElement('button');grid.id='previewGrid';grid.setAttribute('aria-pressed','false');icon(grid,'grid-3x3','Guias de alinhamento');$('.preview-tools').prepend(grid);
   const options=document.createElement('select');options.id='gridAspect';options.setAttribute('aria-label','Proporção das guias');options.hidden=true;
@@ -45,7 +61,7 @@ export function installStudioController(legacy:StudioControllerContext):void {
   document.addEventListener('motion:scenechange',refreshTransport);
   function refreshTransport(){icon($('#playBtn'),state.playback.playing?'pause':'play');icon($('#muteBtn'),$('#muteBtn').textContent==='🔇'?'volume-x':'volume-2')}
   new MutationObserver(refreshTransport).observe($('#playBtn'),{childList:true});new MutationObserver(refreshTransport).observe($('#muteBtn'),{childList:true});
-  document.addEventListener('fullscreenchange',()=>{const active=document.fullscreenElement===wrap;icon($('#previewFullscreen'),active?'minimize':'maximize',active?'Sair da tela cheia · Esc':'Tela cheia')});
+  document.addEventListener('fullscreenchange',()=>{const active=document.fullscreenElement===stageArea;icon($('#previewFullscreen'),active?'minimize':'maximize',active?'Sair da tela cheia · Esc':'Tela cheia')});
   const zoom=$('#timelineZoom');zoom.title='Zoom · Alt ou Shift + roda do mouse';
   for(const [name,factor,label] of [['zoom-out',.8,'Diminuir zoom'],['zoom-in',1.25,'Aumentar zoom']] as const){const b=document.createElement('button');icon(b,name,label);b.onclick=()=>{zoom.value=String(Math.max(.25,Math.min(5,uiState.timelineZoom*factor)));zoom.dispatchEvent(new Event('input',{bubbles:true}))};zoom.parentElement?.insertAdjacentElement(name==='zoom-out'?'beforebegin':'afterend',b)}
   const snap=$('#snapTimeline'),snapLabel=snap.closest<HTMLElement>('label');if(!snapLabel)throw new Error('Controle de encaixe sem rótulo');snapLabel.classList.add('snap-toggle');snapLabel.style.setProperty('--icon','url("assets/icons/magnet.svg")');snapLabel.title='Encaixe magnético';snap.setAttribute('aria-label','Encaixe magnético');

@@ -62,7 +62,7 @@ const path=require('node:path');
   }
   assert.equal(await page.locator('.time-ruler span').nth(5).textContent(),'05');
   await page.locator('#previewFullscreen').click();
-  assert.equal(await page.evaluate(()=>document.fullscreenElement?.className),'stage-wrap');
+  assert.equal(await page.evaluate(()=>document.fullscreenElement?.className),'stage-area');
   await page.evaluate(()=>document.exitFullscreen());
   await page.screenshot({path:path.join(require('node:os').tmpdir(),'motion-timeline-check.png')});
   assert.deepEqual(errors,[]);console.log('PASS: split, grouped tracks, animation keys, scrubbing, move track, drag, undo; no page errors');

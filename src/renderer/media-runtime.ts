@@ -138,9 +138,19 @@ export function create({document,bridge,onChange=()=>{},onSourceChange=onChange,
     if(signal?.aborted)throw new DOMException('Cancelado','AbortError');
     await new Promise<void>((resolve,reject)=>{let timer=0;const cleanup=():void=>{clearTimeout(timer);element.removeEventListener(event,done);element.removeEventListener('error',fail);signal?.removeEventListener('abort',abort)},done=():void=>{cleanup();resolve()},fail=():void=>{cleanup();reject(new Error(`Mídia indisponível: ${(element as HTMLMediaElement|HTMLImageElement).src}`))},abort=():void=>{cleanup();reject(new DOMException('Cancelado','AbortError'))};timer=window.setTimeout(fail,15000);element.addEventListener(event,done,{once:true});element.addEventListener('error',fail,{once:true});signal?.addEventListener('abort',abort,{once:true})});
   }
+  async function prepareVideo(element:HTMLVideoElement,layer:Layer,time:number,signal?:AbortSignal):Promise<void> {
+    for(let attempt=0;attempt<2;attempt++)try{
+      if(element.error||attempt)element.load();
+      if(element.readyState<2)await wait(element,'loadeddata',signal);
+      const target=Math.min(Math.max(0,element.duration-.001),sourceTimeForLayer(layer,time,element.duration));
+      if(Math.abs(element.currentTime-target)>.00001){const ready=wait(element,'seeked',signal);element.currentTime=target;await ready}
+      return;
+    }catch(error){if(signal?.aborted||attempt||error instanceof DOMException&&error.name==='AbortError')throw error}
+    throw new Error(`Mídia indisponível: ${element.src}`);
+  }
   async function prepare(layers:Layer[],time:number,signal?:AbortSignal):Promise<void> {
     const active=layers.filter(layer=>layer.visible&&time>=layer.start&&time<layer.end&&['video','image','drawing'].includes(layer.type));reconcile(active);
-    await Promise.all(active.map(async layer=>{const element=get(layer);if(!element)throw new Error('Mídia visual indisponível');if(element instanceof HTMLImageElement){if(!element.complete)await wait(element,'load',signal);if(!element.naturalWidth)throw new Error('Imagem indisponível');return}if(!(element instanceof HTMLVideoElement))throw new Error('Tipo de mídia visual inválido');if(element.error)throw new Error('Vídeo indisponível');if(element.readyState<2)await wait(element,'loadeddata',signal);const target=Math.min(Math.max(0,element.duration-.001),sourceTimeForLayer(layer,time,element.duration));if(Math.abs(element.currentTime-target)>.00001){const ready=wait(element,'seeked',signal);element.currentTime=target;await ready}}));
+    await Promise.all(active.map(async layer=>{const element=get(layer);if(!element)throw new Error('Mídia visual indisponível');if(element instanceof HTMLImageElement){if(!element.complete)await wait(element,'load',signal);if(!element.naturalWidth)throw new Error('Imagem indisponível');return}if(!(element instanceof HTMLVideoElement))throw new Error('Tipo de mídia visual inválido');await prepareVideo(element,layer,time,signal)}));
   }
   function destroy():Promise<void> {if(destroyPromise)return destroyPromise;destroyed=true;destroyPromise=(async()=>{for(const record of new Set(records.values()))release(record);records.clear();members.clear();containers.clear();proxies.clear();const context=audioContext;audioContext=null;if(context&&context.state!=='closed')await context.close()})();return destroyPromise}
   return{get,attach,reconcile,proxy,url,original,sync,start,pause,prepare,destroy,get size(){return new Set(records.values()).size}};

@@ -5,8 +5,8 @@ const path=require('node:path');
  const app=await _electron.launch({executablePath:require('electron'),args:[path.resolve(__dirname,'..')]});
  try{
   const page=await app.firstWindow();await page.locator('#previewFullscreen').click();
-  await page.waitForFunction(()=>document.fullscreenElement?.classList.contains('stage-wrap'));
-  assert.equal(await page.evaluate(()=>document.fullscreenElement.className),'stage-wrap');
+  await page.waitForFunction(()=>document.fullscreenElement?.classList.contains('stage-area'));
+  assert.equal(await page.evaluate(()=>document.fullscreenElement.className),'stage-area');
   await page.locator('#playBtn').click();
   await page.waitForFunction(()=>state.playback.playing&&state.playback.time>0);
   await page.locator('#playBtn').click();

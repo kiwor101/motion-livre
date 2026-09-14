@@ -1,7 +1,11 @@
+<script setup lang="ts">
+import BaseButton from '../base/BaseButton.vue'
+</script>
+
 <template>
   <div id="effectStack" class="effect-stack"></div>
-  <button id="resetEffects" type="button" class="wide">Restaurar efeitos</button>
+  <BaseButton id="resetEffects" class="wide">Restaurar efeitos</BaseButton>
   <hr>
-  <button id="saveEffectXml" type="button" class="wide">Salvar preset de efeitos XML</button>
-  <button id="openEffectXml" type="button" class="wide">Importar preset XML</button>
+  <BaseButton id="saveEffectXml" class="wide">Salvar preset de efeitos XML</BaseButton>
+  <BaseButton id="openEffectXml" class="wide">Importar preset XML</BaseButton>
 </template>

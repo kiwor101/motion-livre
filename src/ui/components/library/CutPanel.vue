@@ -1,10 +1,14 @@
+<script setup lang="ts">
+import BaseButton from '../base/BaseButton.vue'
+</script>
+
 <template>
   <div id="panel-cut" class="panel">
     <h2>Corte e tempo</h2><p>Selecione um vídeo e posicione o cursor na linha do tempo.</p>
-    <button id="setInPoint" class="wide">Definir entrada no cursor</button>
-    <button id="setOutPoint" class="wide">Definir saída no cursor</button>
-    <button id="splitAtPlayhead" class="wide">✂ Dividir no cursor</button>
-    <button id="resetTrim" class="wide">Restaurar vídeo inteiro</button>
+    <BaseButton id="setInPoint" class="wide">Definir entrada no cursor</BaseButton>
+    <BaseButton id="setOutPoint" class="wide">Definir saída no cursor</BaseButton>
+    <BaseButton id="splitAtPlayhead" class="wide">✂ Dividir no cursor</BaseButton>
+    <BaseButton id="resetTrim" class="wide">Restaurar vídeo inteiro</BaseButton>
     <hr>
     <label>Velocidade <output id="outSpeed">1.00×</output><input id="propSpeed" type="range" min="0.5" max="2" step="0.05" value="1"></label>
     <label>Volume <output id="outVolume">100%</output><input id="propVolume" type="range" min="0" max="200" value="100"></label>

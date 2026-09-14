@@ -6,7 +6,7 @@ Transformar gradualmente o front-end do Motion Livre em microcomponentes Vue fá
 
 ## Progresso estimado
 
-**44%** da componentização planejada.
+**46%** da componentização planejada.
 
 Essa porcentagem considera estrutura Vue, controles reutilizáveis, CSS encapsulado e retirada gradual da criação imperativa de DOM. Ela não significa que 44% das linhas do projeto foram alteradas.
 
@@ -25,6 +25,7 @@ Essa porcentagem considera estrutura Vue, controles reutilizáveis, CSS encapsul
 - Agulha da timeline encaixa em marcadores manuais e de Beat Sync; `Alt` desativa temporariamente o encaixe.
 - Grupos em movimento não encaixam nas próprias bordas.
 - Marcadores e painel de Beat Sync migrados para componentes Vue.
+- Ações largas dos painéis de biblioteca e inspector unificadas em `BaseButton`, preservando IDs e classes usados pelos controladores legados.
 
 ## Validação executada
 
@@ -37,6 +38,8 @@ Essa porcentagem considera estrutura Vue, controles reutilizáveis, CSS encapsul
 - `pnpm exec electron tools/test-editing-commands.cjs`
 - `git diff --check`
 
+Na continuação de 2026-09-14 também passaram `pnpm check:ui`, `pnpm build:ui` e `pnpm exec electron tools/test-ui-components.cjs` após a migração das ações reutilizáveis.
+
 Os testes específicos passaram. `tools/test-studio.cjs` não pôde ser iniciado porque o Playwright não está disponível no caminho padrão deste ambiente. Uma execução de `tools/test-renderer-contracts.cjs` alcançou o aplicativo, mas parou numa verificação preexistente de playback/render range que não pertence às áreas alteradas.
 
 ## Onde parou
@@ -46,7 +49,7 @@ Os campos do inspector já usam CSS scoped e o bundle CSS do Vue está carregado
 ## Próximos passos
 
 1. Migrar e deduplicar o CSS do inspector nas folhas globais.
-2. Revisar os painéis Vue já existentes em `src/ui/components/library` e quebrar blocos repetidos.
+2. Continuar a revisão dos painéis Vue em `src/ui/components/library`, migrando campos repetidos para os componentes-base.
 3. Migrar overlays e menus criados por `innerHTML` ou `document.createElement`.
 4. Criar componentes Vue para track, cabeçalho de track, clip, handles, waveform e régua.
 5. Substituir gradualmente handlers por IDs por props, emits e estado reativo.

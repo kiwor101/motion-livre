@@ -2,6 +2,7 @@
 import ColorField from '../base/ColorField.vue'
 import RangeField from '../base/RangeField.vue'
 import SelectField from '../base/SelectField.vue'
+import BaseButton from '../base/BaseButton.vue'
 
 const blendOptions = [
   ['normal','Normal'],['multiply','Multiplicar'],['screen','Tela'],['overlay','Sobrepor'],['lighten','Clarear'],['darken','Escurecer'],
@@ -20,7 +21,7 @@ const maskOptions = [{value:'none',label:'Nenhuma'},{value:'inset',label:'Retang
   <SelectField label="Fonte" input-id="propFont" :options="fontOptions" />
   <RangeField label="Tamanho da fonte" input-id="propFontSize" output-id="outFontSize" :min="8" :max="180" />
   <SelectField label="Máscara" input-id="propMaskMode" :options="maskOptions" />
-  <button id="editMaskPoints" type="button" class="wide">Editar máscara no palco</button>
-  <button id="clearMaskPoints" type="button" class="wide">Limpar pontos da máscara</button>
+  <BaseButton id="editMaskPoints" class="wide">Editar máscara no palco</BaseButton>
+  <BaseButton id="clearMaskPoints" class="wide">Limpar pontos da máscara</BaseButton>
   <input id="propMask" type="checkbox" hidden>
 </template>

@@ -41,6 +41,12 @@ app.whenReady().then(async () => {
       for (const id of ['propName', 'propX', 'propOpacity', 'propCropX', 'propFitMode', 'propVisible', 'propColor', 'propStart', 'propBlend', 'propRadius', 'propFont', 'propMaskMode']) {
         check(document.getElementById(id), 'Inspector field component contract is missing: ' + id)
       }
+      for (const id of ['detachAudio', 'addNullLayer', 'setInPoint', 'startDrawing', 'resetEffects', 'applyComposition', 'startBezierPath', 'addText', 'editMaskPoints', 'addKeyframe', 'deleteLayer']) {
+        const action = document.getElementById(id)
+        check(action instanceof HTMLButtonElement, 'Reusable panel action contract is missing: ' + id)
+        check(action.classList.contains('base-button--default') || action.classList.contains('base-button--danger'), 'Panel action did not use BaseButton: ' + id)
+      }
+      check(document.getElementById('deleteLayer').classList.contains('base-button--danger'), 'Inspector danger action variant changed')
       document.getElementById('properties').hidden = false
       const inspectorLabel = document.getElementById('propX').closest('label')
       check(getComputedStyle(inspectorLabel).display === 'block', 'Scoped inspector field CSS was not loaded')

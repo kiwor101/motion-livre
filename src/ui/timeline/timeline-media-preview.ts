@@ -34,7 +34,7 @@ export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):
   const thumbnails=new Map<string,Promise<string[]>>();let queue:Promise<void>=Promise.resolve();
   const preview=(layer:Layer,element:HTMLElement)=>{
     if(layer.type!=='video'&&layer.type!=='image')return;const source=context.resolveLayerContent(layer);if(!source)return;
-    const clipWidth=Number.parseFloat(element.closest<HTMLElement>('[data-clip]')?.style.width||'')||element.getBoundingClientRect().width||56,sampleCount=layer.type==='image'?1:clamp(Math.ceil(clipWidth/56),1,16),key=JSON.stringify([source,layer.sourceIn,layer.sourceOut,layer.reverse,layer.start,layer.end,layer.speed,sampleCount]);
+    const clipWidth=Number.parseFloat(element.closest<HTMLElement>('[data-clip]')?.style.width||'')||element.getBoundingClientRect().width||56,sampleCount=layer.type==='image'?1:clamp(Math.ceil(clipWidth/72),1,64),key=JSON.stringify([source,layer.sourceIn,layer.sourceOut,layer.reverse,layer.start,layer.end,layer.speed,sampleCount]);
     if(!thumbnails.has(key)){
       const job=queue.then(async()=>{
         if(layer.type==='image')return[source];
@@ -52,7 +52,7 @@ export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):
       thumbnails.set(key,job);queue=job.then(()=>undefined);
       if(thumbnails.size>80){const oldest=thumbnails.keys().next().value;if(oldest!==undefined)thumbnails.delete(oldest)}
     }
-    thumbnails.get(key)?.then(images=>{if(!element.isConnected)return;for(const imageSource of images){const image=document.createElement('img');image.src=imageSource;image.draggable=false;element.append(image)}});
+    thumbnails.get(key)?.then(images=>{if(!element.isConnected)return;const tiles=layer.type==='image'?Array(Math.max(1,Math.ceil(clipWidth/72))).fill(images[0]):images;for(const imageSource of tiles){const image=document.createElement('img');image.src=imageSource;image.draggable=false;element.append(image)}});
   };
   const captureFrame=async(layer:Layer,time:number):Promise<{content:string;mediaDuration:number}>=>{
     const video=document.createElement('video');video.muted=true;

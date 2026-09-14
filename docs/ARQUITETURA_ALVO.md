@@ -143,6 +143,12 @@ O `core` não pode importar Vue, Electron, DOM, Canvas ou APIs específicas do W
 
 ## Estado da migração
 
+Revisão de integração em 2026-09-14: os registros datados abaixo preservam o histórico das validações do Emanuel; referências a alterações locais/sem commit descrevem aquela sessão, não o estado atual da branch. A migração está versionada em `dev/emanueltk7` até `9b9cf74`. O mapa atual de uso, limites e comandos fica no README.
+
+### Compatibilidade temporária dos modos de mesclagem — 2026-09-14
+
+A composição WebGL de texturas isoladas usava somente alpha normal, fazendo `multiply` ignorar o fundo. Até haver shaders de blend no render graph, quadros com mesclagem não normal usam o rasterizador Canvas já existente para acumular as camadas visíveis em um único canvas reutilizado e apresentá-lo pelo WebGL. Preview e exportação continuam no mesmo compositor, sem redução adicional de resolução ou alteração dos originais. Quadros com blend normal preservam a composição por camada. Esta exceção corrige uma regressão da migração, não cria um motor novo de efeitos. O teste de contrato verifica a cor resultante de duas camadas em multiply; a migração futura para shaders deve manter esse contrato e ampliar os modos cobertos.
+
 1. Concluído: tempo, cortes, velocidade, reverso e intervalos de exportação estão centralizados.
 2. Concluído: interpolação, easing, parenting, câmera e avaliação da cena estão no `core` independente.
 3. Concluído: a interface é montada por Vue 3 + TypeScript + Vite e dividida por regiões fáceis de localizar.
@@ -215,7 +221,7 @@ O núcleo é TypeScript puro, independente de runtime, para continuar reutilizá
 - `src/renderer/webgl-presenter.ts`, `src/renderer/rasterizer.ts` e `src/renderer/composition-engine.ts`: apresentação WebGL2, rasterização e composição compartilhada por preview/exportação, importadas explicitamente pelo bundle.
 - `src/renderer/media-runtime.ts`, `src/renderer/export-controller.ts` e `src/renderer/preview-engine.ts`: ciclo de vida e sincronização das mídias, sessão isolada de exportação e agendamento adaptativo da prévia. As implementações JavaScript anteriores foram removidas.
 
-Esses módulos não acessam DOM, Electron ou Windows e possuem testes executáveis diretamente pelo Node.js.
+Os módulos de `src/core/` não acessam DOM, Electron ou Windows e possuem testes executáveis diretamente pelo Node.js. Os módulos de `src/renderer/` usam APIs gráficas/de mídia e também precisam dos testes Electron.
 
 Os módulos TypeScript são importados pelo bundle da interface. Para testes Node e uso no processo principal, `pnpm build:core` os compila em `.build/core`; desenvolvimento e distribuição compilam o núcleo antes de iniciar. Não existem implementações JavaScript manuais paralelas desses módulos. Os controladores recebem dependências do bootstrap; a API pública tipada `window.motionEditor` permanece para integração e testes.
 

@@ -1,5 +1,7 @@
 # Continuidade — preview travando e áudio após cortes
 
+> Registro histórico. Em 14/09/2026, as correções aqui descritas já constam no histórico da branch do Emanuel, revisada até `9b9cf74`. A suíte `pnpm test:renderer` inclui `test-preview-cuts.cjs`; a observação antiga em contrário e as menções a alterações sem commit referem-se às etapas anteriores.
+
 Registro: 2026-09-10. Branch conferida: `dev/emanueltk7`.
 
 ## Situação atual

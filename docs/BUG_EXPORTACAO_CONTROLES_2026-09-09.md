@@ -1,5 +1,7 @@
 # Bugs: controles sobrepostos e exportação travada
 
+> Relato e prompt históricos de 09/09. Os caminhos atuais são `src/ui/platform/desktop-controller.ts`, `src/renderer/export-controller.ts` e `desktop/`; o adaptador `desktop-integration.js` foi removido. Na revisão de 14/09, os testes de contratos do renderer e de IPC passaram para ordem do modal, erros de frame/finalização, cancelamento e retry. O prompt abaixo é preservado como histórico, não como instrução para suspender commit ou integração autorizados pelo mantenedor.
+
 Data do registro: 2026-09-09
 
 ## Resumo

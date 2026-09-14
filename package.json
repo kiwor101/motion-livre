@@ -16,7 +16,7 @@
   },
   "packageManager": "pnpm@11.19.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "build:core": "tsc -p tsconfig.core.json",

@@ -1,5 +1,7 @@
 # Registro de conclusão — migração do legado da interface
 
+> Registro histórico da sessão de 10/09. Em 14/09/2026, a migração já está commitada na branch do Emanuel (revisada até `9b9cf74`). Menções abaixo a arquivos locais sem commit e a ausência de publicação descrevem aquela sessão, não uma instrução para a integração atual. Consulte o README e o histórico Git.
+
 Conferido em: 2026-09-10
 Branch: `dev/emanueltk7`
 Situação: migração dos adaptadores concluída no clone local, com alterações ainda sem commit. Preserve o trabalho existente.

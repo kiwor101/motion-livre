@@ -66,4 +66,3 @@ app.whenReady().then(async()=>{
   }catch(error){console.error(error)}
   finally{if(window&&!window.isDestroyed()){await window.webContents.executeJavaScript('motionEditor.preview.destroy();motionEditor.mediaRuntime.destroy()').catch(()=>{});}if(directory)await fs.rm(directory,{recursive:true,force:true});if(success)app.quit();else app.exit(1)}
 });
-

@@ -65,11 +65,11 @@ Os testes específicos passaram. `tools/test-studio.cjs` não pôde ser iniciado
 
 ## Onde parou
 
-A auditoria retroativa chegou aos componentes-base. Timeline, overlays e campos reutilizáveis recentes seguem o padrão de CSS scoped. Barra de ferramentas, preview e vários painéis antigos já têm templates Vue, mas ainda dependem de estilos globais. A barra exige atenção especial porque `studio-controller.ts` move sua raiz para o topo e substitui filhos do componente diretamente.
+A auditoria retroativa chegou aos componentes-base. Timeline, overlays e campos reutilizáveis recentes seguem o padrão de CSS scoped. A barra de ferramentas agora pertence à árvore Vue da barra superior, sem movimentação ou substituição de filhos pelo `studio-controller.ts`; a seleção de painel e os ícones são definidos pelos componentes. Seu CSS global e a conferência visual responsiva ainda estão pendentes. Preview e vários painéis antigos também dependem de estilos globais.
 
 ## Próximos passos
 
-1. Migrar em conjunto o comportamento e o CSS de `ToolSidebar`/`ToolButton`, evitando que o controlador substitua filhos gerenciados pelo Vue.
+1. Migrar o CSS de `ToolSidebar`/`ToolButton` para estilos scoped e conferir a barra em larguras menores.
 2. Continuar a revisão dos painéis Vue em `src/ui/components/library`, migrando campos repetidos para os componentes-base.
 3. Migrar o conteúdo dinâmico ainda criado por `innerHTML` ou `document.createElement` nos painéis de camadas, efeitos e menus de contexto.
 4. Migrar lane, waveform e limites de renderização restantes da timeline para componentes focados.

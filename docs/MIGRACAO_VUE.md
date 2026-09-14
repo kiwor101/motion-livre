@@ -120,12 +120,12 @@ Progresso estimado: **76% da componentização planejada**.
 
 ## Ponto de atenção principal
 
-`studio-controller.ts` move a raiz de `ToolSidebar` para a barra superior e substitui filhos que deveriam continuar sob controle do Vue. Esse setor não deve receber apenas uma transferência mecânica de CSS. A próxima pessoa deve migrar comportamento e estilo juntos, preservando seleção de painel, ícones, responsividade e os contratos `data-panel`.
+`ToolSidebar` agora é filho de `AppTopBar`; `studio-controller.ts` não move mais sua raiz nem substitui seus filhos. A seleção e os ícones passaram para os componentes Vue, preservando `data-panel`. Falta migrar as regras globais da barra para CSS scoped e conferir a responsividade visual antes de considerar o setor concluído.
 
 ## Ordem recomendada para retomada
 
 1. Terminar a auditoria dos componentes antigos antes de criar novos setores.
-2. Corrigir `ToolSidebar`/`ToolButton` e remover a substituição imperativa de filhos.
+2. Concluir o CSS scoped e a revisão visual de `ToolSidebar`/`ToolButton`.
 3. Revisar preview e stage, identificando CSS global duplicado.
 4. Revisar os painéis da biblioteca e consolidar padrões repetidos.
 5. Migrar o painel de camadas e a pilha de efeitos ainda montados com `innerHTML`.

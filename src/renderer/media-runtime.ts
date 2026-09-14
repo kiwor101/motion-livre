@@ -32,9 +32,12 @@ export interface MediaRuntime extends RasterMediaSource {
   attach(layer:Layer,container:Element):void;
   reconcile(layers:Layer[]):void;
   proxy(layer:Layer,metadata:ProxyMetadata):Promise<void>;
+  setProxyEnabled(enabled:boolean):void;
+  readonly proxyEnabled:boolean;
   url(layer:Layer):string;
   original(layer:Layer):string;
   sync(state:EditorState):void;
+  playbackTime(state:EditorState):number|null|undefined;
   start():void;
   pause():void;
   prepare(layers:Layer[],time:number,signal?:AbortSignal):Promise<void>;
@@ -45,10 +48,14 @@ export interface MediaRuntime extends RasterMediaSource {
 export function create({document,bridge,onChange=()=>{},onSourceChange=onChange,exporting=false}:{document:Document;bridge?:MediaBridge;onChange?:()=>void;onSourceChange?:()=>void;exporting?:boolean}):MediaRuntime {
   const records=new Map<number,MediaRecord>(),jobs=new Map<string,Promise<void>>(),proxies=new Map<string,string>(),pending=new WeakSet<HTMLMediaElement>();
   const members=new Map<number,Layer>(),containers=new Map<number,Element>();
-  let audioContext:AudioContext|null=null,destroyed=false,destroyPromise:Promise<void>|null=null;
+  let audioContext:AudioContext|null=null,destroyed=false,destroyPromise:Promise<void>|null=null,proxyEnabled=true;
   const key=(layer:Layer):number=>{if(layer.id===undefined)throw new Error('Camada de mídia sem ID');return layer.id};
   const original=(layer:Layer):string=>layer.sourcePath&&bridge?.fileUrl?bridge.fileUrl(layer.sourcePath):layer.content||String(layer.url||'');
-  const url=(layer:Layer):string=>!exporting&&(proxies.get(layer.sourcePath||'')||layer.proxyPath)&&bridge?.fileUrl?bridge.fileUrl(proxies.get(layer.sourcePath||'')||layer.proxyPath!):original(layer);
+  const eligible=(metadata:ProxyMetadata):boolean=>{const width=Number(metadata.width)||0,height=Number(metadata.height)||0;return Math.max(width,height)>1920||Math.min(width,height)>1080};
+  const proxyPath=(layer:Layer):string|undefined=>eligible({width:layer.mediaWidth,height:layer.mediaHeight})?proxies.get(layer.sourcePath||'')||layer.proxyPath:undefined;
+  const url=(layer:Layer):string=>!exporting&&proxyEnabled&&proxyPath(layer)&&bridge?.fileUrl?bridge.fileUrl(proxyPath(layer)!):original(layer);
+  function publishProxyStatus():void {if(!exporting)window.dispatchEvent(new CustomEvent('motion:proxy-status',{detail:{available:[...members.values()].some(layer=>layer.type==='video'&&!!proxyPath(layer)),enabled:proxyEnabled}}))}
+  function setProxyEnabled(enabled:boolean):void {if(proxyEnabled===enabled)return;proxyEnabled=enabled;onSourceChange();publishProxyStatus()}
   function release(record:MediaRecord):void {
     if(record.nodes)for(const node of Object.values(record.nodes))node.disconnect();
     for(const element of [record.visual,record.audio])if(element){if(element instanceof HTMLMediaElement)element.pause();element.removeAttribute('src');if(element instanceof HTMLMediaElement)element.load();element.remove()}
@@ -86,12 +93,13 @@ export function create({document,bridge,onChange=()=>{},onSourceChange=onChange,
       const owners=[...records].filter(([,candidate])=>candidate===record).map(([id])=>containers.get(id)).filter((container):container is Element=>!!container);
       if(owners.length){if(!owners.includes(record.visual.parentElement!))owners[0].append(record.visual);if(record.audio&&!owners.includes(record.audio.parentElement!))owners[0].append(record.audio)}
     }
+    publishProxyStatus();
   }
   async function proxy(layer:Layer,metadata:ProxyMetadata):Promise<void> {
-    if(exporting||layer.type!=='video'||!layer.sourcePath||!bridge?.createProxy)return;
+    if(exporting||layer.type!=='video'||!layer.sourcePath||!bridge?.createProxy||!eligible(metadata))return;
     const source=layer.sourcePath;if(proxies.has(source))return;
     const running=jobs.get(source);if(running)return await running;
-    const job=bridge.createProxy(source,metadata).then(result=>{if(result?.proxied&&!destroyed){proxies.set(source,result.path);onSourceChange()}}).finally(()=>jobs.delete(source));
+    const job=bridge.createProxy(source,metadata).then(result=>{if(result?.proxied&&!destroyed){proxies.set(source,result.path);onSourceChange();publishProxyStatus()}}).finally(()=>jobs.delete(source));
     jobs.set(source,job);await job;
   }
   function graph(record:MediaRecord,element:HTMLMediaElement):void {
@@ -112,7 +120,7 @@ export function create({document,bridge,onChange=()=>{},onSourceChange=onChange,
       const local=state.playback.time-layer.start,remaining=layer.end-state.playback.time,fade=Math.max(0,Math.min(1,layer.fadeIn?local/layer.fadeIn:1,layer.fadeOut?remaining/layer.fadeOut:1));
       const gain=active&&(layer.type!=='video'||layer.hasAudio!==false)&&!state.playback.previewMuted&&!layer.muted&&(!solo||layer.solo)?Math.max(0,Math.min(2,layer.volume/100))*fade:0;
       if(record.nodes){const {split,left,right}=record.nodes,channel=layer.audioChannel||'stereo';if(record.channel!==channel){split.disconnect();split.connect(left,channel==='right'?1:0);split.connect(right,channel==='left'?0:1);record.channel=channel}const pan=Math.max(-1,Math.min(1,layer.pan/100));left.gain.value=gain*(pan>0?1-pan:1);right.gain.value=gain*(pan<0?1+pan:1)}
-      for(const element of [record.visual,record.audio])if(element instanceof HTMLMediaElement){
+      for(const element of [record.audio,record.visual])if(element instanceof HTMLMediaElement){
         element.muted=element!==audible||gain===0;
         element.volume=record.nodes?1:Math.min(1,gain);
         const rate=Math.max(.0625,Math.min(16,layer.speed));
@@ -121,18 +129,31 @@ export function create({document,bridge,onChange=()=>{},onSourceChange=onChange,
         // keep playing; scrubs and changes in source time still perform a seek.
         if((active||upcoming)&&element.readyState>=1){
           const target=Math.min(Math.max(0,element.duration-.001),sourceTimeForLayer(layer,active?state.playback.time:layer.start,element.duration));
-          const tolerance=state.playback.playing&&wasActive&&!layer.reverse?Math.max(.04,2/(state.composition.fps||30)):.001;
-          if(!element.seeking&&Math.abs(element.currentTime-target)>tolerance)element.currentTime=target;
+          const freeRunning=state.playback.playing&&wasActive&&!layer.reverse;
+          // During normal playback, repeatedly seeking to the wall clock can
+          // keep a slow decoder inside a long GOP from ever delivering frames.
+          if(!freeRunning&&!element.seeking&&Math.abs(element.currentTime-target)>.001)element.currentTime=target;
         }
         // play() can wait for the seek to finish. Pausing during every seek
         // cancels forward playback and makes catch-up trigger another seek.
-        if(!state.playback.playing||!active||layer.reverse){if(!element.paused)element.pause()}
+        const audioStarting=element===record.visual&&record.audio&&state.playback.playing&&active&&(record.audio.paused||record.audio.readyState<2||record.audio.currentTime<=sourceTimeForLayer(layer,layer.start,record.audio.duration)+.03);
+        if(!state.playback.playing||!active||layer.reverse||audioStarting){if(!element.paused)element.pause()}
         else if(element.paused&&!pending.has(element)){pending.add(element);element.play().catch(()=>{}).finally(()=>pending.delete(element))}
       }
       record.active=active;
     }
   }
   function pause():void {for(const record of new Set(records.values())){if(record.visual instanceof HTMLMediaElement)record.visual.pause();record.audio?.pause()}}
+  function playbackTime(state:EditorState):number|null|undefined {
+    for(const layer of state.layers){
+      if(layer.type!=='video'&&layer.type!=='audio'||state.playback.time<layer.start||state.playback.time>=layer.end||layer.reverse)continue;
+      const record=layer.id===undefined?null:records.get(layer.id),element=record?.audio||record?.visual;
+      if(!(element instanceof HTMLMediaElement))continue;
+      if(element.paused||element.readyState<2)return null;
+      return Math.max(layer.start,Math.min(layer.end,layer.start+(element.currentTime-layer.sourceIn)/Math.max(.0625,layer.speed)));
+    }
+    return undefined;
+  }
   function start():void {if(destroyed)return;audioContext??=typeof AudioContext==='function'?new AudioContext():null;audioContext?.resume().catch(()=>{})}
   async function wait(element:HTMLElement,event:string,signal?:AbortSignal):Promise<void> {
     if(signal?.aborted)throw new DOMException('Cancelado','AbortError');
@@ -153,5 +174,5 @@ export function create({document,bridge,onChange=()=>{},onSourceChange=onChange,
     await Promise.all(active.map(async layer=>{const element=get(layer);if(!element)throw new Error('Mídia visual indisponível');if(element instanceof HTMLImageElement){if(!element.complete)await wait(element,'load',signal);if(!element.naturalWidth)throw new Error('Imagem indisponível');return}if(!(element instanceof HTMLVideoElement))throw new Error('Tipo de mídia visual inválido');await prepareVideo(element,layer,time,signal)}));
   }
   function destroy():Promise<void> {if(destroyPromise)return destroyPromise;destroyed=true;destroyPromise=(async()=>{for(const record of new Set(records.values()))release(record);records.clear();members.clear();containers.clear();proxies.clear();const context=audioContext;audioContext=null;if(context&&context.state!=='closed')await context.close()})();return destroyPromise}
-  return{get,attach,reconcile,proxy,url,original,sync,start,pause,prepare,destroy,get size(){return new Set(records.values()).size}};
+  return{get,attach,reconcile,proxy,setProxyEnabled,get proxyEnabled(){return proxyEnabled},url,original,sync,playbackTime,start,pause,prepare,destroy,get size(){return new Set(records.values()).size}};
 }

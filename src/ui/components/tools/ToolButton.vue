@@ -5,16 +5,20 @@ defineProps<{
   label: string
   active?: boolean
 }>()
+const emit = defineEmits<{ select: [panel: string] }>()
 </script>
 
 <template>
   <button
     type="button"
-    class="tool"
+    class="tool icon-button"
     :class="{ active }"
     :data-panel="panel"
+    :data-material-icon="icon"
+    :data-tooltip="label"
+    :aria-label="label"
+    @click="emit('select', panel)"
   >
-    <span aria-hidden="true">{{ icon }}</span>
-    {{ label }}
+    <span class="tool-label">{{ label }}</span>
   </button>
 </template>

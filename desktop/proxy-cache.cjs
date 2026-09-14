@@ -1,7 +1,7 @@
 const path=require('node:path');
 const crypto=require('node:crypto');
 
-function needsProxy(metadata={},options={}){const maxWidth=options.maxWidth||1280,maxHeight=options.maxHeight||720;return Number(metadata.width)>maxWidth||Number(metadata.height)>maxHeight}
+function needsProxy(metadata={}){const width=Number(metadata.width)||0,height=Number(metadata.height)||0;return Math.max(width,height)>1920||Math.min(width,height)>1080}
 function cacheKey(filePath,stat){return crypto.createHash('sha256').update(`${path.resolve(filePath)}\0${stat.size}\0${stat.mtimeMs}`).digest('hex').slice(0,32)}
 function outputPath(cacheDirectory,key){return path.join(cacheDirectory,`${key}.mp4`)}
 function ffmpegArgs(input,output,{maxWidth=1280,maxHeight=720}={}){return['-y','-hide_banner','-loglevel','error','-i',input,'-map','0:v:0','-an','-vf',`scale=w='min(${maxWidth},iw)':h='min(${maxHeight},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2`,'-c:v','libx264','-preset','veryfast','-crf','26','-pix_fmt','yuv420p','-movflags','+faststart','-f','mp4',output]}

@@ -1,15 +1,26 @@
+<script setup lang="ts">
+import CheckboxField from '../base/CheckboxField.vue'
+import ColorField from '../base/ColorField.vue'
+import NumberField from '../base/NumberField.vue'
+import RangeField from '../base/RangeField.vue'
+import SelectField from '../base/SelectField.vue'
+
+const fitOptions = [{value:'contain',label:'Ajustar inteira (sem corte)'},{value:'cover',label:'Preencher quadro (pode cortar)'},{value:'fill',label:'Esticar ao quadro'}]
+const fillOptions = [{value:'solid',label:'Cor sólida'},{value:'linear',label:'Gradiente linear'},{value:'radial',label:'Gradiente radial'}]
+</script>
+
 <template>
-  <label>Recorte horizontal<input id="propCropX" type="range" min="0" max="49"><output id="outCropX"></output></label>
-  <label>Recorte vertical<input id="propCropY" type="range" min="0" max="49"><output id="outCropY"></output></label>
-  <label>Ajuste da mídia<select id="propFitMode"><option value="contain">Ajustar inteira (sem corte)</option><option value="cover">Preencher quadro (pode cortar)</option><option value="fill">Esticar ao quadro</option></select></label>
-  <label><input id="propVisible" type="checkbox" checked> Camada visível</label>
-  <label><input id="propLocked" type="checkbox"> Bloquear edição</label>
-  <label><input id="propFlipX" type="checkbox"> Espelhar horizontalmente</label>
-  <label><input id="propFlipY" type="checkbox"> Espelhar verticalmente</label>
-  <label>Cor<input id="propColor" type="color" value="#ffffff"></label>
-  <label>Preenchimento<select id="propFillType"><option value="solid">Cor sólida</option><option value="linear">Gradiente linear</option><option value="radial">Gradiente radial</option></select></label>
-  <label>Cor final do gradiente<input id="propGradientColor" type="color" value="#7758ff"></label>
-  <label>Ângulo do gradiente<input id="propGradientAngle" type="range" min="0" max="360"><output id="outGradientAngle"></output></label>
-  <label>Entrada na composição (s)<input id="propStart" type="number" min="0" step="0.1"></label>
-  <label>Saída na composição (s)<input id="propEnd" type="number" min="0" step="0.1"></label>
+  <RangeField label="Recorte horizontal" input-id="propCropX" output-id="outCropX" :min="0" :max="49" />
+  <RangeField label="Recorte vertical" input-id="propCropY" output-id="outCropY" :min="0" :max="49" />
+  <SelectField label="Ajuste da mídia" input-id="propFitMode" :options="fitOptions" />
+  <CheckboxField label="Camada visível" input-id="propVisible" checked />
+  <CheckboxField label="Bloquear edição" input-id="propLocked" />
+  <CheckboxField label="Espelhar horizontalmente" input-id="propFlipX" />
+  <CheckboxField label="Espelhar verticalmente" input-id="propFlipY" />
+  <ColorField label="Cor" input-id="propColor" value="#ffffff" />
+  <SelectField label="Preenchimento" input-id="propFillType" :options="fillOptions" />
+  <ColorField label="Cor final do gradiente" input-id="propGradientColor" value="#7758ff" />
+  <RangeField label="Ângulo do gradiente" input-id="propGradientAngle" output-id="outGradientAngle" :min="0" :max="360" />
+  <NumberField label="Entrada na composição (s)" input-id="propStart" :min="0" :step="0.1" />
+  <NumberField label="Saída na composição (s)" input-id="propEnd" :min="0" :step="0.1" />
 </template>

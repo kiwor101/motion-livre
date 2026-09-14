@@ -1,4 +1,6 @@
 import {drawTimelineWaveform} from './timeline-waveform';
+import {h,render} from 'vue';
+import TimelineMarkers from '../components/timeline/TimelineMarkers.vue';
 import {setTrackProperty} from '../../core/layer-commands';
 import {toggleMany} from '../../core/selection-commands';
 import type {EditorState} from '../../core/editor-state';
@@ -16,9 +18,10 @@ const clipIcon=(type:string):string=>({video:'film',image:'image',audio:'music-2
 
 export function createTimelineRenderer(context:TimelineRendererContext):TimelineRenderer {
   const width=()=>context.state.duration*context.pixelsPerSecond();
+  let markerHost:HTMLElement|null=null;
   const geometry=(element:HTMLElement,layer:Layer)=>{element.style.left=`${layer.start/context.state.duration*width()}px`;element.style.width=`${Math.max(3,(layer.end-layer.start)/context.state.duration*width())}px`};
   const renderTimeline=()=>{
-    context.timeline.querySelectorAll('.track,.timeline-empty,.timeline-marker,.time-ruler,.render-range-overlay').forEach(element=>element.remove());const rulerDuration=Math.max(60,Math.ceil(context.state.duration)+10),contentWidth=rulerDuration*context.pixelsPerSecond(),ruler=document.createElement('div');ruler.className='time-ruler';ruler.style.width=`${context.headerWidth+contentWidth}px`;
+    if(markerHost)render(null,markerHost);markerHost=null;context.timeline.querySelectorAll('.track,.timeline-empty,.timeline-marker,.time-ruler,.render-range-overlay').forEach(element=>element.remove());const rulerDuration=Math.max(60,Math.ceil(context.state.duration)+10),contentWidth=rulerDuration*context.pixelsPerSecond(),ruler=document.createElement('div');ruler.className='time-ruler';ruler.style.width=`${context.headerWidth+contentWidth}px`;
     for(let time=0;time<=rulerDuration;time++){const tick=document.createElement('span');tick.style.left=`${context.headerWidth+time*context.pixelsPerSecond()}px`;tick.dataset.second=String(time);tick.className=time%5===0?'major-tick':'minor-tick';if(time%5===0)tick.textContent=rulerText(time);ruler.append(tick)}
     const corner=document.createElement('div');corner.className='ruler-corner';corner.innerHTML='<i></i><span>Camadas</span>';corner.onpointerdown=event=>event.stopPropagation();ruler.append(corner);context.navigation.setActiveCorner(corner);ruler.onpointerdown=context.navigation.scrub;context.timeline.insertBefore(ruler,context.head);
     for(const [id,clips] of context.groups()){
@@ -33,7 +36,7 @@ export function createTimelineRenderer(context:TimelineRendererContext):Timeline
       }
       row.append(name,lane);context.timeline.insertBefore(row,context.head);
     }
-    const drawMarkers=(items:number[],type:MarkerKind)=>items.forEach((time,index)=>{const marker=document.createElement('i');marker.className=`timeline-marker ${type==='beat'?'beat-marker':'manual-marker'}`;marker.dataset.markerType=type;marker.dataset.markerIndex=String(index);marker.style.left=`${context.headerWidth+time*context.pixelsPerSecond()}px`;marker.title=`${type==='beat'?'Beat sync':'Marcador manual'} · ${timeText(time)} · arraste ou botão direito`;marker.onpointerdown=event=>context.dragMarker(event,type,index);marker.oncontextmenu=event=>context.showContextMenu(event,null,{type,index});ruler.append(marker)});drawMarkers(context.state.markers,'manual');drawMarkers(context.state.beatMarkers,'beat');
+    markerHost=document.createElement('div');ruler.append(markerHost);render(h(TimelineMarkers,{manual:context.state.markers,beats:context.state.beatMarkers,headerWidth:context.headerWidth,pixelsPerSecond:context.pixelsPerSecond(),timeLabel:timeText,onDrag:(event:PointerEvent,type:MarkerKind,index:number)=>context.dragMarker(event,type,index),onMenu:(event:MouseEvent,type:MarkerKind,index:number)=>context.showContextMenu(event,null,{type,index})}),markerHost);
     const range=context.state.renderRange||{start:0,end:context.state.duration};for(const kind of ['start','end'] as const){const marker=document.createElement('i');marker.className=`timeline-range-marker range-${kind}`;marker.dataset.rangeBoundary=kind;marker.style.left=`${context.headerWidth+range[kind]*context.pixelsPerSecond()}px`;marker.title=`${kind==='start'?'Início':'Fim'} da renderização · ${timeText(range[kind])} · arraste para mover`;marker.onpointerdown=event=>context.dragRenderBoundary(event,kind);ruler.append(marker)}context.rangeStatus.value=`Render ${timeText(range.start)}–${timeText(range.end)}`;context.rangeStatus.textContent=context.rangeStatus.value;context.head.style.bottom='auto';context.head.style.height=`${Math.max(context.timeline.clientHeight,ruler.offsetHeight+[...context.timeline.querySelectorAll<HTMLElement>('.track')].reduce((sum,row)=>sum+row.offsetHeight,0))}px`;context.navigation.positionCorner();context.renderAudioMixer();context.renderLayersPanel();context.navigation.position();
   };
   return{renderTimeline,geometry};

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ToolButton from './ToolButton.vue'
+
 const tools=[
   {panel:'media',icon:'▣',label:'Mídia'},
   {panel:'text',icon:'T',label:'Texto'},
@@ -14,6 +16,11 @@ const tools=[
 
 <template>
   <aside class="tools">
-    <button v-for="tool in tools" :key="tool.panel" class="tool" :class="{active:tool.panel==='media'}" :data-panel="tool.panel"><span>{{ tool.icon }}</span>{{ tool.label }}</button>
+    <ToolButton
+      v-for="tool in tools"
+      :key="tool.panel"
+      v-bind="tool"
+      :active="tool.panel === 'media'"
+    />
   </aside>
 </template>

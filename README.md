@@ -163,6 +163,14 @@ Cada entrega do aplicativo inclui testes, Setup e Portable. Prévias usam releas
 
 [Guia de colaboração e publicação](CONTRIBUTING.md) · [Instruções para agentes](AGENTS.md)
 
+### Build de teste — kiwor101
+
+Prévia validada da revisão do motor, compilada do commit `39967e2564d899ba6ceb9fee2c4f23816e4ac005`. Canal de QA separado; para uso normal, prefira os downloads oficiais no início desta página.
+
+- [Portable de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-39967e2/Motion-Livre-Portable-0.0.1-x64.exe)
+- [Setup de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-39967e2/Motion-Livre-Setup-0.0.1-x64.exe)
+- [Notas, testes e SHA256 da prévia](https://github.com/kiwor101/motion-livre/releases/tag/preview-kiwor101-39967e2)
+
 ### Prévia anterior do Emanuel
 
 A [pré-release `preview-emanueltk7-2294f32`](https://github.com/kiwor101/motion-livre/releases/tag/preview-emanueltk7-2294f32) é um snapshot de QA do commit `2294f32530b10d82ad70d54689f575f9992d0861`, anterior ao ajuste de waveform `9b9cf74` e à revisão de integração. Não é o download oficial atualizado.

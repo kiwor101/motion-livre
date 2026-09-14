@@ -185,3 +185,14 @@ O Motion Livre funciona offline e não exige conta. Projetos e mídias permanece
 ## Licença
 
 Distribuído sob a [licença MIT](LICENSE).
+
+
+## Build de teste — emanueltk7
+
+Pré-release para QA do layout da timeline. Não substitui a versão oficial.
+Commit compilado: `2294f32530b10d82ad70d54689f575f9992d0861`.
+
+- [Motion-Livre-Portable-0.0.1-x64.exe](https://github.com/kiwor101/motion-livre/releases/download/preview-emanueltk7-2294f32/Motion-Livre-Portable-0.0.1-x64.exe)
+- [Motion-Livre-Setup-0.0.1-x64.exe](https://github.com/kiwor101/motion-livre/releases/download/preview-emanueltk7-2294f32/Motion-Livre-Setup-0.0.1-x64.exe)
+
+Validados: compilação, alturas das faixas, ondas centradas/mute, cortes e Portable com perfil isolado. O teste geral de interface encontra a falha `Preview scrubber crossed the saved render out point`.

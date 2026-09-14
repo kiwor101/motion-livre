@@ -13,3 +13,14 @@ Requisitos: Windows 10 ou Windows 11 de 64 bits. Os pacotes incluem Electron, FF
 [Ver os dois executáveis e as notas da versão 0.0.1](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.1). Os arquivos **Source code** são o código-fonte, não os executáveis.
 
 Os links acima são da versão **oficial**. Builds de branches pessoais, quando publicadas, são identificadas como **Pre-release** para testes e devem aparecer em uma seção separada, com links próprios. Cada atualização do aplicativo deve entregar os dois formatos; veja as [orientações de publicação](CONTRIBUTING.md#setup-e-portable-fazem-parte-da-entrega).
+
+
+## Build de teste — emanueltk7
+
+Pré-release para QA do layout da timeline. Não substitui a versão oficial.
+Commit compilado: `2294f32530b10d82ad70d54689f575f9992d0861`.
+
+- [Motion-Livre-Portable-0.0.1-x64.exe](https://github.com/kiwor101/motion-livre/releases/download/preview-emanueltk7-2294f32/Motion-Livre-Portable-0.0.1-x64.exe)
+- [Motion-Livre-Setup-0.0.1-x64.exe](https://github.com/kiwor101/motion-livre/releases/download/preview-emanueltk7-2294f32/Motion-Livre-Setup-0.0.1-x64.exe)
+
+Validados: compilação, alturas das faixas, ondas centradas/mute, cortes e Portable com perfil isolado. O teste geral de interface encontra a falha `Preview scrubber crossed the saved render out point`.

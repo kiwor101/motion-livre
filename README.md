@@ -144,12 +144,8 @@ Os executáveis são distribuídos pelos anexos da Release no GitHub. Dependênc
 desktop/                 Processo principal e ponte nativa do Electron
 docs/                    Documentação dos formatos XML
 tools/                   Preparação do FFmpeg e empacotamento
-app.js                   Editor e importação de mídia
-advanced.js              Composição, timeline e projetos
-pro-editor.js            Keyframes, máscaras, câmera e efeitos
-desktop-integration.js   Arquivos locais e exportação
-alight-compat.js         Interoperabilidade XML
-timeline.js              Faixas, clipes, miniaturas e interação temporal
+src/ui/app-controller.ts Controlador principal tipado
+src/ui/                  Interface Vue e controladores TypeScript
 index.html               Interface do editor
 ```
 
@@ -177,6 +173,7 @@ Depois da integração por `kiwor101`, qualquer um dos dois pode publicar os exe
 
 ## Documentação
 
+- [Resumo da migração da interface](docs/RESUMO_MIGRACAO_INTERFACE.md)
 - [Compatibilidade de cenas XML](docs/COMPATIBILIDADE_ALIGHT_XML.md)
 - [Presets de efeitos XML](docs/PRESETS_XML.md)
 - [Licenças de terceiros](THIRD_PARTY_NOTICES.md)
@@ -188,3 +185,14 @@ O Motion Livre funciona offline e não exige conta. Projetos e mídias permanece
 ## Licença
 
 Distribuído sob a [licença MIT](LICENSE).
+
+
+## Build de teste — emanueltk7
+
+Pré-release para QA do layout da timeline. Não substitui a versão oficial.
+Commit compilado: `2294f32530b10d82ad70d54689f575f9992d0861`.
+
+- [Motion-Livre-Portable-0.0.1-x64.exe](https://github.com/kiwor101/motion-livre/releases/download/preview-emanueltk7-2294f32/Motion-Livre-Portable-0.0.1-x64.exe)
+- [Motion-Livre-Setup-0.0.1-x64.exe](https://github.com/kiwor101/motion-livre/releases/download/preview-emanueltk7-2294f32/Motion-Livre-Setup-0.0.1-x64.exe)
+
+Validados: compilação, alturas das faixas, ondas centradas/mute, cortes e Portable com perfil isolado. O teste geral de interface encontra a falha `Preview scrubber crossed the saved render out point`.

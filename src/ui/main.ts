@@ -101,7 +101,7 @@ const ready=(async()=>{
     state:legacy.state as import('../core/editor-state').EditorState,history:legacy.projectHistory as import('../core/history').History,timelineMedia,snapshot:legacy.snapshot as ()=>string,pushHistory:legacy.pushHistory as ()=>void,syncComposition:legacy.syncComposition as ()=>void,renderAudioMixer:legacy.renderAudioMixer as ()=>void,
     sourceTimeForLayer:legacy.sourceTimeForLayer as (layer:import('../core/project-model').Layer,time:number,mediaDuration?:number)=>number,selected:legacy.selected as ()=>import('../core/project-model').Layer|null,stop:legacy.stop as ()=>void,setTime:legacy.setTime as (time:number)=>void,onTimeChange:playback.onTimeChange,
     renderLayers:()=>{(legacy.renderLayers as ()=>void)()},syncProps:()=>{(legacy.syncProps as ()=>void)()},replaceRenderTimeline:callback=>{legacy.renderTimeline=callback},selectLayer:id=>{(legacy.selectLayer as (id:number)=>void)(id)},nextId:()=>{const id=legacy.uid as number;legacy.uid=id+1;return id},markDirty:legacy.markDirty as ()=>void,toast:legacy.toast as (message:string)=>void,
-    renderMediaLibrary:legacy.renderMediaLibrary as ()=>void,detachAudio:professionalActions.detachAudio,escapeHtml:legacy.escapeHtml as (value:unknown)=>string
+    renderMediaLibrary:legacy.renderMediaLibrary as ()=>void,detachAudio:professionalActions.detachAudio
   });
   installStudioController(legacy);
   (legacy.renderLayers as ()=>void)();playback.setTime(0);

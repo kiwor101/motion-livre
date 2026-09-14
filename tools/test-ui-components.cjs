@@ -47,6 +47,29 @@ app.whenReady().then(async () => {
         check(action.classList.contains('base-button--default') || action.classList.contains('base-button--danger'), 'Panel action did not use BaseButton: ' + id)
       }
       check(document.getElementById('deleteLayer').classList.contains('base-button--danger'), 'Inspector danger action variant changed')
+      for (const id of ['cancelExport', 'acceptCompatReport', 'startConfiguredExport']) {
+        const action = document.getElementById(id)
+        check(action instanceof HTMLButtonElement, 'Overlay action contract is missing: ' + id)
+        check(action.classList.contains('base-button--danger') || action.classList.contains('base-button--primary'), 'Overlay action did not use BaseButton: ' + id)
+      }
+      const projectMenu = document.getElementById('projectMenu')
+      const exportMenu = document.getElementById('exportMenu')
+      check(projectMenu.classList.contains('popup') && exportMenu.classList.contains('popup'), 'PopupMenu root contract changed')
+      check(exportMenu.classList.contains('export-popup'), 'Export menu positioning contract changed')
+      for (const id of ['exportProgress', 'exportSettings', 'featureModal', 'compatReport']) {
+        const modal = document.getElementById(id)
+        check(modal.classList.contains('modal'), 'BaseModal root contract changed: ' + id)
+        check(modal.querySelector(':scope > .modal-card'), 'BaseModal card contract changed: ' + id)
+        check(getComputedStyle(modal).zIndex === '5000', 'BaseModal stacking contract changed: ' + id)
+      }
+      check(document.querySelectorAll('#featureGrid > .feature-card').length === 7, 'Feature map Vue rendering changed')
+      window.dispatchEvent(new CustomEvent('motion-livre:compatibility-report', { detail: {
+        mode: 'import', layers: 2, keyframes: 3, sourceVersion: '<b>106</b>',
+        unsupportedEffects: ['<img id="unsafeCompatMarkup">'], unresolvedMedia: ['clip.mov'],
+      }}))
+      await new Promise(resolve => setTimeout(resolve, 0))
+      check(document.getElementById('compatReportBody').textContent.includes('<b>106</b>'), 'Compatibility report data was not rendered by Vue')
+      check(!document.getElementById('unsafeCompatMarkup'), 'Compatibility report interpreted external data as HTML')
       document.getElementById('properties').hidden = false
       const inspectorLabel = document.getElementById('propX').closest('label')
       check(getComputedStyle(inspectorLabel).display === 'block', 'Scoped inspector field CSS was not loaded')
@@ -54,8 +77,14 @@ app.whenReady().then(async () => {
       motionEditor.state.markers = [3]
       motionEditor.state.beatMarkers = [6]
       motionEditor.renderTimeline()
+      check(document.querySelectorAll('.time-ruler > [data-second]').length >= 61, 'TimelineRuler tick components changed')
+      check(document.querySelector('.time-ruler > .ruler-corner > span')?.textContent === 'Camadas', 'TimelineRuler corner component changed')
       check(document.querySelectorAll('.manual-marker').length === 1, 'Manual marker component was not rendered')
       check(document.querySelectorAll('.beat-marker').length === 1, 'Beat marker component was not rendered')
+      const markerStyle = getComputedStyle(document.querySelector('.manual-marker'))
+      check(markerStyle.top === '9px' && markerStyle.width === '11px' && markerStyle.pointerEvents === 'auto', 'TimelineMarker scoped geometry changed')
+      const beatPanel = document.querySelector('.beat-sync-panel')
+      check(beatPanel && getComputedStyle(beatPanel).position === 'fixed' && beatPanel.querySelectorAll('button').length === 3, 'BeatSyncPanel scoped contract changed')
       const timeline = document.getElementById('timeline')
       const bounds = timeline.getBoundingClientRect()
       const pixelsPerSecond = 40 * Number(document.getElementById('timelineZoom').value)

@@ -18,13 +18,13 @@ interface TimelineControllerContext {
   state:EditorState;history:History;timelineMedia:TimelineMediaTools;snapshot():string;pushHistory():void;syncComposition():void;renderAudioMixer():void;
   sourceTimeForLayer(layer:Layer,time:number,mediaDuration?:number):number;selected():Layer|null;stop():void;setTime(time:number):void;onTimeChange(listener:()=>void):()=>void;
   renderLayers():void;syncProps():void;replaceRenderTimeline(callback:()=>void):void;selectLayer(id:number):void;nextId():number;markDirty():void;toast(message:string):void;
-  renderMediaLibrary():void;detachAudio(layer?:Layer|null):void;escapeHtml(value:unknown):string;
+  renderMediaLibrary():void;detachAudio(layer?:Layer|null):void;
 }
 
 const byId=<T extends HTMLElement>(id:string):T=>{const element=document.getElementById(id);if(!element)throw new Error(`Elemento ausente: ${id}`);return element as T};
 
 export function installTimelineController(context:TimelineControllerContext):void {
-  const timeline=byId<HTMLElement>('timeline'),head=byId<HTMLElement>('playhead'),layerWidth=240,timelineGap=20,header=layerWidth+timelineGap;
+  const timeline=byId<HTMLElement>('timeline'),head=byId<HTMLElement>('playhead'),header=Number.parseFloat(getComputedStyle(timeline).getPropertyValue('--timeline-header-width'))||260;
   const pixelsPerSecond=()=>40*uiState.timelineZoom,width=()=>context.state.duration*pixelsPerSecond(),frameDuration=()=>1/(context.state.composition?.fps||30);
   let renderTimeline=()=>{};const setTime=context.setTime;
   const commit=()=>{context.renderLayers();context.syncProps();setTime(context.state.playback.time);context.pushHistory();context.markDirty()};
@@ -38,7 +38,7 @@ export function installTimelineController(context:TimelineControllerContext):voi
   const {setRenderBoundary,trimTimeline,dragRenderBoundary}=createTimelineRangeController({state:context.state,timeline,headerWidth:header,pixelsPerSecond,frameDuration,history:context.history,snapshot:context.snapshot,stop:context.stop,pushHistory:context.pushHistory,syncComposition:context.syncComposition,commit,renderTimeline:()=>renderTimeline(),markDirty:context.markDirty,toast:context.toast});
   const {showContextMenu,dragMarker}=createTimelineContextController({state:context.state,timeline,stage:byId<HTMLElement>('stage'),headerWidth:header,pixelsPerSecond,frameDuration,history:context.history,snapshot:context.snapshot,stop:context.stop,selectLayer:context.selectLayer,split:()=>byId<HTMLButtonElement>('splitAtPlayhead').click(),duplicate:()=>byId<HTMLButtonElement>('duplicateLayer').click(),deleteSelection:()=>byId<HTMLButtonElement>('deleteLayer').click(),detachAudio:context.detachAudio,pushHistory:context.pushHistory,renderTimeline:()=>renderTimeline(),markDirty:context.markDirty});
   let edit:ReturnType<typeof createTimelineClipGestureController>=()=>{};
-  const renderer=createTimelineRenderer({state:context.state,timeline,head,rangeStatus,headerWidth:header,pixelsPerSecond,groups,trackControls:attachTrackControls,beginMarquee,edit:(event,layer)=>edit(event,layer),preview:context.timelineMedia.preview,sourceTimeForLayer:context.sourceTimeForLayer,showContextMenu,dragMarker,dragRenderBoundary,navigation,selectLayer:context.selectLayer,pushHistory:context.pushHistory,commit,renderAudioMixer:context.renderAudioMixer,renderLayersPanel,escapeHtml:context.escapeHtml});
+  const renderer=createTimelineRenderer({state:context.state,timeline,head,rangeStatus,headerWidth:header,pixelsPerSecond,groups,trackControls:attachTrackControls,beginMarquee,edit:(event,layer)=>edit(event,layer),preview:context.timelineMedia.preview,sourceTimeForLayer:context.sourceTimeForLayer,showContextMenu,dragMarker,dragRenderBoundary,navigation,selectLayer:context.selectLayer,pushHistory:context.pushHistory,commit,renderAudioMixer:context.renderAudioMixer,renderLayersPanel});
   renderTimeline=renderer.renderTimeline;context.replaceRenderTimeline(renderTimeline);
   edit=createTimelineClipGestureController({state:context.state,timeline,headerWidth:header,width,frameDuration,history:context.history,snapshot:context.snapshot,stop:context.stop,selectClip,selectLayer:context.selectLayer,geometry:renderer.geometry,syncProps:context.syncProps,setTime:value=>setTime(value),renderLayers:context.renderLayers,syncComposition:context.syncComposition,commit});
   installTimelineActionsController({state:context.state,tools,groups,nextId:context.nextId,selected:context.selected,captureFrame:context.timelineMedia.captureFrame,detachAudio:context.detachAudio,stop:context.stop,pushHistory:context.pushHistory,syncComposition:context.syncComposition,commit,selectLayer:context.selectLayer,renderMediaLibrary:context.renderMediaLibrary,toast:context.toast});

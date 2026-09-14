@@ -21,16 +21,6 @@ type IdentifiedLayer=Layer&{id:number};
 const renderLayers=()=>context.renderLayers(),renderTimeline=()=>context.renderTimeline(),selectLayer=(id:number|null)=>context.selectLayer(id),selected=()=>{const layer=context.selected();if(layer?.id===undefined&&layer)throw new Error('Camada sem identificador');return layer as IdentifiedLayer|null},updateSelected=()=>context.updateSelected(),loadProjectData=(data:unknown)=>context.loadProjectData(data),restoreMediaLibrary=(value:EditorState)=>context.restoreMediaLibrary(value),stop=()=>context.stop(),markDirty=()=>context.markDirty(),toast=(message:string)=>context.toast(message),escapeHtml=(value:unknown)=>context.escapeHtml(value);
 const layerId=(layer:Layer):number=>{if(layer.id===undefined)throw new Error('Camada sem identificador');return layer.id};
 const inputFrom=(event:Event)=>event.currentTarget as HTMLInputElement;
-const featureMap={
-  'Projeto e arquivos':['Criar, renomear e salvar projetos','Importar/exportar projeto JSON','Importar/exportar cenas XML compatíveis com Alight Motion','Composições 16:9, 9:16, 1:1 e 4:5','Resolução, FPS, duração e fundo','Templates, presets e pacotes de elementos'],
-  'Camadas':['Vídeo, imagem, áudio, texto e formas','Desenho vetorial livre','Duplicar, excluir e reordenar','Agrupamento e pré-composição','Entrada, saída e recorte temporal','Máscaras, clipping e parenting'],
-  'Animação':['Keyframes por propriedade','Easing linear, suave, aceleração, desaceleração e rebote','Posição, escala, rotação e opacidade','Caminhos de movimento e gráfico de curva','Parenting, nulos e precomposição','Retiming, reverso e velocidade de mídia'],
-  'Visual':['Cor sólida e gradientes','Contorno, cantos, transparência e máscaras','Modos de mesclagem','Glow, vinheta, blur, nitidez, contraste e matiz','Chroma key, canais RGB, saturação, sépia e inversão','Recorte, âncora e espelhamento'],
-  'Texto e vetores':['Família e tamanho de fonte','Alinhamento e cor','Formas retângulo/círculo','Splines e desenho manual','Preenchimento e contorno','Elementos nulos e grupos'],
-  'Mídia e saída':['Navegador de mídia, waveform e mixer','Preview sincronizado','Canais L/R, pan, solo, mute e fades','MP4, MOV, WebM, GIF, PNG e MP3','Presets 720p, 1080p, 1440p e 4K','Qualidade, FPS, bitrate, faixa e transparência'],
-  'Experiência offline':['Sem anúncios','Sem pagamentos ou assinatura','Sem conta obrigatória','Projetos armazenados localmente','Sem notificações promocionais','Sem telemetria']
-};
-
 const projectHistory=createHistory({limit:40});
 const originalAddLayer=addLayer,originalApplyStyle=applyStyle;
 addLayer=function(type,content,name){const l=applyLayerDefaults(originalAddLayer(type,content,name),state.duration);queueMicrotask(pushHistory);return l};context.addLayer=addLayer;
@@ -101,8 +91,6 @@ $<HTMLInputElement>('#importProject').onchange=async e=>{const input=e.currentTa
 $('#menuImport').onclick=()=>$('#importProject').click();
 $('#projectFile').onclick=()=>$('#projectMenu').hidden=!$('#projectMenu').hidden;
 $('#menuFeatures').onclick=()=>{$('#featureModal').hidden=false;$('#projectMenu').hidden=true};$('#closeFeatures').onclick=()=>$('#featureModal').hidden=true;
-$('#featureGrid').className='feature-grid';$('#featureGrid').innerHTML=Object.entries(featureMap).map(([title,items])=>`<section class="feature-card"><h3>${title}</h3><ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul></section>`).join('');
-
 addEventListener('keydown',e=>{const target=e.target instanceof Element?e.target:null,editing=Boolean(target?.closest('input,textarea,select,[contenteditable="true"]'));if(editing)return;if(e.ctrlKey&&e.key.toLowerCase()==='z'){e.preventDefault();$('#undoBtn').click()}if(e.ctrlKey&&e.key.toLowerCase()==='y'){e.preventDefault();$('#redoBtn').click()}if(e.key==='Delete'&&state.selection.selected)$('#deleteLayer').click();if(e.code==='Space'){e.preventDefault();$('#playBtn').click()}if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();stop();setTime(state.playback.time+(e.key==='ArrowRight'?1:-1)/(state.composition.fps||30))}});
 ['projectName','aspect','propName','propX','propY','propScale','propRotation','propOpacity','propColor',...Object.keys(advancedFields).map(id=>'prop'+id),'propSpeed','propVolume','propFadeIn','propFadeOut','propMuted',...Object.keys(effectKeys).map(id=>'fx'+id)].forEach(id=>bindHistoryGesture($('#'+id)));
 Object.assign(context,{projectHistory,snapshot,pushHistory,restore,bindHistoryGesture,syncAdvancedProps,requireVideo,buildFilter,renderAudioMixer});

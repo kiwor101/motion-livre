@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseField from './BaseField.vue'
+
 defineProps<{
   label: string
   inputId: string
@@ -7,17 +9,10 @@ defineProps<{
 </script>
 
 <template>
-  <label>{{ label }}<input :id="inputId" type="color" :value="value"></label>
+  <BaseField :label="label"><input :id="inputId" type="color" :value="value"></BaseField>
 </template>
 
 <style scoped>
-label {
-  display: block;
-  margin: 10px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 input {
   display: block;
   width: 100%;

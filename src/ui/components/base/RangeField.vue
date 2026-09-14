@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseField from './BaseField.vue'
+
 withDefaults(defineProps<{
   label: string
   inputId: string
@@ -16,21 +18,13 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <label>
-    {{ label }}
-    <output v-if="outputId" :id="outputId">{{ output }}</output>
+  <BaseField :label="label">
+    <template #aside><output v-if="outputId" :id="outputId">{{ output }}</output></template>
     <input :id="inputId" type="range" :min="min" :max="max" :step="step" :value="value">
-  </label>
+  </BaseField>
 </template>
 
 <style scoped>
-label {
-  display: block;
-  margin: 10px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 input {
   display: block;
   width: 100%;

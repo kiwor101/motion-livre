@@ -26,7 +26,7 @@ export function resolveDropTarget(state:EditorState,timeline:HTMLElement,pointer
 }
 
 export function createTimelineDropFeedback(timeline:HTMLElement,headerWidth:number){
-  const indicator=document.createElement('div');indicator.className='track-drop-indicator';indicator.hidden=true;timeline.append(indicator);
+  const show=(detail:{left:number;top:number;height:number;newTrack:boolean;invalid:boolean;label:string}|null)=>window.dispatchEvent(new CustomEvent('motion:timeline-drop',{detail}));
   let shifted=new Set<number>(),activeRow:HTMLElement|null=null;
   const clearShift=()=>{for(const id of shifted){const element=timeline.querySelector<HTMLElement>(`[data-clip="${id}"]`);if(element){element.style.transform='';element.classList.remove('ripple-shift')}}shifted=new Set()};
   const update=({target,plan,valid,pixelsPerSecond}:{target:DropTarget;plan:RippleInsertionPlan|null;valid:boolean;pixelsPerSecond:number})=>{
@@ -36,17 +36,12 @@ export function createTimelineDropFeedback(timeline:HTMLElement,headerWidth:numb
     if(activeRow!==target.row){activeRow?.classList.remove('drop-target');activeRow=target.row;activeRow?.classList.add('drop-target')}
     const rows=[...timeline.querySelectorAll<HTMLElement>('.track')];
     const row=target.newTrack?rows.find(candidate=>candidate.dataset.track===String(target.newTrack!.target)):target.row;
-    indicator.hidden=!row;
     if(row){
       const bounds=row.getBoundingClientRect(),timelineBounds=timeline.getBoundingClientRect(),top=bounds.top-timelineBounds.top+timeline.scrollTop;
-      indicator.style.left=`${headerWidth}px`;
-      indicator.style.top=`${target.newTrack?top+(target.newTrack.before?0:bounds.height)-2:top+2}px`;
-      indicator.style.height=`${target.newTrack?4:Math.max(8,bounds.height-4)}px`;
-      indicator.classList.toggle('new-track',Boolean(target.newTrack));indicator.classList.toggle('invalid',!valid);
-      indicator.textContent=target.newTrack?'Nova camada':plan?`Inserir · deslocar ${plan.shiftedIds.length} clipe(s)`:'Mover para esta camada';
-    }
+      show({left:headerWidth,top:target.newTrack?top+(target.newTrack.before?0:bounds.height)-2:top+2,height:target.newTrack?4:Math.max(8,bounds.height-4),newTrack:Boolean(target.newTrack),invalid:!valid,label:target.newTrack?'Nova camada':plan?`Inserir · deslocar ${plan.shiftedIds.length} clipe(s)`:'Mover para esta camada'});
+    }else show(null);
     if(plan)for(const id of shifted){const element=timeline.querySelector<HTMLElement>(`[data-clip="${id}"]`);if(element){element.classList.add('ripple-shift');element.style.transform=`translateX(${plan.shift*pixelsPerSecond}px)`}}
   };
-  const remove=()=>{clearShift();indicator.remove();activeRow?.classList.remove('drop-target');activeRow=null};
+  const remove=()=>{clearShift();show(null);activeRow?.classList.remove('drop-target');activeRow=null};
   return{update,remove};
 }

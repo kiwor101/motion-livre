@@ -8,9 +8,9 @@ Transformar gradualmente o front-end do Motion Livre em microcomponentes Vue fá
 
 ## Progresso estimado
 
-**98%** da componentização planejada.
+**100%** da componentização planejada no código; entrega de executáveis e QA com mídias reais ainda pendentes.
 
-Essa porcentagem considera estrutura Vue, controles reutilizáveis, CSS encapsulado e retirada gradual da criação imperativa de DOM. Ela não significa que 2% das linhas do projeto ainda precisem ser alteradas.
+Essa porcentagem considera a estrutura Vue planejada, controles reutilizáveis, CSS encapsulado e retirada da montagem visual imperativa. Não inclui processamento de mídia, QA de entrega ou modernização futura dos handlers por ID.
 
 ## Registro da sessão local de 2026-09-15
 
@@ -26,23 +26,20 @@ Essa porcentagem considera estrutura Vue, controles reutilizáveis, CSS encapsul
 - Contratos foram adicionados ou atualizados em `tools/test-ui-components.cjs`, `tools/test-renderer-contracts.cjs` e `tools/test-timeline-extension-visuals.cjs`.
 - O progresso documentado foi atualizado de 76% para 98%.
 
-### Falta concluir
+### Trabalho de entrega e evolução posterior
 
-1. Auditar os painéis antigos restantes em `src/ui/components/library` e retirar CSS global que ainda pertença a eles.
-2. Revisar waveform e filmstrip. Canvas, imagens, vídeo de captura e probes de metadados devem continuar imperativos quando essa for a interface adequada do navegador; a pendência é deixar explícitos os hosts e o ciclo de limpeza.
-3. Migrar os elementos visuais transitórios dos gestos, principalmente guia de arraste, indicador de destino e marquee, para hosts ou overlays com ciclo de vida centralizado.
-4. Revisar a criação das camadas visuais e handles de transformação no stage sem misturar essa mudança com o runtime de mídia.
-5. Reduzir gradualmente os handlers que ainda localizam elementos por ID e, quando os contratos permitirem, unificar as seis raízes Vue estáticas e as montagens dinâmicas da timeline.
-6. Quando o mantenedor autorizar uma entrega, executar build, suítes Electron e conferência visual, incluindo áudio cortado/restaurado, zoom, reordenação, renomeação, waveform, filmstrip e tela cheia.
+1. Fazer QA interativo com mídias reais e projetos salvos antes da entrega do aplicativo.
+2. Executar Setup, Portable, smoke isolado e pré-release quando a entrega for autorizada.
+3. Reduzir handlers por ID em pacotes independentes; os nós de canvas/imagem e filtros permanecem no runtime de mídia.
 
 ### Estado operacional
 
 - Alterações permanecem somente no clone e na branch atuais.
 - O trabalho local e os arquivos já staged que existiam antes desta continuação foram preservados; esta sessão não reorganizou o índice do Git.
 - Não houve fetch, pull, merge, commit, push, PR, release ou qualquer outra operação no GitHub.
-- Não houve build nesta sessão, conforme pedido do mantenedor.
+- Não houve build de Setup ou Portable nesta sessão, conforme pedido do mantenedor. A interface foi compilada localmente na continuação posterior.
 - Passaram durante esta sessão: `pnpm check:ui`, verificações `node --check` dos arquivos e testes alterados e `git diff --check`.
-- As suítes Electron e a validação visual dos novos componentes continuam pendentes porque dependem da futura rodada autorizada de build/execução.
+- Os testes Electron pertinentes passaram na continuação posterior; a conferência visual interativa continua pendente.
 
 ## Concluído
 
@@ -96,6 +93,11 @@ Essa porcentagem considera estrutura Vue, controles reutilizáveis, CSS encapsul
 - `StudioTooltip` usa `Teleport` e concentra ciclo de eventos, acessibilidade, posicionamento e troca de destino em tela cheia; o controller de apresentação deixou de criar e mover esse nó.
 - `BeatSyncPanel` passou a fazer parte de `AppOverlays`, sem host nem aplicação Vue criados pelo controller.
 - O modo de renomeação pertence a `TimelineTrackHeader`, que alterna título e input declarativamente e emite o novo nome; o controller de faixas mantém apenas reordenação e comandos de projeto.
+- Desenho e composição passaram a reutilizar `ColorField`, `RangeField`, `NumberField` e `SelectField`; os campos mantêm IDs e valores iniciais do contrato legado.
+- Corte, animação e texto reutilizam os campos-base; a seleção de camada pai recebe dados do controlador e renderiza as opções no Vue.
+- `AppRoot` reúne as seis áreas estáticas em uma única aplicação Vue e usa `Teleport` para preservar os hosts originais.
+- Marquee de seleção, guia de arraste e indicador de destino da timeline agora são componentes Vue; os controladores emitem dados transitórios por eventos.
+- Caminhos de movimento e máscaras usam `StageVectorOverlays`, com nós SVG e CSS scoped; os controladores emitem os pontos.
 
 ## Validação histórica anterior a esta sessão
 
@@ -112,19 +114,19 @@ Na continuação de 2026-09-14 também passaram `pnpm check:ui`, `pnpm build:ui`
 
 Na revisão local atual da timeline passaram `pnpm check:ui`, verificações `node --check` dos arquivos tocados e `git diff --check`. Build e execução visual foram deliberadamente adiados a pedido do mantenedor.
 
-As execuções Electron listadas acima pertencem a etapas anteriores. Os contratos Electron foram atualizados nesta sessão, mas ainda precisam ser executados após o próximo build autorizado. O teste Playwright antigo de estúdio foi removido anteriormente porque dependia das APIs globais eliminadas; seus contratos atuais são cobertos pelas suítes Electron mantidas no projeto.
+As execuções Electron listadas acima pertencem a etapas anteriores; nesta continuação, os contratos pertinentes foram executados após `pnpm build:ui`. O teste Playwright antigo de estúdio foi removido anteriormente porque dependia das APIs globais eliminadas; seus contratos atuais são cobertos pelas suítes Electron mantidas no projeto.
 
 ## Onde parou
 
-A auditoria retroativa concluiu ferramentas, listas da biblioteca, painel de camadas, pilha de efeitos, menu de contexto, mixer de áudio, stage e a estrutura visual da timeline, incluindo faixas. Não restam atribuições a `innerHTML` em `src/ui`. Waveform e filmstrip ainda gerenciam canvas e imagens imperativamente como parte do runtime de mídia. A conferência visual permanece pendente porque a sessão não está autorizada a gerar builds.
+A componentização planejada no código foi concluída: biblioteca, overlays, timeline e stage têm estrutura Vue, e existe uma única aplicação principal. Faixas e régua usam nós Vue síncronos com o mesmo contexto da aplicação; camadas, paths e handles do stage também renderizam nós Vue. Waveform, filmstrip, captura e filtros continuam imperativos por serem integrações de mídia. Não restam atribuições a `innerHTML` em `src/ui`. A interface foi compilada, testada e inspecionada em uma captura local, sem gerar executáveis.
 
 ## Próximos passos
 
-1. Continuar a revisão dos painéis Vue em `src/ui/components/library`, migrando campos repetidos para os componentes-base.
-2. Revisar a fronteira de waveform e filmstrip, mantendo canvas e imagens sob responsabilidade do runtime de mídia.
-3. Migrar os setores visuais restantes ainda criados por DOM imperativo.
-4. Substituir gradualmente handlers por IDs por props, emits e estado reativo.
-5. Unificar as aplicações Vue independentes sob uma única raiz quando os contratos legados restantes permitirem.
+1. Fazer QA interativo com mídias reais e projetos salvos antes da entrega do aplicativo.
+2. Quando autorizado, compilar e publicar Setup e Portable conforme `CONTRIBUTING.md`.
+3. Tratar a redução de handlers por ID como evolução posterior em pacotes separados.
+
+Nesta continuação passaram `pnpm check:ui`, `pnpm build:ui`, `git diff --check`, os testes Electron de componentes, edição, gestos, navegação, contratos do renderer, extensão visual e `tools/smoke-renderer.cjs`. Uma captura local mostrou biblioteca, stage, inspector e duas faixas após a atualização do editor. Nenhum Setup ou Portable foi gerado, e não houve commit/push.
 
 ## Cuidados
 

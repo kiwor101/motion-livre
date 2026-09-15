@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AlignmentGuides from './AlignmentGuides.vue'
+import StageVectorOverlays from './StageVectorOverlays.vue'
 </script>
 
 <template>
@@ -7,6 +8,7 @@ import AlignmentGuides from './AlignmentGuides.vue'
     <div id="stage" class="stage">
       <div class="stage-hint">Importe uma mídia ou adicione texto</div>
       <AlignmentGuides />
+      <StageVectorOverlays />
     </div>
   </div>
 </template>

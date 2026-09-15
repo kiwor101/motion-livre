@@ -4,13 +4,14 @@ import BaseField from './BaseField.vue'
 defineProps<{
   label: string
   inputId: string
+  value?: string
   options: Array<{ value: string; label: string }>
 }>()
 </script>
 
 <template>
   <BaseField :label="label">
-    <select :id="inputId">
+    <select :id="inputId" :value="value">
       <option v-for="option in options" :key="option.value" :value="option.value">{{ option.label }}</option>
     </select>
   </BaseField>

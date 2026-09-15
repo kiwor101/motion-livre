@@ -65,12 +65,11 @@ Efeitos externos ainda não implementados podem ser preservados no XML sem apare
 
 ## Estado do projeto
 
-O legado baseado em sete scripts globais foi substituído por módulos TypeScript. A interface usa Vue 3 e Vite; a componentização planejada está em aproximadamente 76%. O núcleo de projeto, timeline, histórico, tempo e áudio não depende da interface nem do Electron.
+O legado baseado em sete scripts globais foi substituído por módulos TypeScript. A interface usa Vue 3 e Vite; a componentização planejada no código foi concluída. Canvas, miniaturas e captura continuam sob o runtime de mídia. O núcleo de projeto, timeline, histórico, tempo e áudio não depende da interface nem do Electron.
 
 Ainda são evoluções futuras:
 
 - render graph completo e mais efeitos com shaders dedicados;
-- conclusão da migração dos painéis e estilos restantes para Vue;
 - recuperação automática quando o decoder acelerado deixa de entregar frames;
 - validação contínua com projetos longos, 4K, reverso e efeitos complexos;
 - assinatura, atualização automática e versão mobile.

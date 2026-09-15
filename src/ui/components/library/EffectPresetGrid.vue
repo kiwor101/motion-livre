@@ -12,3 +12,8 @@ const presets = [
     <button v-for="preset in presets" :key="preset[0]" type="button" :data-effect="preset[0]">{{ preset[1] }}</button>
   </div>
 </template>
+
+<style scoped>
+.effect-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.effect-list button { display: block; width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); text-align: center; cursor: pointer; }
+</style>

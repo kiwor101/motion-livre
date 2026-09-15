@@ -3,6 +3,10 @@ import {appendVectorPoint,setProperties,setVectorPoints} from '../../core/projec
 import type {EditorState} from '../../core/editor-state';
 import type {Layer} from '../../core/project-model';
 import {uiState} from '../ui-state';
+import {h,render} from 'vue';
+import TransformHandles from '../components/stage/TransformHandles.vue';
+import VectorPath from '../components/stage/VectorPath.vue';
+import {getUiAppContext} from '../vue-app-context';
 
 type VectorKind='mask'|'path';
 interface VectorEdit {kind:VectorKind;id:number}
@@ -45,19 +49,23 @@ export function installVectorEditingController(context:VectorEditingContext):voi
   const beginVectorEdit=(kind:VectorKind,id:number)=>{if(vectorEdit)finishVectorEdit(true);context.history.begin(context.snapshot());vectorEdit={kind,id};syncVectorEditUi()};
 
   const renderMaskOverlay=()=>{
-    document.querySelector('.mask-path')?.remove();const layer=context.selected();if(!layer?.id||layer.maskMode!=='polygon'||layer.maskPoints.length<1)return;
-    const element=layerElement(layer.id);if(!element)return;const stageBounds=byId('stage').getBoundingClientRect(),layerBounds=element.getBoundingClientRect();
+    const show=(points:Array<[number,number]>|null)=>window.dispatchEvent(new CustomEvent('motion:stage-mask-path',{detail:points}));
+    const layer=context.selected();if(!layer?.id||layer.maskMode!=='polygon'||layer.maskPoints.length<1){show(null);return}
+    const element=layerElement(layer.id);if(!element){show(null);return}const stageBounds=byId('stage').getBoundingClientRect(),layerBounds=element.getBoundingClientRect();
     const points=layer.maskPoints.map(point=>[(layerBounds.left-stageBounds.left+layerBounds.width*point[0]/100)/stageBounds.width*100,(layerBounds.top-stageBounds.top+layerBounds.height*point[1]/100)/stageBounds.height*100] as [number,number]);
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('mask-path');svg.setAttribute('viewBox','0 0 100 100');const polygon=document.createElementNS(svg.namespaceURI,'polygon');polygon.setAttribute('points',points.map(point=>point.join(',')).join(' '));svg.append(polygon);
-    for(const point of points){const dot=document.createElementNS(svg.namespaceURI,'circle');dot.setAttribute('cx',String(point[0]));dot.setAttribute('cy',String(point[1]));dot.setAttribute('r','1.2');svg.append(dot)}byId('stage').append(svg);
+    show(points);
   };
-  const renderVectorPaths=()=>{for(const layer of context.state.layers.filter(candidate=>candidate.type==='path')){if(!layer.id)continue;const element=layerElement(layer.id);if(!element)continue;element.classList.add('path-layer');let svg=element.querySelector<SVGSVGElement>(':scope > svg');if(!svg){svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');element.replaceChildren(svg)}let path=svg.querySelector<SVGPathElement>('path');if(!path){path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('fill','none');path.setAttribute('stroke-linecap','round');path.setAttribute('stroke-linejoin','round');svg.append(path)}path.setAttribute('d',bezierPath(layer.pathPoints||[]));path.setAttribute('stroke',layer.color||'#fff');path.setAttribute('stroke-width',String(Math.max(.3,layer.stroke||1)));context.applyStyle(element,layer)}};
-  const addTransformHandles=()=>{const layer=context.selected();if(!layer?.id||layer.locked||layer.type==='audio')return;const element=layerElement(layer.id);if(!element)return;
-    for(const kind of ['scale','rotate'] as const){const handle=document.createElement('i');handle.className=`transform-handle ${kind}`;handle.onpointerdown=event=>{event.preventDefault();event.stopPropagation();const bounds=byId('stage').getBoundingClientRect(),centerX=bounds.left+bounds.width*layer.x/100,centerY=bounds.top+bounds.height*layer.y/100,startScale=layer.scale,startRotation=layer.rotation,startDistance=Math.hypot(event.clientX-centerX,event.clientY-centerY)||1,startAngle=Math.atan2(event.clientY-centerY,event.clientX-centerX);context.history.begin(context.snapshot());
+  const pathHosts=new Map<number,HTMLElement>();
+  const renderVectorPaths=()=>{const active=new Set<number>();for(const layer of context.state.layers.filter(candidate=>candidate.type==='path')){if(!layer.id)continue;const element=layerElement(layer.id);if(!element)continue;active.add(layer.id);element.classList.add('path-layer');const previous=pathHosts.get(layer.id);if(previous&&previous!==element)render(null,previous);const vnode=h(VectorPath,{path:bezierPath(layer.pathPoints||[]),color:layer.color||'#fff',stroke:Math.max(.3,layer.stroke||1)});vnode.appContext=getUiAppContext();render(vnode,element);pathHosts.set(layer.id,element);context.applyStyle(element,layer)}for(const [id,element] of pathHosts)if(!active.has(id)){render(null,element);pathHosts.delete(id)}};
+  let handlesMount:HTMLElement|null=null;
+  const removeTransformHandles=()=>{if(!handlesMount)return;render(null,handlesMount);handlesMount.remove();handlesMount=null};
+  const addTransformHandles=()=>{removeTransformHandles();const layer=context.selected();if(!layer?.id||layer.locked||layer.type==='audio')return;const element=layerElement(layer.id);if(!element)return;
+    const start=(event:PointerEvent,kind:'scale'|'rotate')=>{event.preventDefault();event.stopPropagation();const bounds=byId('stage').getBoundingClientRect(),centerX=bounds.left+bounds.width*layer.x/100,centerY=bounds.top+bounds.height*layer.y/100,startScale=layer.scale,startRotation=layer.rotation,startDistance=Math.hypot(event.clientX-centerX,event.clientY-centerY)||1,startAngle=Math.atan2(event.clientY-centerY,event.clientX-centerX);context.history.begin(context.snapshot());
       const move=(pointer:PointerEvent)=>{const values=kind==='scale'?{scale:Math.max(5,Math.min(800,startScale*Math.hypot(pointer.clientX-centerX,pointer.clientY-centerY)/startDistance))}:{rotation:startRotation+(Math.atan2(pointer.clientY-centerY,pointer.clientX-centerX)-startAngle)*180/Math.PI};setProperties(context.state,{id:layer.id!,values});context.updateSelected();context.syncProps()};
       const up=(pointer:PointerEvent)=>{removeEventListener('pointermove',move);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);if(pointer.type==='pointercancel'){setProperties(context.state,{id:layer.id!,values:{scale:startScale,rotation:startRotation}});context.history.cancel();context.updateSelected();context.syncProps()}else context.history.commit(context.snapshot());context.markDirty()};
       addEventListener('pointermove',move);addEventListener('pointerup',up);addEventListener('pointercancel',up);
-    };element.append(handle)}
+    };
+    handlesMount=document.createElement('div');handlesMount.className='transform-host';element.append(handlesMount);const vnode=h(TransformHandles,{onStart:start});vnode.appContext=getUiAppContext();render(vnode,handlesMount);
   };
 
   document.addEventListener('motion:beforehistorygesture',()=>finishVectorEdit(true));
@@ -71,6 +79,6 @@ export function installVectorEditingController(context:VectorEditingContext):voi
   addEventListener('keydown',event=>{if(event.key!=='Escape'||!vectorEdit)return;event.preventDefault();finishVectorEdit(false);context.toast('Edição vetorial cancelada')});
 
   const originalRenderLayers=context.renderLayers;context.replaceRenderLayers(()=>{originalRenderLayers();renderVectorPaths();addTransformHandles();renderMaskOverlay()});
-  const originalSelectLayer=context.selectLayer;context.replaceSelectLayer(id=>{originalSelectLayer(id);document.querySelectorAll('.transform-handle').forEach(element=>element.remove());addTransformHandles();context.renderTimeline();renderMaskOverlay()});
+  const originalSelectLayer=context.selectLayer;context.replaceSelectLayer(id=>{originalSelectLayer(id);addTransformHandles();context.renderTimeline();renderMaskOverlay()});
   const newProject=byId<HTMLButtonElement>('newProject'),originalNewProject=newProject.onclick;newProject.onclick=event=>{finishVectorEdit(true);originalNewProject?.call(newProject,event);context.renderTimeline()};
 }

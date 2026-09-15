@@ -25,3 +25,9 @@ import TextPanel from './TextPanel.vue'
     <LayersPanel />
   </section>
 </template>
+
+<style scoped>
+.library :deep(.panel) { display: none; }
+.library :deep(.panel.active) { display: block; }
+.library :deep(.panel hr) { border: 0; border-top: 1px solid var(--line); margin: 18px 0; }
+</style>

@@ -77,11 +77,11 @@ Um setor é considerado migrado quando:
 7. Existe validação para os contratos que podem quebrar.
 8. `pnpm check:ui`, verificações de sintaxe relevantes e `git diff --check` passam.
 
-Build e testes executáveis visuais devem ser feitos quando o pacote for autorizado para entrega. Enquanto houver orientação para trabalhar somente localmente, não executar build, commit, push, release ou alterações no GitHub.
+Build dos executáveis e publicação devem ocorrer somente quando o pacote for autorizado para entrega. A compilação da interface e os testes locais podem validar o trabalho sem gerar Setup ou Portable. Commit, push, release e alterações no GitHub permanecem suspensos nesta etapa.
 
 ## Estado atual
 
-Progresso estimado: **98% da componentização planejada**.
+Progresso estimado: **100% da componentização planejada no código**. A entrega do aplicativo ainda depende da rodada autorizada de executáveis e publicação.
 
 ### Concluído ou consolidado
 
@@ -116,6 +116,15 @@ Progresso estimado: **98% da componentização planejada**.
 - Tooltip global implementado como overlay Vue com `Teleport`, incluindo posicionamento, acessibilidade, foco, ponteiro e suporte à tela cheia sem criação ou movimentação manual pelo controller.
 - Painel de Beat Sync incorporado à árvore de overlays, removendo sua aplicação Vue e host criados isoladamente.
 - Renomeação de faixa renderiza o campo pelo próprio `TimelineTrackHeader`; o controller não substitui mais o título por um input imperativo.
+- Campos de desenho e composição reutilizam os componentes-base de cor, range, número e select, preservando IDs e valores iniciais usados pelos controladores.
+- Campos de corte, animação e texto também reutilizam os componentes-base; a seleção de camada pai recebe opções e valor por evento tipado e é renderizada pelo Vue.
+- As seis áreas estáticas da interface compartilham uma única aplicação `AppRoot`, com `Teleport` para preservar seus hosts e contratos de layout.
+- Marquee, guia de movimento e indicador de destino da timeline são overlays Vue com estilos scoped; os controladores emitem somente sua geometria e texto.
+- Caminhos de movimento e máscaras selecionadas usam SVG declarativo em `StageVectorOverlays`; os controladores enviam pontos calculados.
+- Faixas e régua da timeline usam montagens síncronas de nós Vue ligadas ao contexto da única aplicação principal; cada host é desmontado antes do redesenho.
+- Camadas, paths Bézier e handles do stage possuem estrutura Vue. O runtime continua anexando mídias, calculando estilo e executando gestos nos hosts declarativos.
+- Formas, presets, separadores, gráfico de easing, imports e estilos das camadas foram retirados das folhas globais e colocados nos componentes responsáveis.
+- A opção de proporção personalizada é declarada em `CompositionAspectSelect`; o controlador envia apenas o valor por evento.
 
 ### Auditoria já realizada
 
@@ -124,25 +133,22 @@ Progresso estimado: **98% da componentização planejada**.
 - Componentes-base: revisados; seis campos compartilham `BaseField`.
 - `TimelineMarker` e `BeatSyncPanel`: corrigidos retroativamente para CSS scoped.
 
-### Auditoria ainda pendente
+### Fronteiras mantidas no runtime
 
-- Painéis da biblioteca.
-- Waveform e filmstrip ainda usam nós de canvas/imagem gerenciados pelo runtime de mídia.
-- Overlays transitórios de gestos e handles do stage ainda possuem montagem imperativa.
-- Regras globais relacionadas a esses setores.
+- Waveform usa canvas no host de clipe; o callback de desenho ignora clipes já desconectados.
+- Filmstrip usa imagens no host `.filmstrip`; tiles desconectados são descartados antes da captura e os slots fora da faixa são removidos.
+- Captura de quadros, probes de mídia e filtros SVG usam nós do navegador como parte do processamento de mídia/efeitos.
+- Estilos globais restantes de `.path-layer` e `.stage.unified-renderer > .layer` pertencem aos contêineres do renderer, não aos painéis da interface.
 
 ## Ponto de atenção principal
 
-`ToolSidebar` agora é filho de `AppTopBar`; `studio-controller.ts` não move sua raiz nem substitui seus filhos. Seleção, ícones, responsividade e CSS pertencem aos componentes Vue, preservando `data-panel` e `data-material-icon`. A validação visual continua adiada enquanto builds locais não estiverem autorizados.
+`ToolSidebar` é filho de `AppTopBar`; `studio-controller.ts` não move sua raiz nem substitui seus filhos. Seleção, ícones, responsividade e CSS pertencem aos componentes Vue, preservando `data-panel` e `data-material-icon`. Os contratos Electron, o smoke do renderer e uma captura visual local passaram após compilar somente a interface. QA interativo com mídias reais continua necessário para a entrega do aplicativo.
 
-## Ordem recomendada para retomada
+## Depois da componentização
 
-1. Terminar a auditoria dos componentes antigos antes de criar novos setores.
-2. Revisar os painéis da biblioteca e consolidar padrões repetidos.
-3. Revisar a fronteira de waveform e filmstrip, preservando o gerenciamento eficiente de canvas e mídia.
-4. Migrar os setores visuais restantes ainda criados por DOM imperativo.
-5. Reduzir handlers baseados em IDs em favor de props, emits e estado reativo.
-6. Unificar aplicações Vue independentes sob uma única raiz quando os contratos restantes permitirem.
+1. Fazer QA interativo com vídeos e áudios reais, incluindo cortes, zoom, waveform, filmstrip, tela cheia, salvar/reabrir e desfazer/refazer.
+2. Reduzir gradualmente os handlers por ID em pacotes independentes, preservando os contratos legados enquanto existirem.
+3. Quando a entrega for autorizada, executar o fluxo de Setup, Portable, smoke isolado e pré-release da própria branch.
 
 ## Validação mínima durante o trabalho local
 
@@ -155,7 +161,7 @@ node --check tools/test-timeline-layout.cjs
 git diff --check
 ```
 
-Não declarar validação visual ou build como concluída se ela não foi executada. As alterações atuais permanecem locais e ainda precisam de uma futura rodada autorizada de build e teste visual antes de qualquer entrega.
+Não declarar validação visual interativa ou build dos executáveis como concluída se elas não foram executadas. As alterações atuais permanecem locais; `pnpm build:ui`, os contratos Electron e o smoke do renderer passaram sem gerar Setup ou Portable.
 
 ## Documento de acompanhamento
 

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import BaseField from './BaseField.vue'
 
-defineProps<{ label: string; inputId: string; min?: number; max?: number; step?: number }>()
+defineProps<{ label: string; inputId: string; min?: number; max?: number; step?: number; value?: number }>()
 </script>
 
 <template>
-  <BaseField :label="label"><input :id="inputId" type="number" :min="min" :max="max" :step="step"></BaseField>
+  <BaseField :label="label"><input :id="inputId" type="number" :min="min" :max="max" :step="step" :value="value"></BaseField>
 </template>
 
 <style scoped>

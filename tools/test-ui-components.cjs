@@ -31,6 +31,11 @@ app.whenReady().then(async () => {
       motionEditor.switchPanel('media')
       await new Promise(resolve => setTimeout(resolve, 0))
       check(document.querySelector('[data-panel="media"]').classList.contains('active'), 'Programmatic panel selection did not update Vue')
+      for (const id of ['mediaInput', 'audioInput', 'importProject', 'importAlightXml']) {
+        const input = document.getElementById(id)
+        check(input instanceof HTMLInputElement && input.type === 'file' && input.closest('.upload'), 'Upload field contract changed: ' + id)
+        check(getComputedStyle(input).display === 'none', 'Upload input became visible: ' + id)
+      }
       check(document.querySelector('.beat-sync-host > .beat-sync-panel'), 'Beat Sync panel component was not mounted')
       check(document.querySelector('[data-beat-bpm]') instanceof HTMLInputElement, 'Beat Sync BPM input contract changed')
       const stageArea = document.querySelector('.stage-area')
@@ -41,6 +46,17 @@ app.whenReady().then(async () => {
         check(document.getElementById(id), 'Stage component contract is missing: ' + id)
       }
       check(document.querySelector('#stage > .alignment-guides'), 'Alignment guides component is missing')
+      window.dispatchEvent(new CustomEvent('motion:stage-motion-path', { detail: [[10, 20], [40, 50]] }))
+      window.dispatchEvent(new CustomEvent('motion:stage-mask-path', { detail: [[5, 8], [90, 8], [50, 90]] }))
+      await new Promise(resolve => setTimeout(resolve, 0))
+      check(document.querySelector('#stage > .motion-path polyline')?.getAttribute('points') === '10,20 40,50', 'Motion path Vue overlay changed')
+      check(document.querySelector('#stage > .mask-path polygon')?.getAttribute('points') === '5,8 90,8 50,90', 'Mask path Vue overlay changed')
+      window.dispatchEvent(new CustomEvent('motion:stage-motion-path', { detail: null }))
+      window.dispatchEvent(new CustomEvent('motion:stage-mask-path', { detail: null }))
+      window.dispatchEvent(new CustomEvent('motion:parent-options', { detail: { options: [{ value: '', label: 'Nenhuma' }, { value: '7', label: '<img id="unsafeParentMarkup">' }], value: '7' } }))
+      await new Promise(resolve => setTimeout(resolve, 0))
+      check(document.getElementById('propParent').value === '7' && document.getElementById('propParent').options[1].textContent.includes('<img'), 'Parent options Vue rendering changed')
+      check(!document.getElementById('unsafeParentMarkup'), 'Parent name was interpreted as HTML')
       const timelineToolbar = document.querySelector('.timeline-controls > .timeline-edit-tools')
       check(timelineToolbar, 'TimelineToolbar component is missing')
       check(timelineToolbar.querySelectorAll(':scope > .timeline-tool-group').length === 6, 'Timeline toolbar groups changed')
@@ -59,6 +75,14 @@ app.whenReady().then(async () => {
       document.getElementById('resolutionButton').click()
       document.querySelector('[data-resolution="1440x1440"]').click()
       check(motionEditor.state.composition.width === 1440 && motionEditor.state.composition.height === 1440, 'Resolution component lost its controller behavior')
+      document.getElementById('resolutionButton').click()
+      document.querySelector('[data-resolution="1920x1080"]').click()
+      document.getElementById('resolutionButton').click()
+      document.getElementById('compositionWidth').value = '1000'
+      document.getElementById('compositionHeight').value = '700'
+      document.getElementById('applyResolution').click()
+      await new Promise(resolve => setTimeout(resolve, 0))
+      check(document.querySelector('#aspect option[data-custom]')?.value === '1000/700' && document.getElementById('aspect').value === '1000/700', 'Vue custom aspect option changed')
       document.getElementById('resolutionButton').click()
       document.querySelector('[data-resolution="1920x1080"]').click()
       check(document.querySelectorAll('#panel-effects [data-effect]').length === 10, 'Effect preset components changed')
@@ -148,6 +172,27 @@ app.whenReady().then(async () => {
       document.querySelector('.time-ruler').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: bounds.left + 260 + 6.35 * pixelsPerSecond }))
       dispatchEvent(new PointerEvent('pointerup'))
       check(Math.abs(motionEditor.state.playback.time - 6.35) < .05, 'Playhead could not move freely beyond the magnetic radius')
+      const shape = motionEditor.addLayer('rect', '', 'Teste de handle')
+      motionEditor.selectLayer(shape.id)
+      const scaleHandle = document.querySelector('.layer.selected .transform-handle.scale')
+      check(scaleHandle && document.querySelector('.layer.selected .transform-handle.rotate'), 'Vue transform handles were not mounted')
+      const stageBounds = document.getElementById('stage').getBoundingClientRect()
+      const centerX = stageBounds.left + stageBounds.width * shape.x / 100
+      const centerY = stageBounds.top + stageBounds.height * shape.y / 100
+      const startScale = shape.scale
+      scaleHandle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: centerX + 20, clientY: centerY }))
+      dispatchEvent(new PointerEvent('pointermove', { clientX: centerX + 40, clientY: centerY }))
+      dispatchEvent(new PointerEvent('pointerup', { clientX: centerX + 40, clientY: centerY }))
+      check(shape.scale > startScale, 'Vue scale handle lost its editing gesture')
+      motionEditor.renderLayers()
+      check(document.querySelectorAll('.layer.selected .transform-handle').length === 2, 'Stage redraw duplicated or lost Vue handles')
+      const vector = motionEditor.addLayer('path', '', 'Caminho QA')
+      vector.pathPoints = [[10, 10], [20, 30], [40, 50]]
+      motionEditor.renderLayers()
+      check(document.querySelector('.layer.path > svg path')?.getAttribute('d').startsWith('M 10 10'), 'Vue vector path was not mounted')
+      motionEditor.state.layers = []
+      motionEditor.renderLayers()
+      check(!document.querySelector('#stage > .layer') && !document.querySelector('.transform-handle'), 'Stage layer and handle Vue hosts were not cleaned up')
     })()`)
     console.log('UI component contracts passed')
   } finally {

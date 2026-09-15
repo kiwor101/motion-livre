@@ -14,7 +14,8 @@ app.whenReady().then(async()=>{
       const x=start.left+25,y=start.top+start.height/2,dropX=x+200,dropY=row.top+row.height/2;
       source.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,clientX:x,clientY:y}));
       window.dispatchEvent(new PointerEvent('pointermove',{button:0,clientX:dropX,clientY:dropY}));
-      const indicator=document.querySelector('.track-drop-indicator');if(indicator.hidden||!indicator.textContent.includes('Inserir')||!document.querySelector('[data-clip="12"]').classList.contains('ripple-shift'))throw Error('Destino vertical ou prévia de inserção ausente');
+      await new Promise(resolve=>requestAnimationFrame(resolve));
+      const indicator=document.querySelector('.track-drop-indicator');if(!indicator||!indicator.textContent.includes('Inserir')||!document.querySelector('[data-clip="12"]').classList.contains('ripple-shift'))throw Error('Destino vertical ou prévia de inserção ausente');
       window.dispatchEvent(new PointerEvent('pointerup',{button:0,clientX:dropX,clientY:dropY}));
       const at=id=>state.layers.find(layer=>layer.id===id);if(Math.abs(at(14).start-5)>.05||Math.abs(at(12).start-7)>.05||Math.abs(at(13).start-11)>.05||at(14).trackId!=='cuts'||Math.abs(state.duration-14)>.05||Math.abs(state.renderRange.end-14)>.05)throw Error('Inserção não abriu espaço ou deixou trecho novo fora da faixa de renderização');
       document.getElementById('undoBtn').click();if(at(14).trackId!=='other'||Math.abs(at(12).start-5)>.05)throw Error('Desfazer não restaurou os clipes');
@@ -22,7 +23,8 @@ app.whenReady().then(async()=>{
       const moved=document.querySelector('[data-clip="14"]'),movedBox=moved.getBoundingClientRect(),movedRow=document.querySelector('.track[data-track="cuts"]').getBoundingClientRect();
       const mx=movedBox.left+25,my=movedBox.top+movedBox.height/2;moved.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,clientX:mx,clientY:my}));
       window.dispatchEvent(new PointerEvent('pointermove',{button:0,clientX:mx+15,clientY:movedRow.top+2}));
-      const line=document.querySelector('.track-drop-indicator');if(line.hidden||!line.classList.contains('new-track'))throw Error('Troca de camada não mostrou guia horizontal');
+      await new Promise(resolve=>requestAnimationFrame(resolve));
+      const line=document.querySelector('.track-drop-indicator');if(!line||!line.classList.contains('new-track'))throw Error('Troca de camada não mostrou guia horizontal');
       window.dispatchEvent(new PointerEvent('pointercancel',{button:0,clientX:mx+15,clientY:movedRow.top+2}));
     })()`);
     console.log('PASS: indicação vertical e inserção entre cortes');app.quit();

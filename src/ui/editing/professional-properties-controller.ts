@@ -44,14 +44,10 @@ function drawEasing(layer:Layer|null):void {
 }
 
 function renderMotionPath(layer:Layer|null):void {
-  document.querySelector('.motion-path')?.remove();
-  if(!layer||!uiState.showMotionPath)return;
+  const show=(points:Array<[number,number]>|null)=>window.dispatchEvent(new CustomEvent('motion:stage-motion-path',{detail:points}));
+  if(!layer||!uiState.showMotionPath){show(null);return}
   const points=layer.keyframes.filter(frame=>Number.isFinite(frame.values.x)&&Number.isFinite(frame.values.y)).slice().sort((left,right)=>left.time-right.time);
-  if(points.length<2)return;
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('motion-path');svg.setAttribute('viewBox','0 0 100 100');
-  const polyline=document.createElementNS(svg.namespaceURI,'polyline');polyline.setAttribute('points',points.map(frame=>`${frame.values.x},${frame.values.y}`).join(' '));svg.append(polyline);
-  for(const frame of points){const dot=document.createElementNS(svg.namespaceURI,'circle');dot.setAttribute('cx',String(frame.values.x));dot.setAttribute('cy',String(frame.values.y));dot.setAttribute('r','1.4');svg.append(dot)}
-  byId('stage').append(svg);
+  show(points.length<2?null:points.map(frame=>[frame.values.x,frame.values.y]));
 }
 
 export function installProfessionalPropertiesController(context:ProfessionalPropertiesContext):void {
@@ -64,9 +60,9 @@ export function installProfessionalPropertiesController(context:ProfessionalProp
     byId<HTMLInputElement>('propReverse').checked=layer.reverse;setValue('propFillType',layer.fillType);setValue('propGradientColor',layer.gradientColor);setValue('propGradientAngle',layer.gradientAngle);setValue('outGradientAngle',`${layer.gradientAngle}°`);setValue('propMaskMode',layer.maskMode);
     setValue('fxGlowColor',typeof layer.glowColor==='string'?layer.glowColor:'#ffffff');setValue('fxChromaColor',typeof layer.chromaColor==='string'?layer.chromaColor:'#00ff00');
     for(const [id,key] of Object.entries(effectFields)){const value=layer.effects[key]??(key.endsWith('Gain')?100:0);setValue(`fx${id}`,value);setValue(`out${id}`,`${value}${key==='motionBlur'?'px':'%'}`)}
-    const parent=byId<HTMLSelectElement>('propParent'),current=String(layer.parentId||'');parent.replaceChildren(new Option('Nenhuma',''));
-    for(const candidate of context.state.layers)if(candidate.id!==layer.id)parent.append(new Option(candidate.name,String(candidate.id)));
-    parent.value=current;drawEasing(layer);context.renderEffectStack();renderMotionPath(layer);
+    const parentOptions=[{value:'',label:'Nenhuma'},...context.state.layers.filter(candidate=>candidate.id!==layer.id&&candidate.id!==undefined).map(candidate=>({value:String(candidate.id),label:candidate.name}))];
+    window.dispatchEvent(new CustomEvent('motion:parent-options',{detail:{options:parentOptions,value:String(layer.parentId||'')}}));
+    drawEasing(layer);context.renderEffectStack();renderMotionPath(layer);
   };
   const originalSync=context.syncProps;context.replaceSyncProps(()=>{originalSync();syncProfessionalProperties()});
 

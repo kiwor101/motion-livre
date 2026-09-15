@@ -9,6 +9,7 @@ import ProjectMenu from './ProjectMenu.vue'
 import ToastMessage from './ToastMessage.vue'
 import TimelineContextMenu from './TimelineContextMenu.vue'
 import StudioTooltip from './StudioTooltip.vue'
+import TimelineMarquee from './TimelineMarquee.vue'
 import BeatSyncPanel from '../timeline/BeatSyncPanel.vue'
 </script>
 
@@ -23,5 +24,6 @@ import BeatSyncPanel from '../timeline/BeatSyncPanel.vue'
   <CompatibilityReport />
   <TimelineContextMenu />
   <StudioTooltip />
+  <TimelineMarquee />
   <div class="beat-sync-host"><BeatSyncPanel /></div>
 </template>

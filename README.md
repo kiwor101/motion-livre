@@ -74,16 +74,6 @@ O preview e os trechos compostos da exportação usam o mesmo avaliador de cena 
 
 Isso facilita manutenção, testes e colaboração. **Não é uma conversão direta do APK nem um motor totalmente concluído.**
 
-### Build de teste da próxima integração
-
-A prévia abaixo inclui a atualização mais recente do Emanuel, revisada na branch do mantenedor e compilada do commit `4840d3c362a86988dff57f829c4208f788a72c69`:
-
-- [Portable de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-4840d3c/Motion-Livre-Portable-0.0.1-x64.exe)
-- [Setup de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-4840d3c/Motion-Livre-Setup-0.0.1-x64.exe)
-- [Notas e hashes](https://github.com/kiwor101/motion-livre/releases/tag/preview-kiwor101-4840d3c)
-
-Esta é uma pré-release para QA e não substitui os downloads oficiais destacados no início da página até a integração na `main`.
-
 ### Limites e próximos passos
 
 - Render graph completo, shaders dedicados e transferência de baixa cópia entre GPU e encoder ainda são evoluções futuras. Parte da rasterização permanece em Canvas.

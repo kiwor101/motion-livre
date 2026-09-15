@@ -1,0 +1,225 @@
+<script setup lang="ts">
+defineProps<{
+  clipId: number
+  kind: string
+  title: string
+  durationLabel: string
+  iconUrl: string
+  selected: boolean
+  visible: boolean
+  keyframes: number[]
+}>()
+
+defineEmits<{
+  edit: [event: PointerEvent]
+  menu: [event: MouseEvent]
+}>()
+</script>
+
+<template>
+  <div
+    class="clip pro-clip"
+    :class="{'selected-clip': selected}"
+    :data-clip="clipId"
+    :data-kind="kind"
+    :title="`${title} · ${durationLabel}`"
+    :style="{opacity: visible ? '1' : '.35', '--clip-icon': `url('${iconUrl}')`}"
+    @pointerdown="$emit('edit', $event)"
+    @contextmenu="$emit('menu', $event)"
+  >
+    <div class="filmstrip"></div>
+    <span class="clip-label">
+      <i class="clip-kind-icon"></i>
+      <span class="clip-title">{{ title }}</span>
+    </span>
+    <i class="clip-handle left"></i>
+    <i class="clip-handle right"></i>
+    <i v-for="position in keyframes" :key="position" class="key-dot" :style="{left: `${position}%`}"></i>
+  </div>
+</template>
+
+<style scoped>
+.clip {
+  position: absolute;
+  top: 3px;
+  height: var(--clip-height);
+  margin: 0;
+  padding: 0 6px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px #ffffff16;
+  cursor: grab;
+  touch-action: none;
+}
+
+.clip:active {
+  cursor: grabbing;
+}
+
+.clip[data-kind='video'] {
+  border-color: #28538f;
+  background: #477fd1;
+  color: #102f58;
+}
+
+.clip[data-kind='image'] {
+  border-color: #8e4033;
+  background: #df745d;
+  color: #63281e;
+}
+
+.clip[data-kind='audio'] {
+  border-color: #37423e;
+  background: #18201e;
+}
+
+.clip[data-kind='text'] {
+  border-color: #4e168f;
+  background: #7927db;
+  color: #d9bdf9;
+}
+
+.clip:is([data-kind='rect'], [data-kind='circle'], [data-kind='drawing'], [data-kind='path']) {
+  border-color: #268b91;
+  background: #5ad9dc;
+  color: #17535a;
+}
+
+.clip:is([data-kind='null'], [data-kind='camera']) {
+  border-color: #923f30;
+  background: #e66b52;
+  color: #702c21;
+}
+
+.selected-clip {
+  border: 1px solid #f0f0f0 !important;
+  box-shadow: 0 0 0 1px #0b0b0c, 0 0 0 2px #f0f0f080 !important;
+}
+
+.dragging {
+  z-index: 6;
+  opacity: .75 !important;
+  box-shadow: 0 5px 15px #0008;
+}
+
+.invalid-drop {
+  border-color: #ff617d !important;
+}
+
+.filmstrip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-start;
+  gap: 0;
+  overflow: hidden;
+  background: transparent;
+  pointer-events: none;
+}
+
+.clip:not([data-kind='video'], [data-kind='image']) .filmstrip {
+  display: none;
+}
+
+.filmstrip :deep(img) {
+  width: 72px;
+  min-width: 72px;
+  max-width: none;
+  height: 100%;
+  flex: 1 0 72px;
+  margin: 0;
+  border-radius: 0;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.clip-label {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  height: 100%;
+  padding: 0;
+  gap: 6px;
+  overflow: hidden;
+  background: transparent;
+  color: inherit;
+  font-size: 9px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.clip:is([data-kind='video'], [data-kind='image']) .clip-label {
+  display: none;
+}
+
+.clip[data-kind='audio'] .clip-label {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  max-width: min(120px, 55%);
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  color: #d8dedb;
+}
+
+.clip-kind-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  background: currentColor;
+  mask: var(--clip-icon) center / contain no-repeat;
+}
+
+.clip-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.clip-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 5px;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+.clip-handle.left { left: 0; }
+.clip-handle.right { right: 0; }
+.clip-handle:hover { background: #09c0d8; }
+.selected-clip .clip-handle { background: #fff9; }
+
+.key-dot {
+  position: absolute;
+  top: 7px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid #6650c9;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+:deep(.clip-waveform) {
+  position: absolute;
+  inset: 1px 4px;
+  width: calc(100% - 8px);
+  height: calc(100% - 2px);
+  opacity: 1;
+  image-rendering: auto;
+  pointer-events: none;
+}
+
+.clip[data-kind='audio'] :deep(.clip-waveform) {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: .9;
+}
+</style>

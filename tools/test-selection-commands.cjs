@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const Editor=require('../.build/core/editor-state.js'),Project=require('../.build/core/project-model.js'),Selection=require('../.build/core/selection-commands.js');
+const state=Editor.create({layers:[1,2,3].map(id=>Project.normalizeLayer({id},10))});
+assert.equal(Selection.selectOnly(state,1),1);assert.equal(state.selection.selectedIds.size,0);
+Selection.toggle(state,2);assert.deepEqual([...state.selection.selectedIds],[1,2]);assert.equal(state.selection.selected,2);
+Selection.toggle(state,2);assert.deepEqual([...state.selection.selectedIds],[1]);assert.equal(state.selection.selected,1);
+Selection.selectRange(state,{order:[1,2,3],anchor:1,target:3});assert.deepEqual([...state.selection.selectedIds],[1,2,3]);assert.equal(state.selection.selected,3);
+Selection.toggleMany(state,[1,2]);assert.deepEqual([...state.selection.selectedIds],[3]);assert.equal(state.selection.selected,3);
+Selection.setMany(state,{ids:[2,99],additive:true,primary:2});assert.deepEqual([...state.selection.selectedIds],[3,2]);assert.equal(state.selection.selected,2);
+assert.equal(Selection.selectOnly(state,99),null);assert.equal(state.selection.selectedIds.size,0);
+console.log('PASS: selection commands own single, range, toggle and additive selection');

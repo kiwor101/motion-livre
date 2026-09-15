@@ -4,6 +4,8 @@
 
 - Ícones Lucide 0.468.0, licença ISC. Arquivos SVG locais em `assets/icons/`; licença completa em `assets/icons/LICENSE`. Fonte: https://github.com/lucide-icons/lucide/tree/0.468.0.
 - Fonte Inter Variable, de Rasmus Andersson, licença SIL Open Font License 1.1. Arquivo local em `assets/fonts/InterVariable.woff2`; licença completa em `assets/fonts/LICENSE.txt`. Fonte: https://rsms.me/inter/.
+- Fonte Noto Sans Variable, licença SIL Open Font License 1.1. Arquivo local em `assets/fonts/NotoSans-Variable.ttf`; licença completa em `assets/fonts/NotoSans-OFL.txt`.
+- Ícones Material Symbols Rounded, licença Apache 2.0. Fonte local em `assets/fonts/MaterialSymbolsRounded.woff2`; licença completa em `assets/fonts/MaterialSymbols-LICENSE.txt`.
 
 ## Alight Motion XML Schema
 

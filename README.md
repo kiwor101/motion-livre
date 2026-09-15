@@ -1,190 +1,198 @@
 # Motion Livre
 
-Editor de vídeo e motion design para Windows, aberto, offline e sem anúncios.
+Editor de vídeo e motion design para Windows. Aberto, offline, sem anúncios e sem conta obrigatória.
 
-**Downloads — versão 0.0.1 · Windows 10/11 de 64 bits**
+## Baixar para Windows
 
-| Versão | Download | Como usar |
+**Versão 0.0.1 · Windows 10/11 · 64 bits**
+
+| Pacote | Download direto | Uso |
 |---|---|---|
-| Portátil | [Baixar Portable.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.1/Motion-Livre-Portable-0.0.1-x64.exe) | Baixe e abra, sem instalação. |
-| Instalador | [Baixar Setup.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.1/Motion-Livre-Setup-0.0.1-x64.exe) | Instale na pasta desejada e use os atalhos do Windows. |
+| **Portable** | **[Baixar Portable.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.1/Motion-Livre-Portable-0.0.1-x64.exe)** | Abra o arquivo, sem instalar o aplicativo. |
+| **Setup** | **[Baixar Setup.exe](https://github.com/kiwor101/motion-livre/releases/download/v0.0.1/Motion-Livre-Setup-0.0.1-x64.exe)** | Instale e use os atalhos do Windows. |
 
-Os dois pacotes incluem Electron, FFmpeg e FFprobe. [Ver arquivos e notas da versão](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.1).
+[Arquivos, data da build, commit e SHA256](https://github.com/kiwor101/motion-livre/releases/tag/v0.0.1) · [Página de downloads](BAIXAR_MOTION_LIVRE.md)
 
-Estes são os downloads **oficiais**. Atualizações ainda nas branches dos colaboradores podem ter builds separadas, marcadas como **Pre-release** para testes; elas não substituem automaticamente estes arquivos.
+Os dois pacotes incluem Electron, FFmpeg e FFprobe. Para **usar** o programa, não é necessário instalar Node.js, pnpm, Rust ou ferramentas de desenvolvimento. Os arquivos “Source code” do GitHub não são os executáveis.
 
-## Sobre o projeto
+O Portable dispensa instalação, mas precisa de espaço para extração temporária, configurações, recuperação e proxies no perfil do Windows; não guarda necessariamente tudo ao lado do executável. Edição e exportação funcionam localmente, sem enviar suas mídias para um serviço.
 
-O Motion Livre reúne edição por camadas, animação, áudio e exportação em um aplicativo desktop independente. Ele funciona localmente e já inclui o motor FFmpeg necessário para leitura e geração de mídia.
+Este projeto está em desenvolvimento. Preserve cópias dos projetos e mídias importantes. A versão permanece **0.0.1** neste ciclo; confira a data e o commit da release para identificar a atualização.
 
-A versão atual é `0.0.1` e oferece instalador e executável portátil para Windows 10 e Windows 11 de 64 bits. Esta é a base da nova organização do projeto, preservando as funcionalidades e correções já implementadas. A numeração foi padronizada, sem apagar o histórico de contribuições.
+## Começar a editar
 
-## Recursos
+1. Abra o Portable ou o programa instalado pelo Setup.
+2. Importe vídeos, imagens e áudio pelo painel **Mídia**, ou arraste os arquivos para a janela. A primeira mídia de vídeo pode definir a composição automaticamente.
+3. Posicione os clipes na timeline. Arraste as bordas para recortar e use **Dividir no cursor** para separar um clipe na mesma faixa.
+4. Selecione uma camada para ajustar posição, escala, rotação, opacidade, áudio, efeitos e keyframes. O botão direito abre as ações do clipe.
+5. Salve em `.motion.json` para continuar editando.
+6. Abra **Exportar**, escolha MP4 ou outro formato e confira resolução, FPS, qualidade e intervalo.
 
-### Edição e timeline
+**O projeto não embute automaticamente os arquivos de mídia.** Vídeos e áudios locais continuam vinculados aos caminhos originais. Ao transferir o trabalho, leve também as mídias e confira os vínculos. Salvar o projeto editável e exportar um vídeo são operações diferentes.
 
-- Vídeo, imagem, áudio, texto, formas e desenho vetorial.
-- Timeline com arraste, zoom, encaixe, marcadores e waveform.
-- Seleção múltipla de clipes com Ctrl, Shift ou seleção por arraste.
-- Marcadores de batida (Beat sync), separados dos marcadores manuais.
-- Corte pelas bordas do clipe, divisão no cursor, entrada, saída e velocidade.
-- Camadas com visibilidade, bloqueio, ordem, agrupamento e precomposição.
-- Arrastar e soltar um ou vários vídeos ou imagens diretamente na janela.
+O intervalo In/Out salvo também limita a reprodução. Se o preview parar antes do final esperado, confira os marcadores de início/fim da renderização.
 
-### Animação e composição
+## Recursos atuais
 
-- Keyframes de posição, escala, rotação, profundidade e opacidade.
-- Curvas de easing, caminho de movimento, parenting, objetos nulos e câmera 2.5D.
-- Transições de fade, zoom e deslizamento.
-- Máscaras geométricas e poligonais, recorte, âncora e espelhamento.
-- Composições 16:9, 9:16, 1:1 e 4:5 com resolução e FPS configuráveis.
+### Timeline e edição
 
-### Efeitos e áudio
+- Vídeo, imagem, áudio, texto, formas e desenho/caminhos vetoriais.
+- Faixas agrupadas, miniaturas locais, waveform centralizada, zoom, encaixe e rolagem.
+- Seleção com Ctrl, Shift ou caixa; exclusão e movimentação horizontal conjunta.
+- Divisão no cursor, trim, velocidade, reverso, espelhamento e congelamento de quadro.
+- Duplicação em faixa acima, reordenação por arraste, nomes, visibilidade e bloqueio.
+- Marcadores manuais e Beat Sync por BPM/deslocamento; estimativa opcional pela waveform.
+- Intervalo In/Out e remoção de espaço vazio no início/final.
+- Histórico transacional para reunir eventos de um mesmo gesto em uma ação de desfazer/refazer.
 
-- Brilho, contraste, saturação, matiz, blur, glow, vinheta e nitidez.
-- Ajuste RGB, sépia, inversão, chroma key e motion blur.
-- Gradientes, contorno, cantos e modos de mesclagem.
-- Mixer com volume, panorama, solo, mute, fades e seleção de canal esquerdo ou direito.
-- Separação do áudio de uma camada de vídeo.
+### Áudio, animação e efeitos
 
-### Arquivos e exportação
+- Extração do áudio de um vídeo para uma faixa independente.
+- Volume, pan, canais esquerdo/direito/estéreo, mute, solo e fades.
+- Cortes preservam origem e propriedades; o plano de áudio alinha samples e timestamps para reduzir falhas nas emendas.
+- Keyframes, easing, parenting, nulos, câmera 2.5D, agrupamento e precomposição.
+- Ajustes de cor, desfoque, glow, vinheta, nitidez, chroma key, máscaras, gradientes, contornos e transições existentes.
+- Presets de camada em `.motion-effect.xml` e cenas XML compatíveis com Alight Motion.
 
-- Projetos editáveis no formato `.motion.json`.
-- Presets reutilizáveis no formato `.motion-effect.xml`.
-- Importação e exportação de cenas XML compatíveis com o ecossistema Alight Motion.
-- Exportação para MP4, MOV, WebM, GIF, PNG e MP3.
-- Presets de saída de 720p a 4K.
-- Faixa de renderização para exportar somente o trecho escolhido.
-- Salvamento automático e histórico de desfazer/refazer.
+Compatibilidade XML **não significa reprodução idêntica de todos os efeitos** do Alight Motion. Efeitos externos desconhecidos podem ser preservados como dados e reexportados sem implementação visual no Motion Livre. [Limites da compatibilidade](docs/COMPATIBILIDADE_ALIGHT_XML.md).
 
-## Instalação
+### Preview e exportação
 
-Para uso normal, escolha uma das opções na [página de versões](https://github.com/kiwor101/motion-livre/releases):
+- Preview adaptativo com composição WebGL2, recuperação de contexto e limites de recursos.
+- Proxies locais para aliviar a edição; áudio e exportação usam as mídias originais.
+- MP4/MOV com H.264 e AAC; também há saídas WebM, GIF, PNG e MP3.
+- Planejamento por segmentos: cópia compatível, recorte direto, processamento FFmpeg e composição apenas dos intervalos que exigem novos pixels.
+- Sobreposições estáticas elegíveis podem ser rasterizadas uma vez e aplicadas pelo FFmpeg.
+- Sondagem funcional de NVENC, Quick Sync e AMF; software quando nenhum encoder selecionado é aprovado. Ganhos dependem do hardware, formato e edição.
+- Cancelamento e limpeza da sessão, permitindo nova tentativa após falhas cobertas pelos testes.
 
-- **Instalador:** permite escolher a pasta e cria atalhos no Windows.
-- **Portátil:** executa diretamente, sem instalação.
+## O que mudou no motor
 
-O computador do usuário não precisa ter Node.js, Electron, FFmpeg, Rust, codecs ou ferramentas de desenvolvimento instalados.
+Os sete scripts globais antigos foram substituídos por módulos TypeScript e uma interface montada com Vue e Vite. A componentização planejada está em aproximadamente 76%, incluindo controles-base, overlays, régua, agulha, cabeçalhos e clipes da timeline. Projeto, tempo, cortes, histórico e áudio ficam separados da interface e da ponte do Windows.
 
-Na página da versão, escolha um dos arquivos `.exe`. Os links **Source code (zip/tar.gz)** são destinados ao desenvolvimento e não contêm o programa pronto para uso. Projetos e mídias devem ser salvos em uma pasta própria; mantenha os arquivos de mídia nos caminhos usados pelo projeto.
+O preview e os trechos compostos da exportação usam o mesmo avaliador de cena e compositor. A exportação analisa o projeto antes de decidir quais intervalos precisam desse compositor: um efeito localizado não deve obrigar todo o vídeo a passar pelo caminho mais caro.
 
-## Primeiros passos
+Isso facilita manutenção, testes e colaboração. **Não é uma conversão direta do APK nem um motor totalmente concluído.**
 
-1. Abra o Motion Livre e defina o nome e as propriedades da composição.
-2. Importe a mídia pelo painel lateral ou arraste os arquivos para o palco.
-3. Organize e corte as camadas na timeline.
-4. Ajuste propriedades, efeitos, keyframes, transições e canais de áudio.
-5. Salve o projeto em `.motion.json` para continuar a edição depois.
-6. Abra **Exportar**, escolha o formato e configure resolução, FPS e qualidade.
+### Build de teste da próxima integração
 
-Atalhos principais:
+A prévia abaixo inclui a atualização mais recente do Emanuel, revisada na branch do mantenedor e compilada do commit `4840d3c362a86988dff57f829c4208f788a72c69`:
 
-| Atalho | Ação |
-|---|---|
-| `Ctrl+N` | Novo projeto |
-| `Ctrl+O` | Abrir projeto |
-| `Ctrl+S` | Salvar projeto |
-| `Ctrl+Z` / `Ctrl+Y` | Desfazer / refazer |
-| `Espaço` | Reproduzir / pausar |
-| `Delete` | Excluir camada selecionada |
+- [Portable de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-4840d3c/Motion-Livre-Portable-0.0.1-x64.exe)
+- [Setup de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-4840d3c/Motion-Livre-Setup-0.0.1-x64.exe)
+- [Notas e hashes](https://github.com/kiwor101/motion-livre/releases/tag/preview-kiwor101-4840d3c)
+
+Esta é uma pré-release para QA e não substitui os downloads oficiais destacados no início da página até a integração na `main`.
+
+### Limites e próximos passos
+
+- Render graph completo, shaders dedicados e transferência de baixa cópia entre GPU e encoder ainda são evoluções futuras. Parte da rasterização permanece em Canvas.
+- Mesclagens não normais usam temporariamente o rasterizador compartilhado para preservar o fundo; isso pode custar mais processamento que o blend normal.
+- A decodificação acelerada de vídeo do Chromium fica desativada por padrão por um problema de estabilidade reproduzido no Windows. A composição WebGL continua acelerada; recuperação automática do decoder ainda é trabalho futuro.
+- Preview sem proxy, reverso, projetos complexos e equivalência visual em diferentes GPUs precisam de validação contínua. Não há promessa de exportação instantânea ou desempenho universal em 4K.
+- A interface de composição permite até 600 segundos e a abertura de projetos normaliza a duração para esse limite. Esta base não garante suporte a projetos mais longos.
+- Testes antigos de navegador que dependem de `state`, `addLayer` e outras funções globais precisam migrar para `window.motionEditor`. São preservados, mas não equivalem à suíte atual aprovada.
+- Assinaturas, atualização automática e versão mobile não estão implementadas nesta entrega.
 
 ## Desenvolvimento
 
-Pré-requisitos:
+Requisitos **somente para programar/compilar**: Windows x64, PowerShell, Git, Node.js **22.12 ou superior**, pnpm **11.19.0** e internet na preparação inicial. Build validada com Node.js 24.18.0. Node 20 não atende a todas as dependências atuais.
 
-- Node.js 20 ou superior;
-- pnpm 11;
-- PowerShell;
-- conexão com a internet na preparação inicial.
-
-Preparação do ambiente:
+Se ainda não houver um clone:
 
 ```powershell
 git clone https://github.com/kiwor101/motion-livre.git
 cd motion-livre
-pnpm install
+```
+
+No clone existente, preserve seu trabalho e selecione sua branch conforme [CONTRIBUTING.md](CONTRIBUTING.md). Não crie outra cópia para desenvolver ou compilar.
+
+```powershell
+pnpm install --frozen-lockfile
 pnpm setup:ffmpeg
 pnpm dev
 ```
 
-Use a própria pasta clonada do repositório para editar, executar e compilar. Abra essa pasta no Codex e no terminal; não é necessário manter uma segunda cópia do projeto. Dependências e componentes locais ficam em `node_modules/` e `vendor/ffmpeg/`, fora do versionamento.
+Execute um comando por vez e pare no erro. `setup:ffmpeg` prepara os componentes quando ausentes. `npm run dev` também inicia o editor; o pnpm precisa estar disponível porque o script o utiliza internamente. O desenvolvimento compila o núcleo, gera a interface e acompanha alterações da UI.
 
-Na raiz do projeto, `npm run dev` também inicia o editor depois da preparação acima.
+### Validar
 
-Gerar instalador e versão portátil:
+```powershell
+pnpm check:ui
+pnpm build:ui
+pnpm test:core
+pnpm test:renderer
+pnpm test:smoke
+pnpm exec electron tools/test-timeline-layout.cjs
+```
+
+O núcleo cobre comandos, persistência, áudio, plano de exportação e FFmpeg real. A suíte Electron cobre composição, edição, XML e reprodução com cortes. O smoke exercita mídia sintética, proxies, histórico e exportação. O teste de timeline verifica alturas das faixas e dinâmica da waveform. Alguns testes abrem janelas temporárias; usam perfis isolados.
+
+Esses comandos não substituem QA com projetos reais, todas as combinações de efeitos ou instalação do Setup em uma máquina limpa. Informe quais passaram; não declare todos os scripts de `tools/` aprovados sem executá-los.
+
+### Gerar Setup e Portable
 
 ```powershell
 pnpm dist
 ```
 
-Os dois executáveis de 64 bits são gravados em `dist/`. O empacotamento usa temporariamente `.build/runtime/`, dentro do próprio projeto. Quando os dois pacotes são gerados com sucesso, os arquivos intermediários e executáveis antigos de `dist/` são removidos, mantendo somente o instalador e o portátil da versão atual.
+Saídas:
 
-Os executáveis são distribuídos pelos anexos da Release no GitHub. Dependências, binários do FFmpeg, dados locais e artefatos de compilação não são versionados.
+- `dist/Motion-Livre-Setup-0.0.1-x64.exe`
+- `dist/Motion-Livre-Portable-0.0.1-x64.exe`
 
-## Organização do código
+O empacotamento compila o núcleo e a interface e usa `.build/runtime/` temporariamente. Após sucesso, `dist/` mantém apenas os dois executáveis atuais. `.build/core/`, `.build/renderer/` e `ui-dist/` são saídas locais de compilação, não cópias alternativas do código-fonte.
 
-### Edição na timeline
+Executáveis são anexos de Releases, não arquivos commitados. Dependências, FFmpeg, caches, mídias e resultados temporários ficam fora do Git.
 
-- Interface com ícones Lucide e fonte Inter incluídos localmente, sem CDN. O CSS próprio define os componentes e espaçamentos do editor.
-- Régua com escala fixa de 40 pixels por segundo no zoom inicial, traços a cada segundo e números a cada 5 segundos. Use a rolagem horizontal, o controle de zoom ou **Alt/Shift + roda do mouse**. Redimensionar a janela não altera a escala temporal.
-- A barra sob o preview oferece reprodução, início/fim, navegação temporal, volume, guias e tela cheia. Os controles continuam disponíveis em tela cheia; Esc sai.
-- O botão de grade ativa guias de alinhamento em 9:16, 16:9, 1:1, 4:5 ou na proporção da composição. As guias não alteram a mídia e não são exportadas.
-- Faixas de texto e áudio são compactas; áudio mostra sua forma de onda, respeitando o trecho recortado. Botões com ícones exibem dicas ao passar o mouse ou receber foco pelo teclado.
+## Mapa do código
 
-- Dividir no cursor mantém as duas partes do clipe na mesma faixa.
-- As setas **↑ / ↓** movem o clipe selecionado para a faixa vizinha; nas extremidades, criam uma nova faixa. Intervalos ocupados não são sobrescritos.
-- Arraste a régua ou o cursor branco para navegar pelo vídeo. Arraste o centro de um clipe para movê-lo e suas bordas para ajustar entrada e saída.
-- Durante o movimento, a faixa de destino é destacada e uma guia mostra o intervalo. Segure **Alt** para ignorar o encaixe; o posicionamento respeita os quadros da composição.
-- Vídeos exibem miniaturas geradas localmente. As faixas são preservadas no projeto JSON; cada clipe mantém seus próprios efeitos e keyframes.
-- **⧉ Duplicar** cria uma faixa acima, mantendo a posição visual do conteúdo. Arraste um clipe para a borda superior/inferior de uma faixa para criar outra faixa; a guia indica o destino.
-- Arraste o nome de uma faixa na timeline ou no painel **Camadas** para reordenar a faixa inteira. Dê duplo clique no nome para renomear; confirme com Enter ou cancele com Esc.
-- Projetos salvam a biblioteca de mídia (inclusive arquivos sem clipes), os nomes e a organização das faixas. Arquivos locais continuam vinculados pelos seus caminhos originais.
+| Pasta/arquivo | Responsabilidade |
+|---|---|
+| `src/core/` | Modelo, comandos, tempo, keyframes, histórico, sessão e planos de áudio/vídeo; sem DOM ou Electron. |
+| `src/renderer/` | Mídias, preview, rasterização, composição WebGL e controlador de exportação. |
+| `src/ui/components/` | Componentes Vue dos painéis e regiões do editor. |
+| `src/ui/` | Controladores TypeScript de edição, timeline, importação e plataforma. |
+| `desktop/` | Processo principal Electron, IPC, proxies e FFmpeg. |
+| `assets/` | Fontes e ícones locais, com suas licenças. |
+| `tools/` | Preparação, empacotamento e testes. |
+| `docs/` | Arquitetura, formatos e registros históricos de migração/bugs. |
+| `index.html` | Casca que carrega a interface compilada. |
 
-```text
-desktop/                 Processo principal e ponte nativa do Electron
-docs/                    Documentação dos formatos XML
-tools/                   Preparação do FFmpeg e empacotamento
-app.js                   Editor e importação de mídia
-advanced.js              Composição, timeline e projetos
-pro-editor.js            Keyframes, máscaras, câmera e efeitos
-desktop-integration.js   Arquivos locais e exportação
-alight-compat.js         Interoperabilidade XML
-timeline.js              Faixas, clipes, miniaturas e interação temporal
-index.html               Interface do editor
-```
+Comece em `src/ui/main.ts` para entender a montagem. Não recrie `app.js`, `timeline.js` ou as pontes globais removidas. Registros datados em `docs/` descrevem aquela sessão; use o Git e este README para o estado atual.
 
-## Colaboração
+## Colaboração e publicação
 
-Cada pessoa mantém uma única pasta clonada no próprio computador e trabalha na sua branch:
+- `dev/kiwor101`: desenvolvimento do mantenedor.
+- `dev/emanueltk7`: desenvolvimento do Emanuel.
+- `main`: código integrado por Pull Request, somente por `kiwor101`.
 
-| Branch | Responsável | Uso |
-|---|---|---|
-| `main` | `kiwor101` | Código integrado; recebe Pull Requests, não pushes diretos. |
-| `dev/kiwor101` | `kiwor101` | Desenvolvimento do mantenedor. |
-| `dev/emanueltk7` | `emanueltk7` | Desenvolvimento do colaborador. |
+Cada pessoa mantém uma pasta local no próprio computador. Antes de um pacote, preserve alterações existentes e sincronize sua branch com a `main`. Combinem as áreas afetadas: branches não impedem conflitos na mesma função.
 
-Somente `kiwor101` integra Pull Requests na `main`. Cada branch de desenvolvimento aceita atualizações apenas da respectiva conta. As três branches têm bloqueio de exclusão e force push no GitHub.
+Cada entrega do aplicativo inclui testes, Setup e Portable. Prévias usam releases separadas, marcadas **Pre-release**. Só após a integração são publicados os executáveis oficiais, com um publicador por vez. Use merge commits e mantenha as branches pessoais. A versão segue `0.0.1` até autorização do mantenedor.
 
-O ciclo é: **atualizar sua branch com a `main` → implementar um pacote pequeno → testar → commit/push na sua branch → abrir PR → `kiwor101` revisa e integra**. Depois do merge, os dois atualizam suas branches antes do próximo pacote. Usem **Create a merge commit**, mantendo as branches pessoais; não usem squash/rebase nessas branches permanentes.
+[Guia de colaboração e publicação](CONTRIBUTING.md) · [Instruções para agentes](AGENTS.md)
 
-Branches separam o trabalho, mas não eliminam conflitos na mesma função. Abram o PR em rascunho assim que houver o primeiro commit e indiquem o objetivo e as áreas afetadas. Se ambos precisarem alterar o mesmo comportamento, combinem a ordem dessa parte.
+### Build de teste — kiwor101
 
-[Guia de colaboração e comandos para os dois computadores](CONTRIBUTING.md) · [Orientações para IAs](AGENTS.md)
+Prévia validada da revisão do motor, compilada do commit `39967e2564d899ba6ceb9fee2c4f23816e4ac005`. Canal de QA separado; para uso normal, prefira os downloads oficiais no início desta página.
 
-A versão oficial continua `0.0.1` durante este ciclo. Ao concluir cada pacote que altera o aplicativo, **os dois colaboradores devem compilar e conferir Setup e Portable**, publicar uma prévia de teste da própria branch e atualizar os links de teste na documentação e no PR. Isso vale também para o chat de desenvolvimento do Emanuel; enviar somente código não conclui a entrega. Não é necessário compilar cada commit intermediário ou uma mudança exclusivamente documental.
+- [Portable de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-39967e2/Motion-Livre-Portable-0.0.1-x64.exe)
+- [Setup de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-39967e2/Motion-Livre-Setup-0.0.1-x64.exe)
+- [Notas, testes e SHA256 da prévia](https://github.com/kiwor101/motion-livre/releases/tag/preview-kiwor101-39967e2)
 
-Depois da integração por `kiwor101`, qualquer um dos dois pode publicar os executáveis oficiais do código integrado e validado, coordenando um publicador por vez. Pré-releases nunca substituem os downloads oficiais antes do merge. Veja o [fluxo completo de compilação e publicação](CONTRIBUTING.md#setup-e-portable-fazem-parte-da-entrega). `package.json` continua sendo a fonte da versão; essas orientações não são uma automação de build do GitHub.
+### Prévia anterior do Emanuel
 
-## Documentação
+A [pré-release `preview-emanueltk7-2294f32`](https://github.com/kiwor101/motion-livre/releases/tag/preview-emanueltk7-2294f32) é um snapshot de QA do commit `2294f32530b10d82ad70d54689f575f9992d0861`, anterior ao ajuste de waveform `9b9cf74` e à revisão de integração. Não é o download oficial atualizado.
 
-- [Compatibilidade de cenas XML](docs/COMPATIBILIDADE_ALIGHT_XML.md)
+## Documentação e licença
+
+- [Arquitetura-alvo e limites do motor](docs/ARQUITETURA_ALVO.md)
+- [Resumo da migração](docs/RESUMO_MIGRACAO_INTERFACE.md)
+- [Registro de migração do legado](docs/HANDOFF_MIGRACAO_LEGADO.md)
+- [Diagnóstico histórico de preview e cortes](docs/HANDOFF_BUG_PREVIEW_CORTES_AUDIO.md)
+- [Compatibilidade Alight Motion XML](docs/COMPATIBILIDADE_ALIGHT_XML.md)
 - [Presets de efeitos XML](docs/PRESETS_XML.md)
 - [Licenças de terceiros](THIRD_PARTY_NOTICES.md)
 
-## Privacidade
-
-O Motion Livre funciona offline e não exige conta. Projetos e mídias permanecem no computador do usuário.
-
-## Licença
-
-Distribuído sob a [licença MIT](LICENSE).
+Código do Motion Livre sob [licença MIT](LICENSE). Fontes, ícones, Electron e FFmpeg mantêm suas próprias licenças. Projeto independente, sem afiliação com Alight Creative; código e shaders proprietários do APK não são distribuídos aqui.

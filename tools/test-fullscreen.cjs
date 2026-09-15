@@ -5,13 +5,13 @@ const path=require('node:path');
  const app=await _electron.launch({executablePath:require('electron'),args:[path.resolve(__dirname,'..')]});
  try{
   const page=await app.firstWindow();await page.locator('#previewFullscreen').click();
-  await page.waitForFunction(()=>document.fullscreenElement?.classList.contains('stage-wrap'));
-  assert.equal(await page.evaluate(()=>document.fullscreenElement.className),'stage-wrap');
+  await page.waitForFunction(()=>document.fullscreenElement?.classList.contains('stage-area'));
+  assert.equal(await page.evaluate(()=>document.fullscreenElement.className),'stage-area');
   await page.locator('#playBtn').click();
-  await page.waitForFunction(()=>state.playing&&state.time>0);
+  await page.waitForFunction(()=>state.playback.playing&&state.playback.time>0);
   await page.locator('#playBtn').click();
-  assert.equal(await page.evaluate(()=>state.playing),false);
-  await page.locator('#toStart').click();assert.equal(await page.evaluate(()=>state.time),0);
+  assert.equal(await page.evaluate(()=>state.playback.playing),false);
+  await page.locator('#toStart').click();assert.equal(await page.evaluate(()=>state.playback.time),0);
   await page.locator('#previewGrid').click();
   assert.equal(await page.locator('.alignment-guides').isVisible(),true);
   await page.locator('#previewFullscreen').click();

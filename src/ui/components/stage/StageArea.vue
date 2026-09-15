@@ -1,7 +1,13 @@
+<script setup lang="ts">
+import CompositionViewport from './CompositionViewport.vue'
+import StageToolbar from './StageToolbar.vue'
+import TransportControls from './TransportControls.vue'
+</script>
+
 <template>
   <section class="stage-area">
-    <div class="stage-toolbar"><span>Composição</span><select id="aspect" hidden aria-label="Proporção da composição"><option value="16/9">16:9</option><option value="9/16">9:16</option><option value="1/1">1:1</option><option value="4/5">4:5</option></select><button id="resolutionButton" type="button" aria-expanded="false">1920 × 1080</button><div id="resolutionMenu" hidden><div class="resolution-presets"><button type="button" data-resolution="1920x1080">1920 × 1080</button><button type="button" data-resolution="1080x1920">1080 × 1920</button><button type="button" data-resolution="1080x1080">1080 × 1080</button><button type="button" data-resolution="1440x1440">1440 × 1440</button><button type="button" data-resolution="2160x2160">2160 × 2160</button></div><div class="custom-resolution"><label>Largura<input id="compositionWidth" type="number" min="64" max="7680" step="2" value="1920"></label><span>×</span><label>Altura<input id="compositionHeight" type="number" min="64" max="4320" step="2" value="1080"></label><button id="applyResolution" type="button">Aplicar</button></div></div></div>
-    <div class="stage-wrap"><div id="stage" class="stage"><div class="stage-hint">Importe uma mídia ou adicione texto</div></div></div>
-    <div class="transport"><button id="toStart">|◀</button><button id="playBtn" class="play">▶</button><span id="timeLabel">00:00.00 / 00:10.00</span><input id="timeSlider" type="range" min="0" max="10" step="0.01" value="0"><button id="muteBtn">🔊</button></div>
+    <StageToolbar />
+    <CompositionViewport />
+    <TransportControls />
   </section>
 </template>

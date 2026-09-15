@@ -17,3 +17,9 @@ import TransformProperties from './TransformProperties.vue'
     </div>
   </aside>
 </template>
+
+<style scoped>
+.inspector :deep(.wide) {
+  margin-top: 8px;
+}
+</style>

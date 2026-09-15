@@ -9,10 +9,11 @@ let window,directory,success=false;
 app.whenReady().then(async()=>{
   try{
     directory=await fs.mkdtemp(path.join(os.tmpdir(),'motion-preview-cuts-'));
-    const source=path.join(directory,'motion.mp4'),proxy=path.join(directory,'proxy.mp4');
+    const realSource=process.env.MOTION_TEST_VIDEO_SOURCE||'',source=realSource||path.join(directory,'motion.mp4'),proxy=path.join(directory,'proxy.mp4');
+    const testWidth=Number(process.env.MOTION_TEST_VIDEO_WIDTH)||640,testHeight=Number(process.env.MOTION_TEST_VIDEO_HEIGHT)||360;
     const ffmpeg=path.resolve(__dirname,'../vendor/ffmpeg/ffmpeg.exe');
-    await run(ffmpeg,['-y','-f','lavfi','-i','testsrc2=size=640x360:rate=30:duration=10','-f','lavfi','-i','sine=frequency=440:duration=10','-c:v','libx264','-preset','ultrafast','-g','30','-c:a','aac','-shortest',source],{windowsHide:true});
-    await run(ffmpeg,['-y','-i',source,'-an','-vf','scale=320:180','-c:v','libx264','-preset','ultrafast',proxy],{windowsHide:true});
+    if(!realSource){await run(ffmpeg,['-y','-f','lavfi','-i',`testsrc2=size=${testWidth}x${testHeight}:rate=30:duration=10`,'-f','lavfi','-i','sine=frequency=440:duration=10','-c:v','libx264','-preset','ultrafast','-g','30','-c:a','aac','-shortest',source],{windowsHide:true});
+    await run(ffmpeg,['-y','-i',source,'-an','-vf','scale=320:180','-c:v','libx264','-preset','ultrafast',proxy],{windowsHide:true})}
     window=new BrowserWindow({show:true,alwaysOnTop:true,width:1280,height:800,webPreferences:{preload:path.resolve(__dirname,'../desktop/preload.cjs'),backgroundThrottling:false}});
     await window.loadFile(path.resolve(__dirname,'../index.html'));
     const results=await window.webContents.executeJavaScript(`(async()=>{
@@ -22,9 +23,9 @@ app.whenReady().then(async()=>{
       const originalMerger=AudioContext.prototype.createChannelMerger;
       AudioContext.prototype.createChannelMerger=function(...args){const merger=originalMerger.apply(this,args),analyser=this.createAnalyser();analyser.fftSize=256;merger.connect(analyser);analysers.push(analyser);return merger};
       const results=[];
-      for(const [cut,useProxy] of [[false,false],[true,false],[true,true]]){
+      for(const [cut,useProxy] of ${realSource?'[[false,false]]':'[[false,false],[true,false],[true,true]]'}){
         editor.stop();state.layers=[];editor.renderLayers();state.duration=10;
-        let layer=editor.addMediaDescriptor({type:'video',name:'Moving video',sourcePath:${JSON.stringify(source)},url:motionDesktop.fileUrl(${JSON.stringify(source)}),width:640,height:360,duration:10,hasAudio:true});
+        let layer=editor.addMediaDescriptor({type:'video',name:'Moving video',sourcePath:${JSON.stringify(source)},url:motionDesktop.fileUrl(${JSON.stringify(source)}),width:${testWidth},height:${testHeight},duration:10,hasAudio:true});
         if(useProxy)layer.proxyPath=${JSON.stringify(proxy)};
         editor.renderLayers();
         if(cut){
@@ -36,6 +37,8 @@ app.whenReady().then(async()=>{
           check(state.layers.every((l,i)=>l.muted===(i===2)),'Mute leaked into another cut');
         }
         editor.renderLayers();editor.setTime(0);await sleep(700);
+        const sourceIndicator=document.querySelector('.proxy-toggle');check(sourceIndicator,'Preview source indicator is missing');if(${testWidth}<=1920&&${testHeight}<=1080)check(sourceIndicator.disabled&&sourceIndicator.textContent.includes('sem proxy'),'1080p source indicator changed');
+        if(useProxy){const toggle=document.querySelector('.proxy-toggle'),usingProxy=editor.mediaRuntime.url(state.layers[0])===motionDesktop.fileUrl(${JSON.stringify(proxy)});if(${testWidth}>1920||${testHeight}>1080){check(toggle&&!toggle.disabled&&usingProxy,'High-resolution proxy toggle unavailable');toggle.click();await sleep(0);check(editor.mediaRuntime.url(state.layers[0])===motionDesktop.fileUrl(${JSON.stringify(source)}),'Proxy toggle did not select original');toggle.click();await sleep(0);check(editor.mediaRuntime.url(state.layers[0])===motionDesktop.fileUrl(${JSON.stringify(proxy)}),'Proxy toggle did not restore proxy')}else check(toggle?.disabled&&toggle.textContent.includes('sem proxy')&&!usingProxy,'1080p should visibly use the original without a proxy')}
         const samples=[[],[],[],[],[]],seeks=[0,0,0,0,0],frames=[0,0,0,0,0];
         const videos=new Set(state.layers.map(l=>editor.mediaRuntime.get(l))),callbacks=new Map();
         check(videos.size===1,'Sequential cuts allocate extra video decoders');
@@ -58,7 +61,7 @@ app.whenReady().then(async()=>{
           check(editor.mediaRuntime.size===1&&editor.mediaRuntime.get(state.layers[0])===shared&&shared.isConnected,'Deleting first cut lost shared media');
         }
       }
-      editor.stop();state.duration=6;state.layers=[];const model=editor.modules.projectModel,content=motionDesktop.fileUrl(${JSON.stringify(source)}),common={type:'video',name:'Speed freeze',trackId:'freeze-track',sourcePath:${JSON.stringify(source)},content,mediaDuration:10,mediaWidth:640,mediaHeight:360,hasAudio:true};state.layers=[model.normalizeLayer({...common,id:101,start:0,end:2,sourceIn:0,sourceOut:4,speed:2},6),model.normalizeLayer({id:102,type:'image',name:'Freeze',trackId:'freeze-track',content:'data:image/gif;base64,R0lGODlhAQABAAAAACw=',frozenFrame:true,frozenSourcePath:${JSON.stringify(source)},frozenSourceTime:4,mediaWidth:640,mediaHeight:360,start:2,end:4},6),model.normalizeLayer({...common,id:103,start:4,end:6,sourceIn:4,sourceOut:6,speed:1},6)];editor.renderLayers();editor.setTime(0);await sleep(500);const resumed=editor.mediaRuntime.get(state.layers[2]);let resumedFrames=0,resumedSamples=0,maxResumeDrift=0,frameId=0;const countFrame=()=>{if(state.playback.time>=4)resumedFrames++;frameId=resumed.requestVideoFrameCallback(countFrame)};frameId=resumed.requestVideoFrameCallback(countFrame);document.getElementById('playBtn').click();const freezeDeadline=performance.now()+9000;while(state.playback.playing&&performance.now()<freezeDeadline){await sleep(40);if(state.playback.time>4.2&&state.playback.time<5.8){resumedSamples++;maxResumeDrift=Math.max(maxResumeDrift,Math.abs(resumed.currentTime-state.playback.time))}}editor.stop();resumed.cancelVideoFrameCallback(frameId);check(resumedSamples>20&&resumedFrames>25&&maxResumeDrift<.2,'Playback after speed/freeze stalled: '+JSON.stringify({resumedSamples,resumedFrames,maxResumeDrift}));
+      editor.stop();state.duration=6;state.layers=[];const model=editor.modules.projectModel,content=motionDesktop.fileUrl(${JSON.stringify(source)}),common={type:'video',name:'Speed freeze',trackId:'freeze-track',sourcePath:${JSON.stringify(source)},content,mediaDuration:10,mediaWidth:${testWidth},mediaHeight:${testHeight},hasAudio:true};state.layers=[model.normalizeLayer({...common,id:101,start:0,end:2,sourceIn:0,sourceOut:4,speed:2},6),model.normalizeLayer({id:102,type:'image',name:'Freeze',trackId:'freeze-track',content:'data:image/gif;base64,R0lGODlhAQABAAAAACw=',frozenFrame:true,frozenSourcePath:${JSON.stringify(source)},frozenSourceTime:4,mediaWidth:${testWidth},mediaHeight:${testHeight},start:2,end:4},6),model.normalizeLayer({...common,id:103,start:4,end:6,sourceIn:4,sourceOut:6,speed:1},6)];editor.renderLayers();editor.setTime(0);await sleep(500);const resumed=editor.mediaRuntime.get(state.layers[2]);let resumedFrames=0,resumedSamples=0,maxResumeDrift=0,frameId=0;const countFrame=()=>{if(state.playback.time>=4)resumedFrames++;frameId=resumed.requestVideoFrameCallback(countFrame)};frameId=resumed.requestVideoFrameCallback(countFrame);document.getElementById('playBtn').click();const freezeDeadline=performance.now()+9000;while(state.playback.playing&&performance.now()<freezeDeadline){await sleep(40);if(state.playback.time>4.2&&state.playback.time<5.8){resumedSamples++;maxResumeDrift=Math.max(maxResumeDrift,Math.abs(resumed.currentTime-state.playback.time))}}editor.stop();resumed.cancelVideoFrameCallback(frameId);check(resumedSamples>20&&resumedFrames>25&&maxResumeDrift<.2,'Playback after speed/freeze stalled: '+JSON.stringify({resumedSamples,resumedFrames,maxResumeDrift}));
       await editor.mediaRuntime.destroy();editor.preview.destroy();return results;
     })()`);
     console.log('PASS: five moving cuts, isolated mute, decoded frames and measured audio, original/proxy',JSON.stringify(results));

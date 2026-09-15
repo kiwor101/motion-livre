@@ -38,7 +38,7 @@ app.whenReady().then(async()=>{
     Object.assign(video,{volume:70,pan:-30,fadeIn:.2,fadeOut:.3,trackName:'Faixa principal'});
     await requestVideoProxy(video,{width:1920,height:1080});renderLayers();
     await wait(()=>motionMedia.get(video).readyState>=2);
-    check(resolveLayerContent(video)!==motionDesktop.fileUrl(video.sourcePath),'Proxy not selected');
+    check(resolveLayerContent(video)===motionDesktop.fileUrl(video.sourcePath),'1080p preview did not keep original');
     const originalId=video.id,originalTrack=video.trackId,source=resolveLayerContent(video);
     const unused=document.createElement('canvas');unused.width=unused.height=4;addMediaDescriptor({type:'image',name:'Não usada',url:unused.toDataURL()},{createLayer:false});
     motionEditor.pushHistory();selectLayer(video.id);document.querySelector('#duplicateLayer').click();await Promise.resolve();

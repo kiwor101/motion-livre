@@ -21,7 +21,6 @@ import * as exportControllerModule from '../renderer/export-controller';
 import * as projectModelModule from '../core/project-model';
 import {createApp} from 'vue';
 import AppTopBar from './components/app/AppTopBar.vue';
-import ToolSidebar from './components/tools/ToolSidebar.vue';
 import LibraryPanels from './components/library/LibraryPanels.vue';
 import StageArea from './components/stage/StageArea.vue';
 import InspectorPanel from './components/inspector/InspectorPanel.vue';
@@ -29,7 +28,6 @@ import TimelineSection from './components/timeline/TimelineSection.vue';
 import AppOverlays from './components/overlays/AppOverlays.vue';
 
 createApp(AppTopBar).mount('#vueTopbar');
-createApp(ToolSidebar).mount('#vueTools');
 createApp(LibraryPanels).mount('#vueLibrary');
 createApp(StageArea).mount('#vueStage');
 createApp(InspectorPanel).mount('#vueInspector');
@@ -38,6 +36,7 @@ createApp(AppOverlays).mount('#vueOverlays');
 
 const ready=(async()=>{
   const legacy=createAppController();
+  window.addEventListener('motion:toggle-proxy',(event:Event)=>legacy.mediaRuntime.setProxyEnabled((event as CustomEvent<boolean>).detail));
   const playback=installPlaybackController({state:legacy.state as import('../core/editor-state').EditorState,mediaRuntime:legacy.mediaRuntime as import('../renderer/media-runtime').MediaRuntime});
   legacy.setTime=playback.setTime;legacy.stop=playback.stop;
   const stage=installStageController({state:legacy.state as import('../core/editor-state').EditorState,mediaRuntime:legacy.mediaRuntime as import('../renderer/media-runtime').MediaRuntime,nextId:()=>{const id=legacy.uid as number;legacy.uid=id+1;return id},history:()=>legacy.projectHistory as import('../core/history').History,snapshot:()=>{const callback=legacy.snapshot as ()=>string;return callback()},renderTimeline:()=>{(legacy.renderTimeline as ()=>void)()},markDirty:()=>{(legacy.markDirty as ()=>void)()},toast:legacy.toast as (message:string)=>void});
@@ -101,7 +100,7 @@ const ready=(async()=>{
     state:legacy.state as import('../core/editor-state').EditorState,history:legacy.projectHistory as import('../core/history').History,timelineMedia,snapshot:legacy.snapshot as ()=>string,pushHistory:legacy.pushHistory as ()=>void,syncComposition:legacy.syncComposition as ()=>void,renderAudioMixer:legacy.renderAudioMixer as ()=>void,
     sourceTimeForLayer:legacy.sourceTimeForLayer as (layer:import('../core/project-model').Layer,time:number,mediaDuration?:number)=>number,selected:legacy.selected as ()=>import('../core/project-model').Layer|null,stop:legacy.stop as ()=>void,setTime:legacy.setTime as (time:number)=>void,onTimeChange:playback.onTimeChange,
     renderLayers:()=>{(legacy.renderLayers as ()=>void)()},syncProps:()=>{(legacy.syncProps as ()=>void)()},replaceRenderTimeline:callback=>{legacy.renderTimeline=callback},selectLayer:id=>{(legacy.selectLayer as (id:number)=>void)(id)},nextId:()=>{const id=legacy.uid as number;legacy.uid=id+1;return id},markDirty:legacy.markDirty as ()=>void,toast:legacy.toast as (message:string)=>void,
-    renderMediaLibrary:legacy.renderMediaLibrary as ()=>void,detachAudio:professionalActions.detachAudio,escapeHtml:legacy.escapeHtml as (value:unknown)=>string
+    renderMediaLibrary:legacy.renderMediaLibrary as ()=>void,detachAudio:professionalActions.detachAudio
   });
   installStudioController(legacy);
   (legacy.renderLayers as ()=>void)();playback.setTime(0);

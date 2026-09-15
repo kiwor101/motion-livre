@@ -3,6 +3,7 @@ import {createLayer} from '../../core/project-model';
 import {applyImportedProject} from '../../core/project-commands';
 import type {Composition,EditorState} from '../../core/editor-state';
 import type {AlightMediaReference,ExternalEffectInstance,ExternalEffectProperty,Layer,ProjectKeyframe} from '../../core/project-model';
+import {emitCompatibilityReport} from './compatibility-report-event';
 
 interface AlightReport {layers:number;keyframes:number;unsupportedEffects:Set<string>|string[];unresolvedMedia:string[];sourceVersion:string}
 interface CollectedLayer {node:Element;parentOriginalId:string|null}
@@ -49,7 +50,6 @@ export function installAlightController(context:AlightControllerContext):void {
   const num=(value:unknown,fallback=0)=>{const parsed=Number(value);return Number.isFinite(parsed)?parsed:fallback};
   const direct=(node:Element,name:string)=>[...node.children].find(child=>child.tagName===name)||null;
   const directAll=(node:Element,name:string)=>[...node.children].filter(child=>child.tagName===name);
-  const esc=(value:unknown)=>String(value??'').replace(/[&<>"']/g,char=>({"&":'&amp;',"<":'&lt;',">":'&gt;','"':'&quot;',"'":'&#39;'}[char]||char));
   const round=(value:number)=>Math.round(value*1e6)/1e6;
   const attributesOf=(node:Element,excluded:string[]=[])=>Object.fromEntries([...node.attributes].filter(attribute=>!excluded.includes(attribute.name)).map(attribute=>[attribute.name,String(attribute.value).slice(0,2048)]));
   const normalizeEffectId=(value:unknown)=>String(value||'').replace(/^com\.alightcreative\.(?:effects\.)?/i,'').slice(0,300);
@@ -346,7 +346,7 @@ export function installAlightController(context:AlightControllerContext):void {
   }
 
   function showReport(report:AlightReport,mode:'export'|'import'):void {
-    const unsupported=[...report.unsupportedEffects],unresolved=report.unresolvedMedia||[],body=$('#compatReportBody');body.innerHTML=`<p><strong>${mode==='export'?'Cena exportada':'Cena importada'}:</strong> ${report.layers} camada(s), ${report.keyframes} keyframe(s). Formato AM ${esc(report.sourceVersion)}.</p>${unsupported.length?`<h3>Efeitos preservados, sem prévia idêntica</h3><ul>${unsupported.slice(0,30).map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:'<p>Os efeitos reconhecidos foram convertidos para a prévia do Motion Livre.</p>'}${unresolved.length?`<h3>Mídias para religar</h3><p>O XML referencia arquivos que não vêm embutidos. Importe essas mídias novamente no projeto:</p><ul>${unresolved.slice(0,30).map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`:''}`;$('#compatReport').hidden=false;
+    emitCompatibilityReport({mode,layers:report.layers,keyframes:report.keyframes,sourceVersion:String(report.sourceVersion),unsupportedEffects:[...report.unsupportedEffects].slice(0,30),unresolvedMedia:(report.unresolvedMedia||[]).slice(0,30)});$('#compatReport').hidden=false;
   }
 
   async function saveScene(){

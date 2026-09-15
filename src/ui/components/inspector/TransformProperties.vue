@@ -1,12 +1,16 @@
+<script setup lang="ts">
+import RangeField from '../base/RangeField.vue'
+import TextField from '../base/TextField.vue'
+
+const fields = [
+  ['Posição X', 'propX', 'outX', 0, 100], ['Posição Y', 'propY', 'outY', 0, 100],
+  ['Escala', 'propScale', 'outScale', 10, 200], ['Rotação', 'propRotation', 'outRotation', -180, 180],
+  ['Profundidade Z', 'propDepth', 'outDepth', -1000, 1000], ['Perspectiva da câmera', 'propPerspective', 'outPerspective', 300, 3000],
+  ['Opacidade', 'propOpacity', 'outOpacity', 0, 100], ['Âncora X', 'propAnchorX', 'outAnchorX', 0, 100], ['Âncora Y', 'propAnchorY', 'outAnchorY', 0, 100],
+] as const
+</script>
+
 <template>
-  <label>Nome<input id="propName"></label>
-  <label>Posição X<input id="propX" type="range" min="0" max="100"><output id="outX"></output></label>
-  <label>Posição Y<input id="propY" type="range" min="0" max="100"><output id="outY"></output></label>
-  <label>Escala<input id="propScale" type="range" min="10" max="200"><output id="outScale"></output></label>
-  <label>Rotação<input id="propRotation" type="range" min="-180" max="180"><output id="outRotation"></output></label>
-  <label>Profundidade Z<input id="propDepth" type="range" min="-1000" max="1000"><output id="outDepth"></output></label>
-  <label>Perspectiva da câmera<input id="propPerspective" type="range" min="300" max="3000"><output id="outPerspective"></output></label>
-  <label>Opacidade<input id="propOpacity" type="range" min="0" max="100"><output id="outOpacity"></output></label>
-  <label>Âncora X<input id="propAnchorX" type="range" min="0" max="100"><output id="outAnchorX"></output></label>
-  <label>Âncora Y<input id="propAnchorY" type="range" min="0" max="100"><output id="outAnchorY"></output></label>
+  <TextField label="Nome" input-id="propName" />
+  <RangeField v-for="field in fields" :key="field[1]" :label="field[0]" :input-id="field[1]" :output-id="field[2]" :min="field[3]" :max="field[4]" />
 </template>

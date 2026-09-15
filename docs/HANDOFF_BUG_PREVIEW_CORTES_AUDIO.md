@@ -105,6 +105,14 @@ Em 2026-09-11 também passaram `pnpm check:ui`, `pnpm build:renderer`, `pnpm tes
 
 ## Resultado final e trabalho futuro
 
+### Revisão com vídeo real 1080p — 2026-09-14
+
+`C:\Users\user\Videos\vegetavsbroly1080p.mp4` (H.264/AAC, 1920×1080, aproximadamente 24 fps, 495,25 s) reproduziu um defeito adicional sem cortes e sem proxy: o relógio avançava antes do início da mídia e `media-runtime.ts` buscava repetidamente o tempo de parede. No teste, os trechos de dois segundos entregaram 2–18 frames, com até 1,44 s de atraso e áudio ausente no início. O compositor consumia cerca de 4 ms por quadro. A mesma falha ocorreu com decodificação acelerada habilitada.
+
+Durante a reprodução normal, o sincronizador não reinicia o decoder com buscas sucessivas; o relógio segue a mídia ativa e espera seu início real. Com o mesmo arquivo, o teste entregou 45–48 frames por trecho de dois segundos, sem buscas repetidas, com áudio presente e desvio visual em torno de 0,1 s. O teste sintético existente de cortes, mute, proxy e retomada após freeze também passou. Essas medidas se referem a este arquivo e computador.
+
+O limiar de proxy passou a ser acima de 1920×1080, com alternância entre proxy e original para vídeos maiores. O indicador permanece visível e desativado em 1080p, informando que o original está em uso. Um teste em 2048×1080 conferiu o botão. A exportação sem edição do arquivo real passou pelo processo principal em modo de cópia de vídeo e áudio em 1,36 s, gerando MP4 H.264/AAC com duração correspondente. A cópia de áudio só é usada quando o fluxo AAC e os parâmetros da única faixa permanecem intactos; áudio editado segue o plano de mixagem.
+
 O defeito relatado está corrigido e coberto por teste reproduzível. O aplicativo usa um decoder por fonte para cortes sequenciais, mantém decoders separados para camadas simultâneas, separa o áudio original da superfície visual e não reconstrói a timeline por eventos de mídia. A composição continua na GPU pelo WebGL2; somente a decodificação acelerada de vídeo usa fallback por software, porque o caminho acelerado falhou de forma repetível e intermitente neste ambiente.
 
 Como evolução, implementar uma verificação de saúde do decoder que detecte ausência de novos frames e reinicie o aplicativo automaticamente no fallback. Somente depois de essa troca automática passar pelos mesmos testes o decoder acelerado deve voltar a ser o padrão. Também convém ampliar os testes para scrub para trás, cortes não contíguos, velocidades diferentes, reverso, múltiplos vídeos simultâneos e transições exatas de fades. Essas ampliações não bloqueiam a correção do cenário relatado.

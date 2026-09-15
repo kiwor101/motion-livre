@@ -68,11 +68,21 @@ Compatibilidade XML **não significa reprodução idêntica de todos os efeitos*
 
 ## O que mudou no motor
 
-Os sete scripts globais antigos foram substituídos por módulos TypeScript e uma interface montada com Vue e Vite. Projeto, tempo, cortes, histórico e áudio ficam separados da interface e da ponte do Windows.
+Os sete scripts globais antigos foram substituídos por módulos TypeScript e uma interface montada com Vue e Vite. A componentização planejada está em aproximadamente 76%, incluindo controles-base, overlays, régua, agulha, cabeçalhos e clipes da timeline. Projeto, tempo, cortes, histórico e áudio ficam separados da interface e da ponte do Windows.
 
 O preview e os trechos compostos da exportação usam o mesmo avaliador de cena e compositor. A exportação analisa o projeto antes de decidir quais intervalos precisam desse compositor: um efeito localizado não deve obrigar todo o vídeo a passar pelo caminho mais caro.
 
 Isso facilita manutenção, testes e colaboração. **Não é uma conversão direta do APK nem um motor totalmente concluído.**
+
+### Build de teste da próxima integração
+
+A prévia abaixo inclui a atualização mais recente do Emanuel, revisada na branch do mantenedor e compilada do commit `4840d3c362a86988dff57f829c4208f788a72c69`:
+
+- [Portable de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-4840d3c/Motion-Livre-Portable-0.0.1-x64.exe)
+- [Setup de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-4840d3c/Motion-Livre-Setup-0.0.1-x64.exe)
+- [Notas e hashes](https://github.com/kiwor101/motion-livre/releases/tag/preview-kiwor101-4840d3c)
+
+Esta é uma pré-release para QA e não substitui os downloads oficiais destacados no início da página até a integração na `main`.
 
 ### Limites e próximos passos
 

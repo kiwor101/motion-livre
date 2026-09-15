@@ -17,18 +17,8 @@ Os links acima são da versão **oficial**. Builds de branches pessoais, quando 
 
 ## Build de teste — kiwor101
 
-Prévia validada da revisão do motor, compilada do commit `39967e2564d899ba6ceb9fee2c4f23816e4ac005`. Canal de QA separado; para uso normal, prefira os downloads oficiais no início desta página.
+Prévia da nova interface Vue, Beat Sync e melhorias de preview/exportação, compilada do commit `4840d3c362a86988dff57f829c4208f788a72c69`. Canal de QA separado; para uso normal, prefira os downloads oficiais no início desta página.
 
-- [Portable de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-39967e2/Motion-Livre-Portable-0.0.1-x64.exe)
-- [Setup de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-39967e2/Motion-Livre-Setup-0.0.1-x64.exe)
-- [Notas, testes e SHA256 da prévia](https://github.com/kiwor101/motion-livre/releases/tag/preview-kiwor101-39967e2)
-
-## Prévia anterior — emanueltk7
-
-Snapshot anterior para QA da timeline. Não inclui a correção de waveform `9b9cf74` nem os ajustes da revisão de integração. Para usar a build oficial atualizada, prefira os downloads destacados acima.
-Commit compilado: `2294f32530b10d82ad70d54689f575f9992d0861`.
-
-- [Motion-Livre-Portable-0.0.1-x64.exe](https://github.com/kiwor101/motion-livre/releases/download/preview-emanueltk7-2294f32/Motion-Livre-Portable-0.0.1-x64.exe)
-- [Motion-Livre-Setup-0.0.1-x64.exe](https://github.com/kiwor101/motion-livre/releases/download/preview-emanueltk7-2294f32/Motion-Livre-Setup-0.0.1-x64.exe)
-
-As validações e limitações desse snapshot estão nas notas da pré-release. A revisão de integração corrigiu o falso positivo do teste de cursor (comparação textual de `0.05` e `.05`); isso não modifica retroativamente os binários dessa prévia.
+- [Portable de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-4840d3c/Motion-Livre-Portable-0.0.1-x64.exe)
+- [Setup de teste](https://github.com/kiwor101/motion-livre/releases/download/preview-kiwor101-4840d3c/Motion-Livre-Setup-0.0.1-x64.exe)
+- [Notas, testes e SHA256 da prévia](https://github.com/kiwor101/motion-livre/releases/tag/preview-kiwor101-4840d3c)

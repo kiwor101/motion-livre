@@ -5,29 +5,29 @@ function percentile(values:number[],position:number):number {
   return values[Math.min(values.length-1,Math.floor((values.length-1)*position))];
 }
 
-// Draw in clip coordinates so the label never shifts the source-time mapping.
-export function drawTimelineWaveform(clip:HTMLElement,layer:Layer,duration:number,sourceTime:(layer:Layer,time:number,duration?:number)=>number):void {
-  const wave=document.createElement('canvas');
-  wave.className='clip-waveform';
-  wave.setAttribute('aria-hidden','true');
-  clip.append(wave);
+// Use timeline coordinates so an extended edge reveals samples without moving existing ones.
+export function drawTimelineWaveform(clip:HTMLElement,layer:Layer,duration:number,sourceTime:(layer:Layer,time:number,duration?:number)=>number,pixelsPerSecond:number):void {
+  let wave=clip.querySelector<HTMLCanvasElement>('.clip-waveform');
+  if(!wave){wave=document.createElement('canvas');wave.className='clip-waveform';wave.setAttribute('aria-hidden','true');clip.append(wave)}
+  const canvas=wave;
+  if(canvas.dataset.pending==='true')return;
+  canvas.dataset.pending='true';
   requestAnimationFrame(()=>{
+    canvas.dataset.pending='false';
     if(!clip.isConnected)return;
     const width=clip.clientWidth,height=clip.clientHeight,points=layer.waveform||[];
     if(!width||!height||!points.length)return;
     const ratio=Math.min(window.devicePixelRatio||1,2,16384/width);
-    wave.width=Math.ceil(width*ratio);wave.height=Math.ceil(height*ratio);
-    const drawing=wave.getContext('2d');if(!drawing)return;
+    canvas.width=Math.ceil(width*ratio);canvas.height=Math.ceil(height*ratio);
+    const drawing=canvas.getContext('2d');if(!drawing)return;
     drawing.scale(ratio,ratio);drawing.strokeStyle='#d8dde2';drawing.lineWidth=1;
-    const label=clip.querySelector<HTMLElement>('.clip-label');
-    const start=label?label.offsetLeft+label.offsetWidth+6:6;
     const mediaDuration=layer.mediaDuration||duration,center=height/2;
     const distribution=points.filter(value=>value>0).sort((a,b)=>a-b);
     const floor=percentile(distribution,.08),ceiling=percentile(distribution,.97),spread=Math.max(.015,ceiling-floor);
     drawing.beginPath();
-    for(let x=start;x<width-3;x+=2){
-      const time=layer.start+x/width*(layer.end-layer.start);
-      const nextTime=Math.min(layer.end,time+2/width*(layer.end-layer.start));
+    for(let x=4;x<width-3;x+=2){
+      const time=layer.start+x/pixelsPerSecond;
+      const nextTime=Math.min(layer.end,time+2/pixelsPerSecond);
       const first=sourceTime(layer,time,layer.mediaDuration)/mediaDuration*points.length;
       const last=sourceTime(layer,nextTime,layer.mediaDuration)/mediaDuration*points.length;
       let energy=0,samples=0;

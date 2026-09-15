@@ -92,6 +92,11 @@ defineEmits<{
   color: #702c21;
 }
 
+.clip:not([data-kind='video'], [data-kind='image']) {
+  background-image: repeating-linear-gradient(90deg, #ffffff21 0 1px, transparent 1px 72px);
+  background-position-x: var(--timeline-grid-offset, 0px);
+}
+
 .selected-clip {
   border: 1px solid #f0f0f0 !important;
   box-shadow: 0 0 0 1px #0b0b0c, 0 0 0 2px #f0f0f080 !important;
@@ -123,11 +128,12 @@ defineEmits<{
 }
 
 .filmstrip :deep(img) {
+  position: absolute;
+  top: 0;
   width: 72px;
   min-width: 72px;
   max-width: none;
   height: 100%;
-  flex: 1 0 72px;
   margin: 0;
   border-radius: 0;
   object-fit: cover;
@@ -135,7 +141,9 @@ defineEmits<{
 }
 
 .clip-label {
-  position: relative;
+  position: absolute;
+  left: calc(6px + var(--clip-label-offset, 0px));
+  top: 0;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -157,7 +165,6 @@ defineEmits<{
 }
 
 .clip[data-kind='audio'] .clip-label {
-  position: relative;
   z-index: 3;
   display: inline-flex;
   max-width: min(120px, 55%);

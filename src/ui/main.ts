@@ -93,7 +93,8 @@ const ready=(async()=>{
   const timelineMedia=createTimelineMediaPreview({
     resolveLayerContent:legacy.resolveLayerContent as (layer:import('../core/project-model').Layer)=>string,
     resolveCaptureContent:(layer:import('../core/project-model').Layer)=>(legacy.mediaRuntime as import('../renderer/media-runtime').MediaRuntime).original(layer),
-    sourceTimeForLayer:legacy.sourceTimeForLayer as (layer:import('../core/project-model').Layer,time:number,mediaDuration?:number)=>number
+    sourceTimeForLayer:legacy.sourceTimeForLayer as (layer:import('../core/project-model').Layer,time:number,mediaDuration?:number)=>number,
+    currentTime:()=> (legacy.state as import('../core/editor-state').EditorState).playback.time
   });
   installPreviewFullscreenController({toast:legacy.toast as (message:string)=>void});
   installTimelineController({

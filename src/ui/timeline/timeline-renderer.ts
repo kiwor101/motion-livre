@@ -19,9 +19,16 @@ const timeText=(time:number):string=>`${Math.floor(time/60).toString().padStart(
 const clipIcon=(type:string):string=>({video:'film',image:'image',audio:'music-2',text:'type',rect:'shapes',circle:'shapes',drawing:'pen-tool',path:'pen-tool',null:'key-round',camera:'maximize'} as Record<string,string>)[type]||'layers';
 
 export function createTimelineRenderer(context:TimelineRendererContext):TimelineRenderer {
-  const width=()=>context.state.duration*context.pixelsPerSecond();
   let markerHost:HTMLElement|null=null,rulerApp:App<Element>|null=null,trackHeaderApps:App<Element>[]=[],clipApps:App<Element>[]=[];
-  const geometry=(element:HTMLElement,layer:Layer)=>{element.style.left=`${layer.start/context.state.duration*width()}px`;element.style.width=`${Math.max(3,(layer.end-layer.start)/context.state.duration*width())}px`};
+  const labelAnchors=new Map<number,{time:number;start:number;end:number}>();
+  const geometry=(element:HTMLElement,layer:Layer)=>{
+    const pixels=context.pixelsPerSecond();element.style.left=`${layer.start*pixels}px`;element.style.width=`${Math.max(3,(layer.end-layer.start)*pixels)}px`;
+    element.style.setProperty('--timeline-grid-offset',`${-layer.start*pixels}px`);
+    if(layer.id!==undefined){let anchor=labelAnchors.get(layer.id);if(!anchor){anchor={time:layer.start,start:layer.start,end:layer.end};labelAnchors.set(layer.id,anchor)}else{const startShift=layer.start-anchor.start,endShift=layer.end-anchor.end;if(Math.abs(startShift-endShift)<.0001)anchor.time+=startShift;anchor.start=layer.start;anchor.end=layer.end}anchor.time=Math.max(anchor.time,layer.start);element.style.setProperty('--clip-label-offset',`${(anchor.time-layer.start)*pixels}px`)}
+    const keyframes=layer.keyframes.filter(keyframe=>keyframe.time>=layer.start&&keyframe.time<=layer.end);
+    element.querySelectorAll<HTMLElement>('.key-dot').forEach((dot,index)=>{dot.hidden=!keyframes[index];if(keyframes[index])dot.style.left=`${(keyframes[index].time-layer.start)*pixels}px`});
+    if(layer.type==='audio'&&layer.waveform?.length)drawTimelineWaveform(element,layer,context.state.duration,context.sourceTimeForLayer,pixels)
+  };
   const mountTrackHeader=(id:TrackId,clips:Layer[]):HTMLElement=>{
     const audioClips=clips.filter(layer=>layer.type==='audio'||layer.type==='video'),hasAudio=clips.some(layer=>layer.type==='audio'||layer.type==='video'&&layer.hasAudio),last=clips.at(-1)!,ids=clips.flatMap(layer=>layer.id===undefined?[]:[layer.id]);
     const mount=document.createElement('div'),app=createApp(TimelineTrackHeader,{title:last.name,locked:clips.every(layer=>layer.locked),visible:clips.some(layer=>layer.visible!==false),muted:hasAudio&&audioClips.every(layer=>layer.muted),hasAudio,multiSelected:ids.every(idValue=>context.state.selection.selectedIds.has(idValue)),onToggleVisibility:()=>{context.pushHistory();setTrackProperty(context.state,{ids,key:'visible',value:!clips.some(layer=>layer.visible!==false)});context.commit()},onToggleLock:()=>{context.pushHistory();setTrackProperty(context.state,{ids,key:'locked',value:!clips.every(layer=>layer.locked)});context.commit()},onToggleMute:()=>{if(!hasAudio)return;context.pushHistory();setTrackProperty(context.state,{ids:audioClips.flatMap(layer=>layer.id===undefined?[]:[layer.id]),key:'muted',value:!audioClips.every(layer=>layer.muted)});context.commit()},onToggleMulti:()=>{toggleMany(context.state,ids);renderTimeline()}}),header=app.mount(mount).$el as HTMLElement;
@@ -30,9 +37,10 @@ export function createTimelineRenderer(context:TimelineRendererContext):Timeline
   const mountClip=(layer:Layer):HTMLElement=>{
     const id=layer.id!,keyframes=layer.keyframes.filter(keyframe=>keyframe.time>=layer.start&&keyframe.time<=layer.end).map(keyframe=>(keyframe.time-layer.start)/(layer.end-layer.start)*100),mount=document.createElement('div');
     const app=createApp(TimelineClip,{clipId:id,kind:layer.type,title:layer.name,durationLabel:timeText(layer.end-layer.start),iconUrl:`assets/icons/${clipIcon(layer.type)}.svg`,selected:context.state.selection.selected===id||context.state.selection.selectedIds.has(id),visible:layer.visible!==false,keyframes,onEdit:(event:PointerEvent)=>context.edit(event,layer),onMenu:(event:MouseEvent)=>context.showContextMenu(event,layer)}),clip=app.mount(mount).$el as HTMLElement;
-    clipApps.push(app);geometry(clip,layer);if(layer.type==='audio'&&layer.waveform?.length)drawTimelineWaveform(clip,layer,context.state.duration,context.sourceTimeForLayer);const filmstrip=clip.querySelector<HTMLElement>('.filmstrip');if(filmstrip)context.preview(layer,filmstrip);return clip;
+    clipApps.push(app);geometry(clip,layer);const filmstrip=clip.querySelector<HTMLElement>('.filmstrip');if(filmstrip)context.preview(layer,filmstrip);return clip;
   };
   const renderTimeline=()=>{
+    const liveIds=new Set(context.state.layers.map(layer=>layer.id));for(const id of labelAnchors.keys())if(!liveIds.has(id))labelAnchors.delete(id);
     if(markerHost)render(null,markerHost);markerHost=null;rulerApp?.unmount();rulerApp=null;trackHeaderApps.forEach(app=>app.unmount());trackHeaderApps=[];clipApps.forEach(app=>app.unmount());clipApps=[];context.timeline.querySelectorAll('.track,.timeline-empty,.timeline-marker,.time-ruler,.render-range-overlay').forEach(element=>element.remove());const rulerDuration=Math.max(60,Math.ceil(context.state.duration)+10),contentWidth=rulerDuration*context.pixelsPerSecond(),ruler=document.createElement('div');ruler.className='time-ruler';ruler.style.width=`${context.headerWidth+contentWidth}px`;
     rulerApp=createApp(TimelineRuler,{duration:rulerDuration,headerWidth:context.headerWidth,pixelsPerSecond:context.pixelsPerSecond()});rulerApp.mount(ruler);const corner=ruler.querySelector<HTMLElement>('.ruler-corner');if(!corner)throw new Error('Canto da régua não foi montado');context.navigation.setActiveCorner(corner);ruler.onpointerdown=context.navigation.scrub;context.timeline.insertBefore(ruler,context.head);
     for(const [id,clips] of context.groups()){

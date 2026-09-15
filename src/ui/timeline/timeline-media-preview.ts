@@ -4,6 +4,7 @@ interface TimelineMediaPreviewContext {
   resolveLayerContent(layer:Layer):string;
   resolveCaptureContent?(layer:Layer):string;
   sourceTimeForLayer(layer:Layer,time:number,mediaDuration?:number):number;
+  currentTime?():number;
 }
 
 const clamp=(value:number,min:number,max:number):number=>Math.max(min,Math.min(max,value));
@@ -31,28 +32,53 @@ export interface TimelineMediaTools {
 }
 
 export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):TimelineMediaTools {
-  const thumbnails=new Map<string,Promise<string[]>>();let queue:Promise<void>=Promise.resolve();
+  const thumbnails=new Map<string,string>(),pending=new Map<string,{source:string;time:number;timelineTime:number;tiles:Set<HTMLImageElement>}>();
+  let running=false,previewVideo:HTMLVideoElement|null=null,previewSource='';
+  const active=(key:string,tiles:Set<HTMLImageElement>)=>[...tiles].some(tile=>tile.isConnected&&tile.dataset.key===key);
+  const capture=async(source:string,time:number):Promise<string>=>{
+    if(previewSource!==source){previewVideo?.removeAttribute('src');previewVideo?.load();previewVideo=document.createElement('video');previewVideo.muted=true;previewVideo.preload='auto';previewSource=source;await mediaEvent(previewVideo,'loadeddata',()=>{previewVideo!.src=source})}
+    const video=previewVideo!,target=clamp(time,0,Math.max(0,video.duration-.001));
+    if(Math.abs(video.currentTime-target)>.001)await mediaEvent(video,'seeked',()=>{video.currentTime=target});
+    const canvas=document.createElement('canvas');canvas.width=96;canvas.height=54;const drawing=canvas.getContext('2d');if(!drawing)throw new Error('Canvas de miniatura indisponível');drawing.drawImage(video,0,0,96,54);return canvas.toDataURL('image/jpeg',.55);
+  };
+  const process=async()=>{
+    if(running)return;running=true;
+    try{
+      while(pending.size){
+        for(const [key,job] of pending)if(!active(key,job.tiles))pending.delete(key);
+        if(!pending.size)break;
+        const playhead=context.currentTime?.()??0;
+        const [key,job]=[...pending].sort((a,b)=>Math.abs(a[1].timelineTime-playhead)-Math.abs(b[1].timelineTime-playhead))[0];
+        let content='';
+        try{content=await capture(job.source,job.time)}catch{previewVideo?.removeAttribute('src');previewVideo?.load();previewVideo=null;previewSource=''}
+        pending.delete(key);
+        if(!content)continue;
+        thumbnails.set(key,content);
+        if(thumbnails.size>160){const oldest=thumbnails.keys().next().value;if(oldest!==undefined)thumbnails.delete(oldest)}
+        for(const tile of job.tiles)if(tile.isConnected&&tile.dataset.key===key)tile.src=content;
+      }
+    }finally{running=false}
+  };
   const preview=(layer:Layer,element:HTMLElement)=>{
     if(layer.type!=='video'&&layer.type!=='image')return;const source=context.resolveLayerContent(layer);if(!source)return;
-    const clipWidth=Number.parseFloat(element.closest<HTMLElement>('[data-clip]')?.style.width||'')||element.getBoundingClientRect().width||56,sampleCount=layer.type==='image'?1:clamp(Math.ceil(clipWidth/72),1,64),key=JSON.stringify([source,layer.sourceIn,layer.sourceOut,layer.reverse,layer.start,layer.end,layer.speed,sampleCount]);
-    if(!thumbnails.has(key)){
-      const job=queue.then(async()=>{
-        if(layer.type==='image')return[source];
-        const video=document.createElement('video');video.muted=true;video.preload='auto';
-        try{
-          await mediaEvent(video,'loadeddata',()=>{video.src=source});
-          const canvas=document.createElement('canvas');canvas.width=128;canvas.height=72;const drawing=canvas.getContext('2d');if(!drawing)throw new Error('Canvas de miniatura indisponível');const images:string[]=[];
-          for(let index=0;index<sampleCount;index++){
-            const time=clamp(context.sourceTimeForLayer(layer,layer.start+(layer.end-layer.start)*(index+.5)/sampleCount,video.duration),0,Math.max(0,video.duration-.001));
-            if(Math.abs(video.currentTime-time)>.001)await mediaEvent(video,'seeked',()=>{video.currentTime=time});drawing.drawImage(video,0,0,128,72);images.push(canvas.toDataURL('image/jpeg',.65));
-          }
-          return images;
-        }finally{video.removeAttribute('src');video.load()}
-      }).catch(()=>[]);
-      thumbnails.set(key,job);queue=job.then(()=>undefined);
-      if(thumbnails.size>80){const oldest=thumbnails.keys().next().value;if(oldest!==undefined)thumbnails.delete(oldest)}
+    const width=Number.parseFloat(element.closest<HTMLElement>('[data-clip]')?.style.width||'')||element.getBoundingClientRect().width||56;
+    const pixelsPerSecond=width/Math.max(.001,layer.end-layer.start),first=Math.floor(layer.start*pixelsPerSecond/72),last=Math.ceil(layer.end*pixelsPerSecond/72)-1;
+    const wanted=new Set<string>();
+    for(let slot=first;slot<=Math.min(last,first+63);slot++){
+      const position=slot*72,slotId=String(slot);wanted.add(slotId);
+      let image=element.querySelector<HTMLImageElement>(`img[data-slot="${slotId}"]`);
+      if(!image){image=document.createElement('img');image.dataset.slot=slotId;image.draggable=false;element.append(image)}
+      image.style.left=`${position-layer.start*pixelsPerSecond}px`;
+      const time=clamp((position+36)/pixelsPerSecond,layer.start,layer.end);
+      const sourceTime=context.sourceTimeForLayer(layer,time,layer.mediaDuration);
+      const key=layer.type==='image'?source:JSON.stringify([source,Math.round(sourceTime*100)/100]);
+      if(image.dataset.key===key)continue;image.dataset.key=key;image.removeAttribute('src');
+      if(layer.type==='image'){image.src=source;continue}
+      const cached=thumbnails.get(key);if(cached){image.src=cached;continue}
+      let job=pending.get(key);if(!job){job={source,time:sourceTime,timelineTime:time,tiles:new Set()};pending.set(key,job)}job.tiles.add(image);
     }
-    thumbnails.get(key)?.then(images=>{if(!element.isConnected)return;const tiles=layer.type==='image'?Array(Math.max(1,Math.ceil(clipWidth/72))).fill(images[0]):images;for(const imageSource of tiles){const image=document.createElement('img');image.src=imageSource;image.draggable=false;element.append(image)}});
+    for(const image of element.querySelectorAll<HTMLImageElement>('img[data-slot]'))if(!wanted.has(image.dataset.slot||''))image.remove();
+    if(pending.size)queueMicrotask(process);
   };
   const captureFrame=async(layer:Layer,time:number):Promise<{content:string;mediaDuration:number}>=>{
     const video=document.createElement('video');video.muted=true;

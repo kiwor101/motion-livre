@@ -5,8 +5,7 @@ ipcMain.handle('app:info',()=>({version:app.getVersion()}));ipcMain.handle('proj
 app.whenReady().then(async()=>{
   const window=new BrowserWindow({show:true,webPreferences:{preload:path.resolve(__dirname,'../desktop/preload.cjs'),backgroundThrottling:false}});
   try{
-    const timelineSource=fs.readFileSync(path.resolve(__dirname,'../src/ui/timeline/timeline-renderer.ts'),'utf8'),previewSource=fs.readFileSync(path.resolve(__dirname,'../src/ui/timeline/timeline-media-preview.ts'),'utf8'),studioCss=fs.readFileSync(path.resolve(__dirname,'../studio.css'),'utf8');
-    if(!previewSource.includes("element.closest<HTMLElement>('[data-clip]')?.style.width")||!previewSource.includes('(index+.5)/sampleCount'))throw Error('Video thumbnails do not follow assigned clip width and source time');
+    const timelineSource=fs.readFileSync(path.resolve(__dirname,'../src/ui/timeline/timeline-renderer.ts'),'utf8'),studioCss=fs.readFileSync(path.resolve(__dirname,'../studio.css'),'utf8');
     await window.loadFile(path.resolve(__dirname,'../index.html'));
     await window.webContents.executeJavaScript(`(async()=>{
       while(!window.motionUiReady)await new Promise(r=>setTimeout(r,10));await motionUiReady;

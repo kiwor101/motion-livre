@@ -6,5 +6,3 @@ foreach ($icon in $icons) {
  Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/$icon.svg" -OutFile (Join-Path $assetRoot "icons/$icon.svg")
 }
 Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/LICENSE' -OutFile (Join-Path $assetRoot 'icons/LICENSE')
-Invoke-WebRequest -Uri 'https://rsms.me/inter/font-files/InterVariable.woff2' -OutFile (Join-Path $assetRoot 'fonts/InterVariable.woff2')
-Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/rsms/inter/master/LICENSE.txt' -OutFile (Join-Path $assetRoot 'fonts/LICENSE.txt')

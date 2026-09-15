@@ -61,7 +61,7 @@ Na continuação de 2026-09-14 também passaram `pnpm check:ui`, `pnpm build:ui`
 
 Na revisão local da timeline passaram `pnpm check:ui`, `node --check tools/test-timeline-layout.cjs` e `git diff --check`. Build e execução visual foram deliberadamente adiados a pedido do mantenedor.
 
-Os testes específicos passaram. `tools/test-studio.cjs` não pôde ser iniciado porque o Playwright não está disponível no caminho padrão deste ambiente. Uma execução de `tools/test-renderer-contracts.cjs` alcançou o aplicativo, mas parou numa verificação preexistente de playback/render range que não pertence às áreas alteradas.
+Os testes específicos passaram. O teste Playwright antigo de estúdio foi removido após a migração porque dependia das APIs globais eliminadas; seus contratos atuais são cobertos pelas suítes Electron mantidas no projeto.
 
 ## Onde parou
 

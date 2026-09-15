@@ -70,8 +70,9 @@ defineEmits<{
 }
 
 .clip[data-kind='audio'] {
+  --audio-label-bg: #18201e;
   border-color: #37423e;
-  background: #18201e;
+  background: var(--audio-label-bg);
 }
 
 .clip[data-kind='text'] {
@@ -142,14 +143,16 @@ defineEmits<{
 
 .clip-label {
   position: absolute;
-  left: calc(6px + var(--clip-label-offset, 0px));
+  left: var(--clip-label-offset, 0px);
   top: 0;
   z-index: 2;
   display: flex;
   align-items: center;
-  max-width: 100%;
+  width: max-content;
+  max-width: 120px;
   height: 100%;
-  padding: 0;
+  padding: 0 6px;
+  box-sizing: border-box;
   gap: 6px;
   overflow: hidden;
   background: transparent;
@@ -165,12 +168,15 @@ defineEmits<{
 }
 
 .clip[data-kind='audio'] .clip-label {
+  left: calc(var(--clip-label-offset, 0px) + 4px);
   z-index: 3;
   display: inline-flex;
-  max-width: min(120px, 55%);
+  max-width: min(180px, calc(100% - 8px));
   height: 100%;
-  padding: 0;
-  background: transparent;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--audio-label-bg);
+  box-shadow: -4px 0 0 var(--audio-label-bg), 4px 0 6px var(--audio-label-bg);
   color: #d8dedb;
 }
 
@@ -183,6 +189,7 @@ defineEmits<{
 }
 
 .clip-title {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;

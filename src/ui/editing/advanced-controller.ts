@@ -7,9 +7,10 @@ import * as MotionLayerCommands from '../../core/layer-commands';
 import * as MotionProjectCommands from '../../core/project-commands';
 import type {EditorState,ProjectState} from '../../core/editor-state';
 import {uiState as MotionUiState} from '../ui-state';
+import {handleTimelineArrow} from '../timeline/timeline-keyboard-controller';
 
 export interface AdvancedControllerContext {
-  state:EditorState;addLayer(type:string,content?:string,name?:string):Layer;applyStyle(element:HTMLElement,layer:Partial<Layer>):void;setTime(time:number):void;syncProps():void;renderTimeline():void;renderLayers():void;selectLayer(id:number|null):void;selected():Layer|null;updateSelected():void;loadProjectData(data:unknown):void;restoreMediaLibrary(state:EditorState):void;stop():void;markDirty():void;toast(message:string):void;escapeHtml(value:unknown):string;projectData():ProjectState;pushHistory():void;syncComposition():void;
+  state:EditorState;addLayer(type:string,content?:string,name?:string):Layer;applyStyle(element:HTMLElement,layer:Partial<Layer>):void;setTime(time:number):void;syncProps():void;renderTimeline():void;renderLayers():void;selectLayer(id:number|null):void;selected():Layer|null;updateSelected():void;loadProjectData(data:unknown):void;restoreMediaLibrary(state:EditorState):void;stop():void;markDirty():void;toast(message:string):void;projectData():ProjectState;pushHistory():void;syncComposition():void;
   projectHistory?:ReturnType<typeof createHistory>;snapshot?():string;restore?(raw:string):void;bindHistoryGesture?(element:HTMLElement|null):void;syncAdvancedProps?():void;requireVideo?():Layer|null;buildFilter?(layer:Layer):string;renderAudioMixer?():void;
 }
 
@@ -18,8 +19,7 @@ type UiElement=HTMLElement&{value:string;type:string;checked:boolean;max:string;
 const state=context.state,$=<T extends HTMLElement=UiElement>(selector:string):T=>{const element=document.querySelector<T>(selector);if(!element)throw new Error(`Elemento ausente: ${selector}`);return element},$$=<T extends HTMLElement=UiElement>(selector:string):T[]=>[...document.querySelectorAll<T>(selector)];
 let addLayer=context.addLayer,applyStyle=context.applyStyle,setTime=context.setTime,syncProps=context.syncProps;
 type IdentifiedLayer=Layer&{id:number};
-const renderLayers=()=>context.renderLayers(),renderTimeline=()=>context.renderTimeline(),selectLayer=(id:number|null)=>context.selectLayer(id),selected=()=>{const layer=context.selected();if(layer?.id===undefined&&layer)throw new Error('Camada sem identificador');return layer as IdentifiedLayer|null},updateSelected=()=>context.updateSelected(),loadProjectData=(data:unknown)=>context.loadProjectData(data),restoreMediaLibrary=(value:EditorState)=>context.restoreMediaLibrary(value),stop=()=>context.stop(),markDirty=()=>context.markDirty(),toast=(message:string)=>context.toast(message),escapeHtml=(value:unknown)=>context.escapeHtml(value);
-const layerId=(layer:Layer):number=>{if(layer.id===undefined)throw new Error('Camada sem identificador');return layer.id};
+const renderLayers=()=>context.renderLayers(),renderTimeline=()=>context.renderTimeline(),selectLayer=(id:number|null)=>context.selectLayer(id),selected=()=>{const layer=context.selected();if(layer?.id===undefined&&layer)throw new Error('Camada sem identificador');return layer as IdentifiedLayer|null},updateSelected=()=>context.updateSelected(),loadProjectData=(data:unknown)=>context.loadProjectData(data),restoreMediaLibrary=(value:EditorState)=>context.restoreMediaLibrary(value),stop=()=>context.stop(),markDirty=()=>context.markDirty(),toast=(message:string)=>context.toast(message);
 const inputFrom=(event:Event)=>event.currentTarget as HTMLInputElement;
 const projectHistory=createHistory({limit:40});
 const originalAddLayer=addLayer,originalApplyStyle=applyStyle;
@@ -62,21 +62,12 @@ $('#groupLayer').onclick=()=>{const l=selected();if(!l)return;MotionProjectComma
 
 
 function renderAudioMixer(){
-  const box=$('#audioMixer'),channels=state.layers.filter(layer=>layer.type==='audio'||layer.type==='video');
-  if(!channels.length){box.innerHTML='<div class="empty">Importe áudio ou um vídeo com som</div>';return}
-  box.innerHTML='';
-  for(const layer of channels){
-    const id=layerId(layer),card=document.createElement('div'),rawVolume=Number(layer.volume),rawPan=Number(layer.pan),volume=Math.max(0,Math.min(200,Number.isFinite(rawVolume)?rawVolume:100)),pan=Math.max(-100,Math.min(100,Number.isFinite(rawPan)?rawPan:0));
-    card.className='audio-channel';card.innerHTML=`<strong>${layer.type==='video'?'🎬':'♫'} ${escapeHtml(layer.name)}</strong><label>Volume ${volume}%<input data-volume type="range" min="0" max="200" value="${volume}"></label><label>Pan L/R ${pan}<input data-pan type="range" min="-100" max="100" value="${pan}"></label><label>Fonte<select data-channel><option value="stereo">Estéreo</option><option value="left">Somente canal esquerdo</option><option value="right">Somente canal direito</option></select></label><label><input data-mute type="checkbox" ${layer.muted?'checked':''}> Mudo</label><label><input data-solo type="checkbox" ${layer.solo?'checked':''}> Solo</label>`;
-    const field=<T extends HTMLInputElement|HTMLSelectElement>(selector:string):T=>{const element=card.querySelector<T>(selector);if(!element)throw new Error(`Controle de áudio ausente: ${selector}`);return element};
-    const channel=field<HTMLSelectElement>('[data-channel]'),volumeInput=field<HTMLInputElement>('[data-volume]'),panInput=field<HTMLInputElement>('[data-pan]'),muteInput=field<HTMLInputElement>('[data-mute]'),soloInput=field<HTMLInputElement>('[data-solo]');
-    card.onclick=()=>selectLayer(id);channel.value=['stereo','left','right'].includes(layer.audioChannel)?layer.audioChannel:'stereo';
-    volumeInput.oninput=()=>{MotionProjectCommands.setProperties(state,{id,values:{volume:+volumeInput.value}});if(volumeInput.parentElement?.firstChild)volumeInput.parentElement.firstChild.nodeValue=`Volume ${volumeInput.value}%`;markDirty()};
-    panInput.oninput=()=>{MotionProjectCommands.setProperties(state,{id,values:{pan:+panInput.value}});if(panInput.parentElement?.firstChild)panInput.parentElement.firstChild.nodeValue=`Pan L/R ${panInput.value}`;markDirty()};
-    bindHistoryGesture(volumeInput);bindHistoryGesture(panInput);
-    channel.onchange=()=>{MotionProjectCommands.setProperties(state,{id,values:{audioChannel:channel.value}});markDirty()};muteInput.onchange=()=>{MotionProjectCommands.setProperties(state,{id,values:{muted:muteInput.checked}});renderLayers();markDirty()};soloInput.onchange=()=>{MotionProjectCommands.setProperties(state,{id,values:{solo:soloInput.checked}});renderAudioMixer();markDirty()};box.append(card);
-  }
+  const channels=state.layers.flatMap(layer=>{if((layer.type!=='audio'&&layer.type!=='video')||layer.id===undefined)return[];const rawVolume=Number(layer.volume),rawPan=Number(layer.pan);return[{id:layer.id,kind:layer.type, name:layer.name,volume:Math.max(0,Math.min(200,Number.isFinite(rawVolume)?rawVolume:100)),pan:Math.max(-100,Math.min(100,Number.isFinite(rawPan)?rawPan:0)),channel:['stereo','left','right'].includes(layer.audioChannel)?layer.audioChannel:'stereo',muted:Boolean(layer.muted),solo:Boolean(layer.solo)}]});
+  window.dispatchEvent(new CustomEvent('motion:audio-mixer-update',{detail:channels}));
 }
+window.addEventListener('motion:audio-mixer-select',event=>selectLayer((event as CustomEvent<number>).detail));
+window.addEventListener('motion:audio-mixer-controls',event=>{for(const element of (event as CustomEvent<HTMLElement[]>).detail)bindHistoryGesture(element)});
+window.addEventListener('motion:audio-mixer-change',event=>{const {id,key,value}=(event as CustomEvent<{id:number;key:'volume'|'pan'|'audioChannel'|'muted'|'solo';value:number|string|boolean}>).detail;if(!MotionProjectCommands.setProperties(state,{id,values:{[key]:value}}))return;if(key==='muted')renderLayers();if(key==='solo')renderAudioMixer();markDirty()});
 
 $('#startDrawing').onclick=()=>{MotionUiState.drawing=!MotionUiState.drawing;$('#stage').classList.toggle('drawing',MotionUiState.drawing);$('#startDrawing').textContent=MotionUiState.drawing?'Desenho ativo — arraste no palco':'Iniciar desenho';toast(MotionUiState.drawing?'Modo desenho ativo':'Modo desenho encerrado')};
 let drawPoints:Array<[number,number]>=[];
@@ -91,7 +82,7 @@ $<HTMLInputElement>('#importProject').onchange=async e=>{const input=e.currentTa
 $('#menuImport').onclick=()=>$('#importProject').click();
 $('#projectFile').onclick=()=>$('#projectMenu').hidden=!$('#projectMenu').hidden;
 $('#menuFeatures').onclick=()=>{$('#featureModal').hidden=false;$('#projectMenu').hidden=true};$('#closeFeatures').onclick=()=>$('#featureModal').hidden=true;
-addEventListener('keydown',e=>{const target=e.target instanceof Element?e.target:null,editing=Boolean(target?.closest('input,textarea,select,[contenteditable="true"]'));if(editing)return;if(e.ctrlKey&&e.key.toLowerCase()==='z'){e.preventDefault();$('#undoBtn').click()}if(e.ctrlKey&&e.key.toLowerCase()==='y'){e.preventDefault();$('#redoBtn').click()}if(e.key==='Delete'&&state.selection.selected)$('#deleteLayer').click();if(e.code==='Space'){e.preventDefault();$('#playBtn').click()}if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();stop();setTime(state.playback.time+(e.key==='ArrowRight'?1:-1)/(state.composition.fps||30))}});
+addEventListener('keydown',e=>{if(handleTimelineArrow(e,state,stop,setTime))return;const target=e.target instanceof Element?e.target:null,editing=Boolean(target?.closest('input,textarea,select,[contenteditable="true"]'));if(editing)return;if(e.ctrlKey&&e.key.toLowerCase()==='z'){e.preventDefault();$('#undoBtn').click()}if(e.ctrlKey&&e.key.toLowerCase()==='y'){e.preventDefault();$('#redoBtn').click()}if(e.key==='Delete'&&state.selection.selected)$('#deleteLayer').click();if(e.code==='Space'){e.preventDefault();$('#playBtn').click()}});
 ['projectName','aspect','propName','propX','propY','propScale','propRotation','propOpacity','propColor',...Object.keys(advancedFields).map(id=>'prop'+id),'propSpeed','propVolume','propFadeIn','propFadeOut','propMuted',...Object.keys(effectKeys).map(id=>'fx'+id)].forEach(id=>bindHistoryGesture($('#'+id)));
 Object.assign(context,{projectHistory,snapshot,pushHistory,restore,bindHistoryGesture,syncAdvancedProps,requireVideo,buildFilter,renderAudioMixer});
 syncComposition();pushHistory();renderLayers();

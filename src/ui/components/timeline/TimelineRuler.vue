@@ -1,11 +1,24 @@
 <script setup lang="ts">
 import {computed} from 'vue'
 import AppIcon from '../base/AppIcon.vue'
+import TimelineMarkers from './TimelineMarkers.vue'
+import TimelineRenderRange from './TimelineRenderRange.vue'
 
 const props = defineProps<{
   duration: number
   headerWidth: number
   pixelsPerSecond: number
+  manualMarkers: number[]
+  beatMarkers: number[]
+  rangeStart: number
+  rangeEnd: number
+  timeLabel: (time: number) => string
+}>()
+
+defineEmits<{
+  dragMarker: [event: PointerEvent, kind: 'manual' | 'beat', index: number]
+  menuMarker: [event: MouseEvent, kind: 'manual' | 'beat', index: number]
+  dragRange: [event: PointerEvent, kind: 'start' | 'end']
 }>()
 
 const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) => ({
@@ -27,6 +40,23 @@ const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) 
     <AppIcon name="layers" class="ruler-icon" :size="15" />
     <span>Camadas</span>
   </div>
+  <TimelineMarkers
+    :manual="manualMarkers"
+    :beats="beatMarkers"
+    :header-width="headerWidth"
+    :pixels-per-second="pixelsPerSecond"
+    :time-label="timeLabel"
+    @drag="(...args) => $emit('dragMarker', ...args)"
+    @menu="(...args) => $emit('menuMarker', ...args)"
+  />
+  <TimelineRenderRange
+    :start="rangeStart"
+    :end="rangeEnd"
+    :header-width="headerWidth"
+    :pixels-per-second="pixelsPerSecond"
+    :time-label="timeLabel"
+    @drag="(...args) => $emit('dragRange', ...args)"
+  />
 </template>
 
 <style scoped>

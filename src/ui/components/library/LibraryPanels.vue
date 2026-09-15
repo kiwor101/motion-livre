@@ -5,6 +5,7 @@ import CutPanel from './CutPanel.vue'
 import DrawingPanel from './DrawingPanel.vue'
 import EffectsPanel from './EffectsPanel.vue'
 import MediaPanel from './MediaPanel.vue'
+import LayersPanel from './LayersPanel.vue'
 import ProjectPanel from './ProjectPanel.vue'
 import ShapePanel from './ShapePanel.vue'
 import TextPanel from './TextPanel.vue'
@@ -21,5 +22,6 @@ import TextPanel from './TextPanel.vue'
     <AudioPanel />
     <AnimationPanel />
     <ProjectPanel />
+    <LayersPanel />
   </section>
 </template>

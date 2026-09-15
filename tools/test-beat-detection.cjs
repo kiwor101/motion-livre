@@ -39,6 +39,8 @@ assert.equal(snapTimelineTime({ state: snapState, time: 6.4, pixelsPerSecond: 40
 assert.equal(snapTimelineTime({ state: snapState, time: 7.2, pixelsPerSecond: 40 }), 7, 'Video edge did not attract a clip')
 assert.equal(snapTimelineTime({ state: snapState, time: 9.7, pixelsPerSecond: 40 }), 9.5, 'Audio edge did not attract a clip')
 assert.equal(snapTimelineTime({ state: snapState, time: 1.2, pixelsPerSecond: 40, exclude: new Set([1]) }), 1.2, 'Moving clip snapped to its own edge')
-assert.equal(snapTimelineTime({ state: snapState, time: 6.4, pixelsPerSecond: 40, markersOnly: true }), 6, 'Playhead did not snap to a beat marker')
+assert.equal(snapTimelineTime({ state: snapState, time: 6.1, pixelsPerSecond: 40, markersOnly: true }), 6, 'Nearby beat marker did not attract the playhead')
+assert.equal(snapTimelineTime({ state: snapState, time: 3.1, pixelsPerSecond: 40, markersOnly: true }), 3, 'Nearby manual marker did not attract the playhead')
+assert.equal(snapTimelineTime({ state: snapState, time: 6.4, pixelsPerSecond: 40, markersOnly: true }), 6.4, 'Playhead magnetism blocked navigation between markers')
 
 console.log('PASS: beat detection preserves tempo/phase and timeline snapping favors markers')

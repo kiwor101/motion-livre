@@ -1,5 +1,8 @@
 <script setup lang="ts">
-defineProps<{
+import {nextTick, ref} from 'vue'
+import AppIcon from '../base/AppIcon.vue'
+
+const props = defineProps<{
   title: string
   locked: boolean
   visible: boolean
@@ -8,21 +11,43 @@ defineProps<{
   multiSelected: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
+  select: []
+  rename: [title: string]
   toggleLock: []
   toggleVisibility: []
   toggleMute: []
   toggleMulti: []
 }>()
+
+const editing = ref(false)
+const draft = ref('')
+const input = ref<HTMLInputElement | null>(null)
+
+async function startRename(): Promise<void> {
+  if (props.locked) return
+  draft.value = props.title
+  editing.value = true
+  await nextTick()
+  input.value?.select()
+}
+
+function finishRename(save: boolean): void {
+  if (!editing.value) return
+  const title = draft.value.trim()
+  editing.value = false
+  if (save && title && title !== props.title) emit('rename', title)
+}
 </script>
 
 <template>
   <div class="track-name">
-    <span class="layer-title">{{ title }}</span>
-    <button type="button" data-lock title="Bloquear faixa" @click.stop="$emit('toggleLock')">{{ locked ? '🔒' : '🔓' }}</button>
-    <button type="button" data-vis title="Ocultar faixa" @click.stop="$emit('toggleVisibility')">{{ visible ? '●' : '○' }}</button>
-    <button type="button" data-mute title="Silenciar faixa" :disabled="!hasAudio" @click.stop="$emit('toggleMute')">{{ hasAudio && muted ? '🔇' : '🔊' }}</button>
-    <button type="button" data-multi title="Marcar clipes para precomposição" @click.stop="$emit('toggleMulti')">{{ multiSelected ? '☑' : '☐' }}</button>
+    <input v-if="editing" ref="input" v-model="draft" class="track-rename" @click.stop @dblclick.stop @keydown.enter.stop="finishRename(true)" @keydown.esc.stop="finishRename(false)" @blur="finishRename(true)">
+    <span v-else class="layer-title" title="Clique para selecionar; duplo clique para renomear" @click.stop="$emit('select')" @dblclick.stop="startRename">{{ title }}</span>
+    <button type="button" data-lock :aria-label="locked ? 'Desbloquear faixa' : 'Bloquear faixa'" :title="locked ? 'Desbloquear faixa' : 'Bloquear faixa'" @click.stop="$emit('toggleLock')"><AppIcon :name="locked ? 'lock' : 'lock-open'" :size="16" /></button>
+    <button type="button" data-vis :aria-label="visible ? 'Ocultar faixa' : 'Mostrar faixa'" :title="visible ? 'Ocultar faixa' : 'Mostrar faixa'" @click.stop="$emit('toggleVisibility')"><AppIcon :name="visible ? 'visibility' : 'visibility-off'" :size="16" /></button>
+    <button type="button" data-mute :aria-label="muted ? 'Ativar áudio da faixa' : 'Silenciar faixa'" :title="muted ? 'Ativar áudio da faixa' : 'Silenciar faixa'" :disabled="!hasAudio" @click.stop="$emit('toggleMute')"><AppIcon :name="hasAudio && muted ? 'volume-off' : 'volume-up'" :size="16" /></button>
+    <button type="button" data-multi aria-label="Marcar clipes para precomposição" title="Marcar clipes para precomposição" @click.stop="$emit('toggleMulti')"><AppIcon :name="multiSelected ? 'check-box' : 'check-box-outline-blank'" :size="16" /></button>
   </div>
 </template>
 
@@ -62,10 +87,15 @@ defineEmits<{
 }
 
 button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   font-size: 10px;
 }
 
-:deep(.track-rename) {
+.track-rename {
   order: 0;
   flex: 1;
   min-width: 0;

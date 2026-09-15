@@ -28,6 +28,9 @@ function toggleProxy() {
 </template>
 
 <style scoped>
+.stage-toolbar { position: relative; z-index: 300; display: flex; align-items: center; gap: 10px; width: 100%; height: 56px; padding: 0 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--text); font-size: 12px; }
+.stage-toolbar > span { margin-right: 0; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.stage-toolbar :deep(select option) { background: var(--panel2); color: var(--text); }
 .proxy-toggle { margin-left: auto; white-space: nowrap; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; cursor: pointer; }
 .proxy-toggle[aria-pressed="true"] { color: var(--accent2); border-color: var(--accent); }
 .proxy-toggle:disabled { color: var(--muted); cursor: default; }

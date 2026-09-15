@@ -7,6 +7,9 @@ import FeatureModal from './FeatureModal.vue'
 import MediaDropOverlay from './MediaDropOverlay.vue'
 import ProjectMenu from './ProjectMenu.vue'
 import ToastMessage from './ToastMessage.vue'
+import TimelineContextMenu from './TimelineContextMenu.vue'
+import StudioTooltip from './StudioTooltip.vue'
+import BeatSyncPanel from '../timeline/BeatSyncPanel.vue'
 </script>
 
 <template>
@@ -18,4 +21,7 @@ import ToastMessage from './ToastMessage.vue'
   <ExportSettingsModal />
   <FeatureModal />
   <CompatibilityReport />
+  <TimelineContextMenu />
+  <StudioTooltip />
+  <div class="beat-sync-host"><BeatSyncPanel /></div>
 </template>

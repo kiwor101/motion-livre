@@ -14,7 +14,8 @@ interface SnapCandidate { time: number; radius: number }
 
 export function snapTimelineTime(options: SnapOptions): number {
   const { state, time, pixelsPerSecond } = options
-  const markerRadius = 18 / Math.max(.001, pixelsPerSecond)
+  // A playhead needs room between dense beat markers; clip edges keep the wider attraction.
+  const markerRadius = (options.markersOnly ? 6 : 18) / Math.max(.001, pixelsPerSecond)
   const edgeRadius = 10 / Math.max(.001, pixelsPerSecond)
   const candidates: SnapCandidate[] = [
     ...state.markers.map(value => ({ time: value, radius: markerRadius })),

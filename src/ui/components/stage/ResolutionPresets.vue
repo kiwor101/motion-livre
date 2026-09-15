@@ -14,3 +14,8 @@ const label = (value: string) => value.replace('x', ' × ')
     >{{ label(preset) }}</button>
   </div>
 </template>
+
+<style scoped>
+.resolution-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.resolution-presets button { padding: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel2); color: var(--text); }
+</style>

@@ -81,7 +81,7 @@ Build e testes executáveis visuais devem ser feitos quando o pacote for autoriz
 
 ## Estado atual
 
-Progresso estimado: **76% da componentização planejada**.
+Progresso estimado: **98% da componentização planejada**.
 
 ### Concluído ou consolidado
 
@@ -99,6 +99,23 @@ Progresso estimado: **76% da componentização planejada**.
 - Clipes com filmstrip, waveform, handles, seleção, tipos de mídia e keyframes encapsulados.
 - Montagens Vue dinâmicas da timeline são desmontadas antes de cada renderização.
 - Testes adicionados para geometria, contratos DOM e segurança de textos externos.
+- Barra de ferramentas com CSS scoped e ícones declarativos via `AppIcon`, sem decoração visual pelo controlador.
+- Controles de fim, guias, proporção das guias e tela cheia do preview declarados em Vue, sem `createElement`, `innerHTML` ou movimentação posterior dos componentes.
+- Painel de camadas, pilha de efeitos e menu de contexto da timeline renderizados por componentes Vue com dados externos interpolados como texto e CSS scoped.
+- Mixer de áudio dividido em lista e canal Vue, preservando gestos de histórico e propriedades de volume, pan, fonte, mute e solo sem montagem por HTML.
+- Lista de mídia declarativa em Vue e renderização de caminhos vetoriais por nós SVG reutilizáveis; não restam atribuições a `innerHTML` em `src/ui`.
+- Guias de alinhamento e ferramentas auxiliares do preview com CSS scoped, sem regras equivalentes nas folhas globais.
+- Estrutura e CSS de stage, viewport, resolução e transporte encapsulados nos componentes responsáveis; as únicas regras globais de `.stage` preservadas pertencem ao renderer de mídia.
+- Barra da timeline declarada integralmente por `TimelineToolbar`, com grupos, ações, zoom, encaixe e status estáticos; o controlador apenas consulta os contratos e associa regras de edição.
+- Delegação das ações da timeline resolve o botão ancestral, permitindo clicar com segurança nos ícones internos renderizados por Vue.
+- Limites de entrada e saída da renderização declarados por `TimelineRenderRange` dentro de `TimelineRuler`; régua, marcadores e limites compartilham uma única montagem Vue.
+- Cada faixa agora é uma árvore `TimelineTrack` única, contendo cabeçalho, lane e clipes; foram eliminadas a criação manual de linhas/lanes e as aplicações Vue independentes por cabeçalho e clipe.
+- Geometria, waveform e filmstrip continuam acoplados após a montagem por serem integrações de canvas e mídia, sem assumir a estrutura visual da faixa.
+- Controles do cabeçalho da faixa usam `AppIcon` diretamente; foi removido o observador que reescrevia botões depois de cada renderização.
+- Cabeçalho dos clipes de áudio possui margem inicial e fundo opaco sobre a waveform; sua âncora permanece estável quando uma borda cortada é restaurada.
+- Tooltip global implementado como overlay Vue com `Teleport`, incluindo posicionamento, acessibilidade, foco, ponteiro e suporte à tela cheia sem criação ou movimentação manual pelo controller.
+- Painel de Beat Sync incorporado à árvore de overlays, removendo sua aplicação Vue e host criados isoladamente.
+- Renomeação de faixa renderiza o campo pelo próprio `TimelineTrackHeader`; o controller não substitui mais o título por um input imperativo.
 
 ### Auditoria já realizada
 
@@ -109,29 +126,23 @@ Progresso estimado: **76% da componentização planejada**.
 
 ### Auditoria ainda pendente
 
-- `ToolSidebar` e `ToolButton`.
-- Barra superior e ações antigas.
-- Preview e componentes de stage.
 - Painéis da biblioteca.
-- Painel de camadas criado por `timeline-tracks-controller.ts`.
-- Pilha de efeitos criada por `professional-effects-controller.ts`.
-- Menu de contexto da timeline.
+- Waveform e filmstrip ainda usam nós de canvas/imagem gerenciados pelo runtime de mídia.
+- Overlays transitórios de gestos e handles do stage ainda possuem montagem imperativa.
 - Regras globais relacionadas a esses setores.
 
 ## Ponto de atenção principal
 
-`ToolSidebar` agora é filho de `AppTopBar`; `studio-controller.ts` não move mais sua raiz nem substitui seus filhos. A seleção e os ícones passaram para os componentes Vue, preservando `data-panel`. Falta migrar as regras globais da barra para CSS scoped e conferir a responsividade visual antes de considerar o setor concluído.
+`ToolSidebar` agora é filho de `AppTopBar`; `studio-controller.ts` não move sua raiz nem substitui seus filhos. Seleção, ícones, responsividade e CSS pertencem aos componentes Vue, preservando `data-panel` e `data-material-icon`. A validação visual continua adiada enquanto builds locais não estiverem autorizados.
 
 ## Ordem recomendada para retomada
 
 1. Terminar a auditoria dos componentes antigos antes de criar novos setores.
-2. Concluir o CSS scoped e a revisão visual de `ToolSidebar`/`ToolButton`.
-3. Revisar preview e stage, identificando CSS global duplicado.
-4. Revisar os painéis da biblioteca e consolidar padrões repetidos.
-5. Migrar o painel de camadas e a pilha de efeitos ainda montados com `innerHTML`.
-6. Migrar lane, waveform e limites de renderização restantes da timeline.
-7. Reduzir handlers baseados em IDs em favor de props, emits e estado reativo.
-8. Unificar aplicações Vue independentes sob uma única raiz quando os contratos restantes permitirem.
+2. Revisar os painéis da biblioteca e consolidar padrões repetidos.
+3. Revisar a fronteira de waveform e filmstrip, preservando o gerenciamento eficiente de canvas e mídia.
+4. Migrar os setores visuais restantes ainda criados por DOM imperativo.
+5. Reduzir handlers baseados em IDs em favor de props, emits e estado reativo.
+6. Unificar aplicações Vue independentes sob uma única raiz quando os contratos restantes permitirem.
 
 ## Validação mínima durante o trabalho local
 

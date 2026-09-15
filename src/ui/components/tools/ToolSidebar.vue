@@ -35,3 +35,25 @@ onBeforeUnmount(() => window.removeEventListener('motion:panel-change', syncPane
     />
   </aside>
 </template>
+
+<style scoped>
+.tools {
+  order: 0;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  gap: 4px;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: transparent;
+  scrollbar-width: none;
+}
+
+.tools::-webkit-scrollbar {
+  display: none;
+}
+</style>

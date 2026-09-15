@@ -21,11 +21,14 @@ app.whenReady().then(async()=>{
       const oldText=grid(text.id),oldEffect=grid(effect.id);
       const labelLeft=id=>clip(id).querySelector('.clip-label').getBoundingClientRect().left;
       const oldTextLabel=labelLeft(text.id),oldEffectLabel=labelLeft(effect.id),oldDot=clip(effect.id).querySelector('.key-dot').getBoundingClientRect().left;
+      const audioLabel=clip(audio.id).querySelector('.clip-label'),audioLabelStyle=getComputedStyle(audioLabel),oldAudioLabel={left:audioLabel.getBoundingClientRect().left,width:audioLabel.getBoundingClientRect().width,icon:audioLabel.querySelector('.clip-kind-icon').getBoundingClientRect().left};
+      if(audioLabelStyle.backgroundColor==='rgba(0, 0, 0, 0)'||Number(audioLabelStyle.zIndex)<1||Math.abs(oldAudioLabel.left-clip(audio.id).getBoundingClientRect().left-4)>1)throw Error('Cabeçalho do áudio não reserva uma margem opaca sobre a waveform');
       for(const layer of [audio,text,effect])Object.assign(layer,{start:0,sourceIn:0});motionEditor.renderLayers();await paint();
       const newWave=clip(audio.id).querySelector('.clip-waveform'),newColumn=column(newWave,140);
       if(newWave.width<=oldWidth||Math.abs((newWave.getBoundingClientRect().left+140)-(oldWaveLeft+100))>1||JSON.stringify(newColumn)!==JSON.stringify(oldColumn))throw Error('Onda existente se moveu ou esticou ao revelar áudio');
       for(const [id,old] of [[text.id,oldText],[effect.id,oldEffect]]){const next=grid(id);if(!next.image.includes('repeating-linear-gradient')||Math.abs((next.left+next.offset)-(old.left+old.offset))>1)throw Error('Marcas da faixa sem frames mudaram de posição')}
       if(Math.abs(labelLeft(text.id)-oldTextLabel)>1||Math.abs(labelLeft(effect.id)-oldEffectLabel)>1||Math.abs(clip(effect.id).querySelector('.key-dot').getBoundingClientRect().left-oldDot)>1)throw Error('Texto ou keyframe se deslocou ao estender a borda: '+[oldTextLabel,labelLeft(text.id),oldEffectLabel,labelLeft(effect.id),oldDot,clip(effect.id).querySelector('.key-dot').getBoundingClientRect().left].join(','));
+      const newAudioLabel=clip(audio.id).querySelector('.clip-label');if(Math.abs(newAudioLabel.getBoundingClientRect().left-oldAudioLabel.left)>1||Math.abs(newAudioLabel.getBoundingClientRect().width-oldAudioLabel.width)>1||Math.abs(newAudioLabel.querySelector('.clip-kind-icon').getBoundingClientRect().left-oldAudioLabel.icon)>1)throw Error('Nome, ícone ou largura do áudio mudaram ao restaurar a borda');
     })()`);
     console.log('PASS: áudio, texto e efeito revelam conteúdo com âncora fixa');app.quit();
   }catch(error){console.error(error);app.exit(1)}

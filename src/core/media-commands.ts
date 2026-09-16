@@ -40,3 +40,37 @@ export function configureLayer(state:EditorState,{id,source}:{id:LayerId;source:
   if(mediaDuration>state.duration){state.duration=Math.min(mediaDuration,600);layer.end=state.duration;if(state.renderRange.end>=previousDuration-.001)state.renderRange.end=state.duration}
   return layer;
 }
+
+export function setLayerWaveform(
+  state: EditorState,
+  {
+    id,
+    points,
+    hasAudio,
+  }: { id: LayerId; points: number[]; hasAudio?: boolean },
+): boolean {
+  const layer = state.layers.find((item) => item.id === id);
+  if (!layer || !['video', 'audio'].includes(layer.type)) return false;
+  if (!Array.isArray(points) || points.length > 10_000) {
+    throw new RangeError('Waveform inválida');
+  }
+
+  const waveform = points.map((point) => {
+    if (
+      typeof point !== 'number' ||
+      !Number.isFinite(point) ||
+      point < 0 ||
+      point > 1
+    ) {
+      throw new RangeError('Amostra da waveform inválido');
+    }
+    return +point.toFixed(6);
+  });
+  if (hasAudio !== undefined && typeof hasAudio !== 'boolean') {
+    throw new Error('Metadado de áudio inválido');
+  }
+
+  layer.waveform = waveform;
+  if (hasAudio !== undefined) layer.hasAudio = hasAudio;
+  return true;
+}

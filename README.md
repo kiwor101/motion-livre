@@ -143,6 +143,7 @@ As branches pessoais são permanentes. Cada atualização deve ser validada e en
 ## Documentação
 
 - [Arquitetura e limites técnicos](docs/ARQUITETURA_ALVO.md)
+- [Plano de refatoração TypeScript](docs/PLANO_REFATORACAO_TYPESCRIPT.md)
 - [Migração da interface Vue](docs/MIGRACAO_VUE.md)
 - [Resumo da migração TypeScript](docs/RESUMO_MIGRACAO_INTERFACE.md)
 - [Compatibilidade Alight Motion XML](docs/COMPATIBILIDADE_ALIGHT_XML.md)

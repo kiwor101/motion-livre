@@ -17,7 +17,7 @@ const fpsOptions = ['23.976', '24', '25', '29.97', '30', '50', '59.94', '60'].ma
     <NumberField label="Duração (s)" input-id="compDuration" :value="10" :min="1" :max="600" />
     <ColorField label="Fundo" input-id="compBackground" value="#08090b" />
     <BaseButton id="applyComposition" class="wide">Aplicar composição</BaseButton>
-    <hr><BaseButton id="exportProject" class="wide">Exportar projeto JSON</BaseButton>
+    <hr><BaseButton id="exportProject" class="wide">Salvar projeto como…</BaseButton>
     <UploadField label="Importar projeto JSON" input-id="importProject" accept="application/json,.json" />
     <hr><h3>Alight Motion XML</h3><p>Intercâmbio de cenas, camadas, keyframes e efeitos compatíveis.</p>
     <BaseButton id="exportAlightXml" class="wide">Exportar cena XML compatível</BaseButton>

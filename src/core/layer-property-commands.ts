@@ -175,12 +175,9 @@ export function setKeyframe(
 
   const frames: ProjectKeyframe[] = layer.keyframes.flatMap((frame) => {
     if (Math.abs(frame.time - time) >= 0.02) return [clone(frame)];
-
     const remaining = { ...frame.values };
     for (const key of keys) delete remaining[key];
-    return Object.keys(remaining).length
-      ? [{ ...clone(frame), values: remaining }]
-      : [];
+    return Object.keys(remaining).length ? [{ ...clone(frame), values: remaining }] : [];
   });
 
   frames.push({
@@ -189,5 +186,46 @@ export function setKeyframe(
     easing: easing ?? layer.easing ?? 'linear',
   });
   layer.keyframes = frames.sort((a, b) => a.time - b.time);
+  return true;
+}
+
+export function setAnimatedProperties(
+  state: EditorState,
+  {
+    id,
+    time,
+    values,
+  }: { id: LayerId; time: number; values: Record<string, unknown> },
+): boolean {
+  const layer = state.layers.find((item) => item.id === id);
+  if (!layer || !setProperties(state, { id, values })) return false;
+
+  const animatedValues: Record<string, number> = {};
+  for (const [key, value] of Object.entries(values)) {
+    if (
+      keyframeProperties.has(key) &&
+      typeof value === 'number' &&
+      layer.keyframes.some((frame) => Number.isFinite(frame.values?.[key]))
+    ) {
+      animatedValues[key] = value;
+    }
+  }
+  if (Object.keys(animatedValues).length) {
+    setKeyframe(state, { id, time, values: animatedValues, easing: layer.easing });
+  }
+  return true;
+}
+
+export function moveKeyframe(
+  state: EditorState,
+  { id, index, time }: { id: LayerId; index: number; time: number },
+): boolean {
+  const layer = editable(state, id);
+  if (!layer || !layer.keyframes[index]) return false;
+  finiteNumber(time, 0, state.duration, 'Tempo');
+  const previousTime = layer.keyframes[index].time;
+  const nextTime = Math.max(layer.start, Math.min(layer.end, time));
+  for (const frame of layer.keyframes) if (Math.abs(frame.time - previousTime) < 0.02) frame.time = nextTime;
+  layer.keyframes.sort((left, right) => left.time - right.time);
   return true;
 }

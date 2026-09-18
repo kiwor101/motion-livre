@@ -5,8 +5,8 @@ import {create as createExportController,type ExportBridge,type ExportController
 import type {ExportFormat,ExportSettingsInput} from '../../core/export-settings';
 
 export interface DesktopBridge extends ExportBridge {
-  saveProject(data:string,suggestedName:string):Promise<string|null>;
-  openProject():Promise<{data:string}|null>;
+  saveProject(data:string,suggestedName:string,filePath?:string):Promise<string|null>;
+  openProject():Promise<{path:string;data:string}|null>;
   saveEffect(data:string,suggestedName:string):Promise<string|null>;
   openEffect():Promise<{data:string}|null>;
   autosave(data:string):Promise<unknown>;
@@ -85,14 +85,17 @@ export function installDesktopController(context:DesktopContext):ExportControlle
   const bridge=context.bridge;if(!bridge)return null;
   document.body.classList.add('desktop-app');
   let autosaveTimer:ReturnType<typeof setTimeout>|undefined;
+  let projectPath:string|null=null;
   const projectName=()=>byId<HTMLInputElement>('projectName').value;
   const serialize=()=>JSON.stringify(context.projectData(),null,2);
-  const nativeSave=async()=>{const path=await bridge.saveProject(serialize(),projectName());if(path){byId('saveState').textContent='Salvo em arquivo';context.toast('Projeto salvo no Windows')}};
-  const nativeOpen=async()=>{const result=await bridge.openProject();if(result)try{context.loadProjectData(JSON.parse(result.data));context.toast('Projeto aberto')}catch{context.toast('Projeto inválido')}};
+  const nativeSave=async(saveAs=false)=>{const path=await bridge.saveProject(serialize(),projectName(),saveAs?undefined:projectPath||undefined);if(path){projectPath=path;byId('saveState').textContent='Projeto salvo';context.toast(saveAs?'Projeto salvo como novo arquivo':'Projeto salvo')}};
+  const nativeOpen=async()=>{const result=await bridge.openProject();if(result)try{context.loadProjectData(JSON.parse(result.data));projectPath=result.path;byId('saveState').textContent='Projeto aberto';context.toast('Projeto aberto')}catch{context.toast('Projeto inválido')}};
+  byId('newProject').addEventListener('click',()=>{projectPath=null},{capture:true});
+  byId('importProject').addEventListener('change',()=>{projectPath=null},{capture:true});
   byId('saveEffectXml').onclick=async()=>{const layer=context.selected();if(!layer)return context.toast('Selecione uma camada');const path=await bridge.saveEffect(effectPresetXml(layer),layer.name);if(path)context.toast('Preset XML salvo')};
   byId('openEffectXml').onclick=async()=>{const result=await bridge.openEffect();if(!result)return;try{const layer=context.selected();if(!layer)throw new Error('Selecione uma camada antes de importar');if(layer.id===undefined)throw new Error('Camada sem identificador');const preset=parseEffectPreset(result.data,layer);if(!applyLayerPreset(context.state,{id:layer.id,preset}))throw new Error('A camada está bloqueada ou indisponível');context.updateSelected();context.syncProps();context.renderLayers();context.selectLayer(layer.id);context.pushHistory();context.markDirty();context.toast('Preset XML aplicado à camada')}catch(error){context.toast(error instanceof Error?error.message:'Preset inválido')}};
-  byId('saveProject').onclick=nativeSave;byId('exportProject').onclick=nativeSave;byId('menuExport').onclick=nativeSave;
-  bridge.onMenu('save',()=>{void nativeSave()});bridge.onMenu('open',()=>{void nativeOpen()});bridge.onMenu('new',()=>byId('newProject').click());bridge.onMenu('features',()=>byId('menuFeatures').click());
+  byId('saveProject').onclick=()=>{void nativeSave()};byId('exportProject').onclick=()=>{void nativeSave(true)};byId('menuExport').onclick=()=>{void nativeSave(true)};
+  bridge.onMenu('save',()=>{void nativeSave()});bridge.onMenu('save-as',()=>{void nativeSave(true)});bridge.onMenu('open',()=>{void nativeOpen()});bridge.onMenu('new',()=>{projectPath=null;byId('newProject').click()});bridge.onMenu('features',()=>byId('menuFeatures').click());
   const originalMarkDirty=context.markDirty;context.replaceMarkDirty(()=>{originalMarkDirty();if(autosaveTimer)clearTimeout(autosaveTimer);autosaveTimer=setTimeout(()=>{void bridge.autosave(serialize()).then(()=>{byId('saveState').textContent='Backup automático salvo'})},1200)});
   void bridge.info().then(info=>{document.title=`Motion Livre ${info.version}`});
   const exporter=createExportController({document,bridge,viewport:()=>byId('stage').getBoundingClientRect(),onProgress:progress=>{const percent=progress.total?Math.round(progress.frame/progress.total*100):0;byId<HTMLProgressElement>('exportBar').value=progress.phase==='complete'?100:Math.min(95,percent*.95);byId('exportStatus').textContent=progress.phase==='finish'?`Finalizando · ${progress.mode} · ${progress.encoder}`:progress.phase==='complete'?`Concluído em ${(progress.timings.totalMs/1000).toFixed(2)}s`:`${progress.mode} · ${progress.encoder} · ${percent}%`}});

@@ -13,6 +13,7 @@ defineProps<{
 defineEmits<{
   edit: [event: PointerEvent]
   menu: [event: MouseEvent]
+  keyframe: [event: PointerEvent, index: number]
 }>()
 </script>
 
@@ -34,7 +35,7 @@ defineEmits<{
     </span>
     <i class="clip-handle left"></i>
     <i class="clip-handle right"></i>
-    <i v-for="position in keyframes" :key="position" class="key-dot" :style="{left: `${position}%`}"></i>
+    <i v-for="(position, index) in keyframes" :key="`${index}-${position}`" class="key-dot" :style="{left: `${position}%`}" title="Arraste para mover o keyframe" @pointerdown.stop="$emit('keyframe', $event, index)"></i>
   </div>
 </template>
 
@@ -218,7 +219,14 @@ defineEmits<{
   border: 1px solid #6650c9;
   background: #fff;
   transform: rotate(45deg);
+  z-index: 5;
+  cursor: ew-resize;
+  box-shadow: 0 0 0 2px #1118;
+  transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
 }
+
+.key-dot:hover { background: #d9d0ff; transform: rotate(45deg) scale(1.35); box-shadow: 0 0 0 2px #8f78ff; }
+.key-dot.dragging-keyframe { background: #9d7cff; transform: rotate(45deg) scale(1.45); box-shadow: 0 0 0 3px #fff; }
 
 :deep(.clip-waveform) {
   position: absolute;

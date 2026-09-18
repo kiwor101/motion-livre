@@ -37,6 +37,7 @@ defineEmits<{
   toggleMulti: []
   edit: [event: PointerEvent, clipId: number]
   menu: [event: MouseEvent, clipId: number]
+  keyframe: [event: PointerEvent, clipId: number, index: number]
   marquee: [event: PointerEvent]
 }>()
 </script>
@@ -71,6 +72,7 @@ defineEmits<{
         :keyframes="clip.keyframes"
         @edit="$emit('edit', $event, clip.id)"
         @menu="$emit('menu', $event, clip.id)"
+        @keyframe="(event, index) => $emit('keyframe', event, clip.id, index)"
       />
     </div>
   </div>

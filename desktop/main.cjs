@@ -77,6 +77,7 @@ function buildMenu(){
       {label:'Novo projeto',accelerator:'CmdOrCtrl+N',click:()=>mainWindow.webContents.send('menu:new')},
       {label:'Abrir projeto…',accelerator:'CmdOrCtrl+O',click:()=>mainWindow.webContents.send('menu:open')},
       {label:'Salvar projeto',accelerator:'CmdOrCtrl+S',click:()=>mainWindow.webContents.send('menu:save')},
+      {label:'Salvar projeto como…',accelerator:'CmdOrCtrl+Shift+S',click:()=>mainWindow.webContents.send('menu:save-as')},
       {type:'separator'},{label:'Importar cena Alight XML…',click:()=>mainWindow.webContents.send('menu:alight-open')},
       {label:'Exportar cena Alight XML…',click:()=>mainWindow.webContents.send('menu:alight-save')},
       {type:'separator'},{label:'Sair',role:'quit'}
@@ -87,8 +88,12 @@ function buildMenu(){
   ]));
 }
 
-secureHandle('project:save',async(_event,{data,suggestedName})=>{
+secureHandle('project:save',async(_event,{data,suggestedName,filePath})=>{
   ensureText(data,MAX_PROJECT_BYTES,'Projeto');
+  if(filePath){
+    if(typeof filePath!=='string'||!path.isAbsolute(filePath)||!/\.(motion\.json|json)$/i.test(filePath))throw new Error('Caminho do projeto inválido');
+    await fs.writeFile(filePath,data,'utf8');return filePath;
+  }
   const result=await dialog.showSaveDialog(mainWindow,{title:'Salvar projeto',defaultPath:`${suggestedName||'projeto'}.motion.json`,filters:projectFilter});
   if(result.canceled||!result.filePath)return null;
   await fs.writeFile(result.filePath,data,'utf8');return result.filePath;

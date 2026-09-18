@@ -213,20 +213,21 @@ defineEmits<{
 
 .key-dot {
   position: absolute;
-  top: 7px;
-  width: 9px;
-  height: 9px;
-  border: 1px solid #6650c9;
-  background: #fff;
-  transform: rotate(45deg);
+  top: 6px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  background: #7b5cff;
+  transform: translateX(-50%) rotate(45deg);
   z-index: 5;
   cursor: ew-resize;
-  box-shadow: 0 0 0 2px #1118;
+  box-shadow: 0 0 0 2px #241661, 0 2px 5px #000;
   transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
 }
 
-.key-dot:hover { background: #d9d0ff; transform: rotate(45deg) scale(1.35); box-shadow: 0 0 0 2px #8f78ff; }
-.key-dot.dragging-keyframe { background: #9d7cff; transform: rotate(45deg) scale(1.45); box-shadow: 0 0 0 3px #fff; }
+.key-dot:hover { background: #d9d0ff; transform: translateX(-50%) rotate(45deg) scale(1.35); box-shadow: 0 0 0 2px #8f78ff; }
+.key-dot.dragging-keyframe { background: #9d7cff; transform: translateX(-50%) rotate(45deg) scale(1.45); box-shadow: 0 0 0 3px #fff; }
 
 :deep(.clip-waveform) {
   position: absolute;

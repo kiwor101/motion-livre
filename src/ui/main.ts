@@ -72,7 +72,7 @@ const ready=(async()=>{
     state:legacy.state as import('../core/editor-state').EditorState,
     selected:legacy.selected as ()=>import('../core/project-model').Layer|null,
     syncProps:legacy.syncProps as ()=>void,replaceSyncProps:callback=>{legacy.syncProps=callback},
-    updateSelected:legacy.updateSelected as ()=>void,renderLayers:legacy.renderLayers as ()=>void,renderTimeline:legacy.renderTimeline as ()=>void,selectLayer:legacy.selectLayer as (id:number)=>void,
+    updateSelected:legacy.updateSelected as ()=>void,renderLayers:legacy.renderLayers as ()=>void,renderTimeline:()=>{(legacy.renderTimeline as ()=>void)()},selectLayer:legacy.selectLayer as (id:number)=>void,setTime:legacy.setTime as (time:number)=>void,
     renderEffectStack:professionalEffects.renderEffectStack,bindHistoryGesture:legacy.bindHistoryGesture as (element:HTMLElement)=>void,pushHistory:legacy.pushHistory as ()=>void,markDirty:legacy.markDirty as ()=>void,toast:legacy.toast as (message:string)=>void
   });
   installProfessionalMediaController({

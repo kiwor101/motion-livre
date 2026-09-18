@@ -14,6 +14,7 @@ interface ProfessionalPropertiesContext {
   updateSelected():void;
   renderLayers():void;
   renderTimeline():void;
+  setTime(time:number):void;
   selectLayer(id:number):void;
   renderEffectStack():void;
   bindHistoryGesture(element:HTMLElement):void;
@@ -50,6 +51,12 @@ function renderMotionPath(layer:Layer|null):void {
   show(points.length<2?null:points.map(frame=>[frame.values.x,frame.values.y]));
 }
 
+function renderKeyframeList(layer:Layer|null):void {
+  const grouped=new Map<number,Set<string>>();
+  for(const frame of layer?.keyframes||[]){const time=Math.round(frame.time*1000)/1000,properties=grouped.get(time)||new Set<string>();Object.keys(frame.values).forEach(key=>properties.add(key));grouped.set(time,properties)}
+  window.dispatchEvent(new CustomEvent('motion:keyframes',{detail:[...grouped].sort(([left],[right])=>left-right).map(([time,properties])=>({time,properties:[...properties].join(', ')}))}));
+}
+
 export function installProfessionalPropertiesController(context:ProfessionalPropertiesContext):void {
   const effectFields={Glow:'glow',Vignette:'vignette',Sharpen:'sharpen',ChromaTolerance:'chromaTolerance',MotionBlur:'motionBlur',RedGain:'redGain',GreenGain:'greenGain',BlueGain:'blueGain'} as const;
   const syncProfessionalProperties=()=>{
@@ -62,7 +69,7 @@ export function installProfessionalPropertiesController(context:ProfessionalProp
     for(const [id,key] of Object.entries(effectFields)){const value=layer.effects[key]??(key.endsWith('Gain')?100:0);setValue(`fx${id}`,value);setValue(`out${id}`,`${value}${key==='motionBlur'?'px':'%'}`)}
     const parentOptions=[{value:'',label:'Nenhuma'},...context.state.layers.filter(candidate=>candidate.id!==layer.id&&candidate.id!==undefined).map(candidate=>({value:String(candidate.id),label:candidate.name}))];
     window.dispatchEvent(new CustomEvent('motion:parent-options',{detail:{options:parentOptions,value:String(layer.parentId||'')}}));
-    drawEasing(layer);context.renderEffectStack();renderMotionPath(layer);
+    drawEasing(layer);context.renderEffectStack();renderMotionPath(layer);renderKeyframeList(layer);
   };
   const originalSync=context.syncProps;context.replaceSyncProps(()=>{originalSync();syncProfessionalProperties()});
 
@@ -78,11 +85,15 @@ export function installProfessionalPropertiesController(context:ProfessionalProp
     context.bindHistoryGesture(input);
   }
 
-  byId<HTMLButtonElement>('addKeyframe').onclick=()=>{const layer=context.selected();if(!layer?.id)return;const property=byId<HTMLSelectElement>('keyframeProperty').value,keys:TransformProperty[]=property==='all'?[...TRANSFORM_PROPERTIES]:[property as TransformProperty],values:Record<string,number>={};
+  byId<HTMLButtonElement>('addKeyframe').onclick=()=>{let layer=context.selected();if(!layer?.id)return;const time=context.state.playback.time;
+    if(time<layer.start-.0001||time>layer.end+.0001){const sameTrack=context.state.layers.filter(candidate=>candidate.id!==undefined&&candidate.trackId===layer!.trackId&&time>=candidate.start-.0001&&time<=candidate.end+.0001).sort((left,right)=>Math.abs(left.start-time)-Math.abs(right.start-time))[0];if(sameTrack?.id===undefined)return context.toast('Posicione o cursor dentro de um clipe da track selecionada');layer=sameTrack;context.selectLayer(sameTrack.id);context.syncProps()}
+    const layerId=layer.id;if(layerId===undefined)return;
+    const property=byId<HTMLSelectElement>('keyframeProperty').value||'all',keys:TransformProperty[]=property==='all'?[...TRANSFORM_PROPERTIES]:[property as TransformProperty],values:Record<string,number>={};
     for(const key of keys)values[key]=layer[key];
-    if(!setKeyframe(context.state,{id:layer.id,time:context.state.playback.time,values,easing:layer.easing}))return;
-    context.renderTimeline();renderMotionPath(layer);context.pushHistory();context.markDirty();context.toast(`Keyframe de ${property==='all'?'transformação':property} criado`);
+    if(!setKeyframe(context.state,{id:layerId,time,values,easing:layer.easing}))return;
+    context.renderTimeline();renderMotionPath(layer);renderKeyframeList(layer);context.pushHistory();context.markDirty();context.toast(`Keyframe de ${property==='all'?'transformação':property} criado`);
   };
   byId<HTMLButtonElement>('showMotionPath').onclick=()=>{uiState.showMotionPath=!uiState.showMotionPath;renderMotionPath(context.selected());byId('showMotionPath').textContent=uiState.showMotionPath?'Ocultar caminho de movimento':'Exibir caminho de movimento'};
+  window.addEventListener('motion:keyframe-seek',event=>context.setTime((event as CustomEvent<number>).detail));
   syncProfessionalProperties();
 }

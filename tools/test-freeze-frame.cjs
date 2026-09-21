@@ -10,4 +10,8 @@ assert.equal(left.end,4);assert.equal(left.sourceOut,3);assert.equal(right.start
 const before=JSON.stringify(state);assert.throws(()=>Layers.freezeFrame(state,{id:11,time:7,content:'x',stillId:10,rightId:20,mediaDuration:10}),/duplicado/);assert.equal(JSON.stringify(state),before);
 const reverseState=Editor.create({duration:10,layers:[Project.normalizeLayer({id:4,type:'video',start:2,end:8,sourceIn:1,sourceOut:7,mediaDuration:10,reverse:true},10)]});
 Layers.freezeFrame(reverseState,{id:4,time:4,content:'frame',stillId:12,rightId:13,mediaDuration:10});assert.equal(reverseState.layers.find(layer=>layer.id===4).sourceIn,5);assert.equal(reverseState.layers.find(layer=>layer.id===13).sourceOut,5);
+const endState=Editor.create({duration:8,renderRange:{start:0,end:8},layers:[Project.normalizeLayer({id:20,type:'video',start:0,end:8,sourceIn:0,sourceOut:8,mediaDuration:8},8)]});
+Layers.freezeFrame(endState,{id:20,time:4,content:'frame',stillId:21,rightId:22,mediaDuration:8});assert.equal(endState.duration,10);assert.equal(endState.renderRange.end,10);
+const customRangeState=Editor.create({duration:8,renderRange:{start:1,end:7},layers:[Project.normalizeLayer({id:30,type:'video',start:0,end:8,sourceIn:0,sourceOut:8,mediaDuration:8},8)]});
+Layers.freezeFrame(customRangeState,{id:30,time:4,content:'frame',stillId:31,rightId:32,mediaDuration:8});assert.equal(customRangeState.duration,10);assert.equal(customRangeState.renderRange.end,7);
 console.log('PASS: freeze frame is atomic and preserves effects, timing, audio properties and reverse mapping');

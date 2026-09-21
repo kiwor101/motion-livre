@@ -19,6 +19,7 @@ app.whenReady().then(async()=>{
       for(const time of [1,2,3]){motionEditor.setTime(time);document.querySelector('#addKeyframe').click();await Promise.resolve()}
       await Promise.resolve();
       check(layer.keyframes.filter(key=>key.values.x!==undefined).length===4,'Manual keyframes were not stored at four times');
+      document.querySelector('#propEasing').value='ease-in-out';document.querySelector('#propEasing').dispatchEvent(new Event('input',{bubbles:true}));check(layer.keyframes.every(key=>key.easing==='ease-in-out'),'Changing the graph did not update existing keyframes');
       check(document.querySelectorAll('[data-clip="'+layer.id+'"] .key-dot').length===4,'Timeline did not render the four manual keyframes');
       for(const type of ['video','image','audio','text']){
         const tracked=addLayer(type,'','Track '+type);

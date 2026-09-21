@@ -61,7 +61,7 @@ export function setComposition(
 ): boolean {
   finiteNumber(width, 16, 8192, 'Largura');
   finiteNumber(height, 16, 8192, 'Altura');
-  finiteNumber(fps, 1, 120, 'FPS');
+  finiteNumber(fps, 30, 120, 'FPS');
   finiteNumber(duration, 0.01, 600, 'Duração');
 
   const invalidComposition =

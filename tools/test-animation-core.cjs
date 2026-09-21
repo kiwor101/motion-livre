@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict');
 const {easeValue,interpolateProperty,evaluateLayer,evaluateScene}=require('../.build/core/animation.js');
+const {blendFrameSample,temporalSampleTimes}=require('../.build/core/temporal-sampling.js');
 
 assert.equal(easeValue(0,'linear'),0);
 assert.equal(easeValue(1,'ease-in-out'),1);
@@ -19,4 +20,14 @@ assert.equal(intro.opacity,50);
 assert.equal(evaluateScene([child],10,10).length,0);
 assert.equal(evaluateScene([child],5,10).length,1);
 
-console.log('PASS: shared keyframe, easing, transition and parenting evaluation');
+const animatedProject={duration:10,layers:[{...child,transitionIn:'none',transitionOut:'none'}]};
+const samples=temporalSampleTimes(animatedProject,5,24,0,10,false);
+assert.equal(samples.length,3);
+assert.ok(samples[0]<5&&samples[2]>5,'animated export should sample around the output frame');
+assert.deepEqual(temporalSampleTimes(animatedProject,5,60,0,10,false),[5]);
+assert.deepEqual(temporalSampleTimes(animatedProject,5,24,0,10,true),[5]);
+const pixels=new Uint8Array([0,100,200,255]),second=new Uint8Array([100,200,0,255]),third=new Uint8Array([200,0,100,255]);
+blendFrameSample(pixels,second,1);blendFrameSample(pixels,third,2);
+assert.deepEqual([...pixels],[100,100,100,255]);
+
+console.log('PASS: shared animation evaluation and animated-frame temporal sampling');

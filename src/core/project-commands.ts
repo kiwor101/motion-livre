@@ -7,7 +7,7 @@ export {
 } from './layer-hierarchy-commands';
 export { applyImportedProject, type ImportedProject } from './project-import-commands';
 export { applyLayerPreset, moveEffect, type LayerPreset } from './layer-preset-commands';
-export { moveKeyframe, setAnimatedProperties, setKeyframe, setProperties } from './layer-property-commands';
+export { moveKeyframe, setAnimatedProperties, setKeyframe, setLayerEasing, setProperties } from './layer-property-commands';
 export { resetTrim, trim } from './layer-trim-commands';
 export { appendVectorPoint, setVectorPoints } from './layer-vector-commands';
 export { setLayerWaveform } from './media-commands';

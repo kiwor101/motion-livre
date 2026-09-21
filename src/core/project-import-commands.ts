@@ -12,6 +12,7 @@ import {
   type Layer,
   type LayerId,
 } from './project-model';
+import { projectFrameRate } from './frame-rate';
 
 export interface ImportedProject {
   duration: number;
@@ -106,6 +107,7 @@ export function applyImportedProject(
   finiteNumber(composition.width, 64, 7680, 'Largura importada');
   finiteNumber(composition.height, 64, 7680, 'Altura importada');
   finiteNumber(composition.fps, 1, 240, 'FPS importado');
+  composition.fps = projectFrameRate(composition.fps);
 
   const invalidComposition =
     !Number.isInteger(composition.width) ||

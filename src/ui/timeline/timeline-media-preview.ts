@@ -61,6 +61,11 @@ export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):
   };
   const preview=(layer:Layer,element:HTMLElement)=>{
     if(layer.type!=='video'&&layer.type!=='image')return;const source=context.resolveLayerContent(layer);if(!source)return;
+    if(layer.type==='image'){
+      let image=element.querySelector<HTMLImageElement>('img[data-slot="image"]');
+      if(!image){element.replaceChildren();image=document.createElement('img');image.dataset.slot='image';image.draggable=false;element.append(image)}
+      image.style.left='4px';image.dataset.key=source;if(image.src!==source)image.src=source;return;
+    }
     const width=Number.parseFloat(element.closest<HTMLElement>('[data-clip]')?.style.width||'')||element.getBoundingClientRect().width||56;
     const pixelsPerSecond=width/Math.max(.001,layer.end-layer.start),first=Math.floor(layer.start*pixelsPerSecond/72),last=Math.ceil(layer.end*pixelsPerSecond/72)-1;
     const wanted=new Set<string>();
@@ -71,9 +76,8 @@ export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):
       image.style.left=`${position-layer.start*pixelsPerSecond}px`;
       const time=clamp((position+36)/pixelsPerSecond,layer.start,layer.end);
       const sourceTime=context.sourceTimeForLayer(layer,time,layer.mediaDuration);
-      const key=layer.type==='image'?source:JSON.stringify([source,Math.round(sourceTime*100)/100]);
+      const key=JSON.stringify([source,Math.round(sourceTime*100)/100]);
       if(image.dataset.key===key)continue;image.dataset.key=key;image.removeAttribute('src');
-      if(layer.type==='image'){image.src=source;continue}
       const cached=thumbnails.get(key);if(cached){image.src=cached;continue}
       let job=pending.get(key);if(!job){job={source,time:sourceTime,timelineTime:time,tiles:new Set()};pending.set(key,job)}job.tiles.add(image);
     }

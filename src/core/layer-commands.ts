@@ -126,5 +126,6 @@ export function freezeFrame(state:EditorState,{id,time,content,stillId,rightId,h
   const shifted=state.layers.map(layer=>{if(layer===source||layer.trackId!==track||layer.start<time)return layer;const copy=structuredClone(layer);copy.start+=hold;copy.end+=hold;copy.keyframes=copy.keyframes.map(frame=>({...frame,time:frame.time+hold}));return copy});
   Object.assign(right,{id:rightId,start:time+hold,end:source.end+hold,keyframes:source.keyframes.map(frame=>({...structuredClone(frame),time:frame.time+hold}))});
   const left=structuredClone(source);left.end=time;if(source.reverse){right.sourceOut=cut;left.sourceIn=cut}else{right.sourceIn=cut;left.sourceOut=cut}
-  shifted.splice(sourceIndex,1,...(time>source.start?[left,still,right]:[still,right]));state.layers=shifted;state.duration=Math.max(state.duration,...state.layers.map(layer=>layer.end));state.selection.selected=stillId;state.selection.selectedIds.clear();return still;
+  const previousDuration=state.duration,renderRangeEndedWithProject=state.renderRange.end>=previousDuration-.001;
+  shifted.splice(sourceIndex,1,...(time>source.start?[left,still,right]:[still,right]));state.layers=shifted;state.duration=Math.max(state.duration,...state.layers.map(layer=>layer.end));if(renderRangeEndedWithProject)state.renderRange.end=state.duration;state.selection.selected=stillId;state.selection.selectedIds.clear();return still;
 }

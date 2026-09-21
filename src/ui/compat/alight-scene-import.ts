@@ -42,7 +42,7 @@ export function importAlightScene(
   const root = parseXml(options.xml).documentElement;
   const width = clamp(root.getAttribute('width') || 1920, 64, 7680);
   const height = clamp(root.getAttribute('height') || 1080, 64, 7680);
-  const fps = clamp(root.getAttribute('fps') || 30, 1, 240);
+  const fps = clamp(root.getAttribute('fps') || 30, 30, 240);
   const duration = clamp(
     num(root.getAttribute('totalTime'), 10_000) / 1000,
     0.05,

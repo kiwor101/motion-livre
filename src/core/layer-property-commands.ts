@@ -145,6 +145,18 @@ export function setProperties(
   return true;
 }
 
+export function setLayerEasing(
+  state:EditorState,
+  {id,easing}:{id:LayerId;easing:string},
+):boolean {
+  const layer=editable(state,id);
+  if(!layer)return false;
+  if(typeof easing!=='string'||!easing||easing.length>2048)throw new Error('Interpolação inválida');
+  layer.easing=easing;
+  layer.keyframes=layer.keyframes.map(frame=>({...clone(frame),easing,easings:frame.easings?Object.fromEntries(Object.keys(frame.easings).map(property=>[property,easing])):frame.easings}));
+  return true;
+}
+
 export function setKeyframe(
   state: EditorState,
   {

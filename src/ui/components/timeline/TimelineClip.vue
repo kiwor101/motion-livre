@@ -142,6 +142,15 @@ defineEmits<{
   pointer-events: none;
 }
 
+.clip[data-kind='image'] .filmstrip :deep(img) {
+  top: 50%;
+  width: 42px;
+  min-width: 42px;
+  height: 28px;
+  object-fit: contain;
+  transform: translateY(-50%);
+}
+
 .clip-label {
   position: absolute;
   left: var(--clip-label-offset, 0px);

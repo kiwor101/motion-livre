@@ -67,9 +67,31 @@ async function seekVideo(
     sourceTimeForLayer(layer, time, element.duration),
   );
   if (Math.abs(element.currentTime - target) <= 0.00001) return;
+  const presented = typeof element.requestVideoFrameCallback === 'function'
+    ? new Promise<void>((resolve, reject) => {
+        let callback = 0;
+        const cleanup = (): void => {
+          clearTimeout(timer);
+          signal?.removeEventListener('abort', abort);
+        };
+        const abort = (): void => {
+          if (callback) element.cancelVideoFrameCallback(callback);
+          cleanup();
+          reject(new DOMException('Cancelado', 'AbortError'));
+        };
+        const timer = window.setTimeout(() => {
+          if (callback) element.cancelVideoFrameCallback(callback);
+          cleanup();
+          reject(unavailable(element));
+        }, 15_000);
+        signal?.addEventListener('abort', abort, { once: true });
+        if(signal?.aborted){abort();return}
+        callback = element.requestVideoFrameCallback(() => { cleanup(); resolve(); });
+      })
+    : null;
   const ready = waitFor(element, 'seeked', signal);
   element.currentTime = target;
-  await ready;
+  await Promise.all(presented?[ready,presented]:[ready]);
 }
 
 async function prepareVideo(

@@ -1,5 +1,5 @@
 import {easeValue,TRANSFORM_PROPERTIES,type TransformProperty} from '../../core/animation';
-import {setAnimatedProperties,setKeyframe,setProperties} from '../../core/project-commands';
+import {setAnimatedProperties,setKeyframe,setLayerEasing,setProperties} from '../../core/project-commands';
 import {applyLayerDefaults,type Layer} from '../../core/project-model';
 import type {EditorState} from '../../core/editor-state';
 import {uiState} from '../ui-state';
@@ -79,7 +79,7 @@ export function installProfessionalPropertiesController(context:ProfessionalProp
   for(const [id,key,mode] of properties){
     const input=byId<HTMLInputElement|HTMLSelectElement>(id);
     input.oninput=()=>{const layer=context.selected();if(!layer?.id)return;const value=mode==='checked'?(input as HTMLInputElement).checked:mode==='number'?Number(input.value):mode==='parent'?(Number(input.value)||null):input.value;
-      try{if(!(key==='depth'?setAnimatedProperties(context.state,{id:layer.id,time:context.state.playback.time,values:{[key]:value}}):setProperties(context.state,{id:layer.id,values:{[key]:value}})))return}catch(error){syncProfessionalProperties();context.toast(error instanceof Error?error.message:String(error));return}
+      try{if(!(key==='depth'?setAnimatedProperties(context.state,{id:layer.id,time:context.state.playback.time,values:{[key]:value}}):key==='easing'?setLayerEasing(context.state,{id:layer.id,easing:String(value)}):setProperties(context.state,{id:layer.id,values:{[key]:value}})))return}catch(error){syncProfessionalProperties();context.toast(error instanceof Error?error.message:String(error));return}
       context.updateSelected();syncProfessionalProperties();context.renderLayers();context.renderTimeline();context.selectLayer(layer.id);context.markDirty();
     };
     context.bindHistoryGesture(input);

@@ -10,7 +10,7 @@ import BaseModal from '../base/BaseModal.vue'
         <label>Preset<select id="exportPreset"><option value="source">Da composição</option><option value="720">HD 720p</option><option value="1080" selected>Full HD 1080p</option><option value="1440">QHD 1440p</option><option value="2160">4K UHD</option></select></label>
         <label>Largura<input id="exportWidth" type="number" min="64" max="7680" value="1920"></label>
         <label>Altura<input id="exportHeight" type="number" min="64" max="4320" value="1080"></label>
-        <label>FPS<select id="exportFps"><option>23.976</option><option>24</option><option>25</option><option>29.97</option><option selected>30</option><option>50</option><option>59.94</option><option>60</option></select></label>
+        <label>FPS<select id="exportFps"><option selected>30</option><option>50</option><option>59.94</option><option>60</option></select></label>
         <label>Qualidade<select id="exportQuality"><option value="16">Máxima</option><option value="18" selected>Alta</option><option value="23">Equilibrada</option><option value="28">Compacta</option></select></label>
         <label>Bitrate de áudio<select id="exportAudioBitrate"><option value="128k">128 kbps</option><option value="192k" selected>192 kbps</option><option value="320k">320 kbps</option></select></label>
         <label>Início (s)<input id="exportStart" type="number" min="0" step="0.01" value="0"></label>

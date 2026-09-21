@@ -36,8 +36,10 @@ export function createTimelineRenderer(context:TimelineRendererContext):Timeline
   const geometry=(element:HTMLElement,layer:Layer)=>{
     const pixels=context.pixelsPerSecond();element.style.left=`${layer.start*pixels}px`;element.style.width=`${Math.max(3,(layer.end-layer.start)*pixels)}px`;
     element.style.setProperty('--timeline-grid-offset',`${-layer.start*pixels}px`);
-    // Keep the label fixed while a trimmed edge reveals earlier media; moving the whole clip moves the anchor with it.
-    if(layer.id!==undefined){let anchor=labelAnchors.get(layer.id);if(!anchor){anchor={time:layer.start,start:layer.start,end:layer.end};labelAnchors.set(layer.id,anchor)}else{const startShift=layer.start-anchor.start,endShift=layer.end-anchor.end;if(Math.abs(startShift-endShift)<.0001)anchor.time+=startShift;anchor.start=layer.start;anchor.end=layer.end}anchor.time=Math.max(anchor.time,layer.start);element.style.setProperty('--clip-label-offset',`${(anchor.time-layer.start)*pixels}px`)}
+    // Audio titles stay at the clip edge so newly revealed waveform never appears before them.
+    // Other labels keep their visual anchor while a trimmed edge reveals earlier content.
+    if(layer.type==='audio')element.style.setProperty('--clip-label-offset','0px');
+    else if(layer.id!==undefined){let anchor=labelAnchors.get(layer.id);if(!anchor){anchor={time:layer.start,start:layer.start,end:layer.end};labelAnchors.set(layer.id,anchor)}else{const startShift=layer.start-anchor.start,endShift=layer.end-anchor.end;if(Math.abs(startShift-endShift)<.0001)anchor.time+=startShift;anchor.start=layer.start;anchor.end=layer.end}anchor.time=Math.max(anchor.time,layer.start);element.style.setProperty('--clip-label-offset',`${(anchor.time-layer.start)*pixels}px`)}
     const keyframes=visibleKeyframes(layer);
     const inset=element.clientLeft+(element.parentElement?.clientLeft||0)-.5;
     element.querySelectorAll<HTMLElement>('.key-dot').forEach((dot,index)=>{dot.hidden=!keyframes[index];if(keyframes[index])dot.style.left=`${(keyframes[index].time-layer.start)*pixels-inset}px`});

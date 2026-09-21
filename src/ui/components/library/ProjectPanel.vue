@@ -5,7 +5,7 @@ import NumberField from '../base/NumberField.vue'
 import SelectField from '../base/SelectField.vue'
 import UploadField from '../base/UploadField.vue'
 
-const fpsOptions = ['23.976', '24', '25', '29.97', '30', '50', '59.94', '60'].map(value => ({ value, label: value }))
+const fpsOptions = ['30', '50', '59.94', '60'].map(value => ({ value, label: value }))
 </script>
 
 <template>

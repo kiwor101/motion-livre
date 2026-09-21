@@ -48,8 +48,8 @@ defineEmits<{
   padding: 0 6px;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 5px;
-  box-shadow: inset 0 0 0 1px #ffffff16;
+  border-radius: 3px;
+  box-shadow: none;
   cursor: grab;
   touch-action: none;
 }
@@ -59,21 +59,18 @@ defineEmits<{
 }
 
 .clip[data-kind='video'] {
-  border-color: #28538f;
-  background: #477fd1;
-  color: #102f58;
+  background: #29292c;
+  color: #fff;
 }
 
 .clip[data-kind='image'] {
-  border-color: #8e4033;
-  background: #df745d;
-  color: #63281e;
+  background: #dd735f;
+  color: #fff;
 }
 
 .clip[data-kind='audio'] {
-  --audio-label-bg: #18201e;
-  border-color: #37423e;
-  background: var(--audio-label-bg);
+  background: #9457bf;
+  color: #fff;
 }
 
 .clip[data-kind='text'] {
@@ -132,8 +129,8 @@ defineEmits<{
 .filmstrip :deep(img) {
   position: absolute;
   top: 0;
-  width: 72px;
-  min-width: 72px;
+  width: 96px;
+  min-width: 96px;
   max-width: none;
   height: 100%;
   margin: 0;
@@ -154,46 +151,41 @@ defineEmits<{
 .clip-label {
   position: absolute;
   left: var(--clip-label-offset, 0px);
-  top: 0;
+  top: 2px;
   z-index: 2;
   display: flex;
   align-items: center;
   width: max-content;
   max-width: 120px;
-  height: 100%;
-  padding: 0 6px;
+  height: 16px;
+  padding: 0 4px;
   box-sizing: border-box;
-  gap: 6px;
+  gap: 3px;
   overflow: hidden;
   background: transparent;
-  color: inherit;
+  color: #fff;
   font-size: 9px;
-  font-weight: 500;
+  font-weight: 550;
+  line-height: 16px;
+  text-shadow: 0 1px 2px #000,0 0 4px #000a;
   white-space: nowrap;
   pointer-events: none;
 }
 
-.clip:is([data-kind='video'], [data-kind='image']) .clip-label {
-  display: none;
-}
-
 .clip[data-kind='audio'] .clip-label {
-  left: calc(var(--clip-label-offset, 0px) + 4px);
+  left: calc(var(--clip-label-offset, 0px) + 2px);
   z-index: 3;
   display: inline-flex;
-  max-width: min(180px, calc(100% - 8px));
-  height: 100%;
-  padding: 0 6px;
-  border-radius: 3px;
-  background: var(--audio-label-bg);
-  box-shadow: -4px 0 0 var(--audio-label-bg), 4px 0 6px var(--audio-label-bg);
-  color: #d8dedb;
+  max-width: min(230px, calc(100% - 6px));
+  height: 16px;
+  padding: 0 4px;
+  background: transparent;
+  box-shadow: none;
+  color: #fff;
 }
 
 .clip-kind-icon {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
+  display:none;
   background: currentColor;
   mask: var(--clip-icon) center / contain no-repeat;
 }
@@ -249,9 +241,9 @@ defineEmits<{
 }
 
 .clip[data-kind='audio'] :deep(.clip-waveform) {
-  inset: 0;
+  inset: 18px 0 0;
   width: 100%;
-  height: 100%;
-  opacity: .9;
+  height: calc(100% - 18px);
+  opacity: .82;
 }
 </style>

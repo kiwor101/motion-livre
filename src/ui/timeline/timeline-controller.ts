@@ -24,7 +24,7 @@ interface TimelineControllerContext {
 const byId=<T extends HTMLElement>(id:string):T=>{const element=document.getElementById(id);if(!element)throw new Error(`Elemento ausente: ${id}`);return element as T};
 
 export function installTimelineController(context:TimelineControllerContext):void {
-  const timeline=byId<HTMLElement>('timeline'),head=byId<HTMLElement>('playhead'),header=Number.parseFloat(getComputedStyle(timeline).getPropertyValue('--timeline-header-width'))||260;
+  const timeline=byId<HTMLElement>('timeline'),head=byId<HTMLElement>('playhead'),header=Number.parseFloat(getComputedStyle(timeline).getPropertyValue('--timeline-header-width'))||108;
   const pixelsPerSecond=()=>40*uiState.timelineZoom,width=()=>context.state.duration*pixelsPerSecond(),frameDuration=()=>1/(context.state.composition?.fps||30);
   let renderTimeline=()=>{};const setTime=context.setTime;
   const commit=()=>{context.renderLayers();context.syncProps();setTime(context.state.playback.time);context.pushHistory();context.markDirty()};

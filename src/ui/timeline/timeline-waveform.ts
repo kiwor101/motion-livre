@@ -20,7 +20,7 @@ export function drawTimelineWaveform(clip:HTMLElement,layer:Layer,duration:numbe
     const ratio=Math.min(window.devicePixelRatio||1,2,16384/width);
     canvas.width=Math.ceil(width*ratio);canvas.height=Math.ceil(height*ratio);
     const drawing=canvas.getContext('2d');if(!drawing)return;
-    drawing.scale(ratio,ratio);drawing.strokeStyle='#d8dde2';drawing.lineWidth=1;
+    drawing.scale(ratio,ratio);drawing.strokeStyle='#dfc6ef';drawing.lineWidth=1;
     const mediaDuration=layer.mediaDuration||duration,center=height/2;
     const distribution=points.filter(value=>value>0).sort((a,b)=>a-b);
     const floor=percentile(distribution,.08),ceiling=percentile(distribution,.97),spread=Math.max(.015,ceiling-floor);

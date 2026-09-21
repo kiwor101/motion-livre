@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {computed} from 'vue'
-import AppIcon from '../base/AppIcon.vue'
 import TimelineMarkers from './TimelineMarkers.vue'
 import TimelineRenderRange from './TimelineRenderRange.vue'
 
@@ -36,10 +35,7 @@ const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) 
     :data-second="tick.time"
     :style="{left: `${headerWidth + tick.time * pixelsPerSecond}px`}"
   >{{ tick.major ? tick.label : '' }}</span>
-  <div class="ruler-corner" @pointerdown.stop>
-    <AppIcon name="layers" class="ruler-icon" :size="15" />
-    <span>Camadas</span>
-  </div>
+  <div class="ruler-corner" aria-hidden="true" @pointerdown.stop></div>
   <TimelineMarkers
     :manual="manualMarkers"
     :beats="beatMarkers"
@@ -64,10 +60,9 @@ const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) 
   position: sticky;
   top: 0;
   z-index: 15;
-  height: 40px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: 0 1px 0 var(--bg);
+  height: 46px;
+  border-bottom: 0;
+  background: var(--bg);
   cursor: ew-resize;
 }
 
@@ -79,38 +74,24 @@ const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) 
   display: flex;
   align-items: center;
   width: var(--timeline-header-width);
-  height: 40px;
-  padding: 0 16px;
-  gap: 9px;
-  border-right: 1px solid var(--line);
-  background: var(--panel);
+  height: 46px;
+  padding: 0;
+  border-right: 1px solid #27272a;
+  background: var(--bg);
   color: var(--muted);
   font-size: 12px;
   pointer-events: auto;
   will-change: transform;
 }
 
-.ruler-icon {
-  flex: 0 0 15px;
-}
-
-.ruler-corner span {
-  position: static;
-  height: auto;
-  padding: 0;
-  border: 0;
-  color: inherit;
-  font-size: inherit;
-}
-
 span[data-second] {
   position: absolute;
-  top: 32px;
+  top: 25px;
   height: 5px;
   padding: 0;
   border-left: 1px solid #4a4a4d;
-  color: #747478;
-  font-size: 9px;
+  color: #606066;
+  font-size: 8px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -119,8 +100,8 @@ span[data-second] {
 .major-tick {
   top: 0;
   width: 30px;
-  height: 40px;
-  padding: 6px 0 0;
+  height: 46px;
+  padding: 7px 0 0;
   border-left: 0;
   color: #77777b;
   text-align: center;
@@ -130,7 +111,7 @@ span[data-second] {
 .major-tick::after {
   content: '';
   position: absolute;
-  bottom: 3px;
+  bottom: 8px;
   left: 50%;
   width: 1px;
   height: 8px;

@@ -28,14 +28,13 @@ const emit = defineEmits<{ select: [panel: string] }>()
 
 <style scoped>
 .tool {
-  display: inline-flex;
+  display: grid;
   flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  min-width: 72px;
-  height: 38px;
-  gap: 7px;
-  padding: 0 10px;
+  place-items: center;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
@@ -69,21 +68,7 @@ const emit = defineEmits<{ select: [panel: string] }>()
 }
 
 .tool-label {
-  overflow: hidden;
-  font-size: 10px;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: none;
 }
 
-@media (max-width: 1150px) {
-  .tool {
-    min-width: 52px;
-    padding: 0 7px;
-  }
-
-  .tool-label {
-    display: none;
-  }
-}
 </style>

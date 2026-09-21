@@ -45,6 +45,7 @@ defineEmits<{
 <template>
   <div class="track" :data-track="trackId" :data-kind="kind" :style="{width: `${width}px`, gridTemplateColumns: `${headerWidth}px ${contentWidth}px`}">
     <TimelineTrackHeader
+      :kind="kind"
       :title="title"
       :locked="locked"
       :visible="visible"
@@ -79,8 +80,8 @@ defineEmits<{
 </template>
 
 <style scoped>
-.track{position:relative;display:grid;height:var(--lane-height);border-bottom:1px solid var(--line);background:var(--panel)}
-.track[data-kind='video']{--lane-height:48px;--clip-height:42px}.track:is([data-kind='audio'],[data-kind='text']){--lane-height:32px;--clip-height:26px}
-.track-lane{position:relative;height:var(--lane-height);border-left:1px solid var(--line);background:var(--panel2);transition:background-color .14s ease}
+.track{position:relative;display:grid;height:var(--lane-height);margin-bottom:6px;background:var(--bg)}
+.track[data-kind='video']{--lane-height:68px;--clip-height:64px}.track:is([data-kind='audio'],[data-kind='text']){--lane-height:58px;--clip-height:54px}
+.track-lane{position:relative;height:var(--lane-height);background:var(--bg);transition:background-color .14s ease}
 :global(.timeline .drop-target) .track-lane{background:#254c56}
 </style>

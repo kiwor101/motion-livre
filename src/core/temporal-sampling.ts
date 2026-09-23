@@ -12,12 +12,18 @@ const animatedAt=(layer:Layer,time:number):boolean=>{
   return Boolean(layer.transitionIn&&layer.transitionIn!=='none'&&time<start+duration||layer.transitionOut&&layer.transitionOut!=='none'&&time>end-duration);
 };
 
+const motionBlurAt=(layer:Layer,time:number):number=>animatedAt(layer,time)?Math.max(0,Math.min(30,Number(layer.effects?.motionBlur)||0)):0;
+
 export function temporalSampleTimes(project:ProjectState,time:number,fps:number,start:number,end:number,transparent=false):number[] {
-  if(transparent||fps>=50||!project.layers.some(layer=>animatedAt(layer,time)))return[time];
+  // Match preview/export by default: one deterministic scene evaluation per output frame.
+  // Temporal supersampling is reserved for the explicit Motion Blur effect; applying it
+  // implicitly to every low-FPS animation makes transforms appear to trail the preview.
+  const blur=project.layers.reduce((maximum,layer)=>Math.max(maximum,motionBlurAt(layer,time)),0);
+  if(transparent||blur<=0)return[time];
   const boundaries=[start,end,...project.layers.flatMap(layer=>[Number(layer.start),Number(layer.end)]).filter(Number.isFinite)].sort((a,b)=>a-b),epsilon=1e-6;
   let lower=start,upper=end;
   for(const boundary of boundaries){if(boundary<=time+epsilon)lower=Math.max(lower,boundary);else{upper=Math.min(upper,boundary);break}}
-  const offset=.25/Math.max(1,fps),samples=[Math.max(lower,time-offset),time,Math.min(upper-epsilon,time+offset)];
+  const shutter=Math.min(.5,blur/30)*.5/Math.max(1,fps),samples=[Math.max(lower,time-shutter),time,Math.min(upper-epsilon,time+shutter)];
   return samples.filter((value,index)=>index===0||Math.abs(value-samples[index-1])>epsilon);
 }
 

@@ -16,11 +16,12 @@ import PreviewTools from './PreviewTools.vue'
 </template>
 
 <style scoped>
-.transport { position: static; z-index: 1; display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 68px; gap: 10px; padding: 0 16px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--text); font-size: 12px; }
+.transport { position:static; z-index:1; display:flex; align-items:center; justify-content:flex-start; width:100%; height:48px; gap:7px; padding:0 12px; border:0; border-top:1px solid var(--panel-border); background:transparent; color:var(--panel-foreground); font-size:12px; }
 .transport #timeLabel { order: 0; margin-right: 0; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .transport input { flex: 1; min-width: 35px; max-width: 170px; height: 3px; }
 .transport #muteBtn { margin-left: auto; }
-.transport :deep(.play.icon-button) { border-radius: 50%; background: var(--accent) !important; color: var(--text) !important; }
+.transport :deep(button) { width:32px; min-width:32px; height:32px; border-radius:5px; }
+.transport :deep(.play.icon-button) { background:var(--foreground); color:var(--background); }
 
 @media (max-width: 1150px) {
   .transport #timeLabel { display: none; }

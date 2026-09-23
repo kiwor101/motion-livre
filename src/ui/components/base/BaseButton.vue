@@ -16,18 +16,20 @@ withDefaults(defineProps<{
 button.wide {
   display: block;
   width: 100%;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel2);
-  color: var(--text);
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  background: var(--panel-accent);
+  color: var(--panel-foreground);
   font-size: 12px;
   text-align: center;
   cursor: pointer;
 }
+button.wide:hover { background:var(--accent-bg); }
 
 button.base-button--danger {
-  border-color: #61333a;
-  color: #ff9ca5;
+  border-color:color-mix(in srgb,var(--destructive) 45%,var(--panel-border));
+  color:color-mix(in srgb,var(--destructive) 55%,white);
 }
 </style>

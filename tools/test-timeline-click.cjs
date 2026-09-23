@@ -16,11 +16,11 @@ app.whenReady().then(async()=>{
       await new Promise(resolve=>setTimeout(resolve,30));
       if(layer.start!==before[0]||layer.end!==before[1]||state.playback.time!==before[2])throw Error('Clique alterou o clipe ou o playhead');
       if(document.querySelector('[data-clip="'+layer.id+'"]').classList.contains('dragging'))throw Error('Clique deixou o clipe em estado de arrasto');
-      const currentClip=document.querySelector('[data-clip="'+layer.id+'"]'),oldTile=currentClip.querySelector('img[data-slot="image"]'),oldLeft=oldTile?.getBoundingClientRect().left;
+      const currentClip=document.querySelector('[data-clip="'+layer.id+'"]'),oldTile=currentClip.querySelector('img[data-slot="image-0"]'),oldLeft=oldTile?.getBoundingClientRect().left;
       if(oldLeft===undefined)throw Error('Miniatura fixa não foi criada');
       layer.start=.017;motionEditor.renderLayers();
-      const nextClip=document.querySelector('[data-clip="'+layer.id+'"]'),newTile=nextClip.querySelector('img[data-slot="image"]'),tileBox=newTile?.getBoundingClientRect(),clipBox=nextClip.getBoundingClientRect();
-      if(!newTile||nextClip.querySelectorAll('.filmstrip img').length!==1||Math.abs(tileBox.left-clipBox.left-4)>1||Math.abs(tileBox.width-42)>1)throw Error('Miniatura de foto não manteve posição e tamanho fixos');
+      const nextClip=document.querySelector('[data-clip="'+layer.id+'"]'),newTile=nextClip.querySelector('img[data-slot="image-0"]'),tileBox=newTile?.getBoundingClientRect(),clipBox=nextClip.getBoundingClientRect();
+      if(!newTile||nextClip.querySelectorAll('.filmstrip img').length<2||Math.abs(tileBox.left-clipBox.left)>1||Math.abs(tileBox.width-65*16/9)>1)throw Error('Miniatura de foto não repetiu os tiles no padrão OpenCut');
     })()`);
     console.log('PASS: clique preserva tempo e extensão mantém miniaturas fixas');app.quit();
   }catch(error){console.error(error);app.exit(1)}

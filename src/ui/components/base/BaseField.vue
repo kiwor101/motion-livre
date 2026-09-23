@@ -15,7 +15,8 @@ defineProps<{label: string; labelAfter?: boolean}>()
 label {
   display: block;
   margin: 10px 0;
-  color: var(--muted);
+  color: var(--muted-foreground);
   font-size: 12px;
+  font-weight: 500;
 }
 </style>

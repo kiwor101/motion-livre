@@ -9,14 +9,14 @@ export interface VideoRenderPlan {segments:VideoRenderSegment[]}
 
 const close=(left:number|undefined,right:number,tolerance=.001):boolean=>Number.isFinite(left)&&Math.abs(left!-right)<=tolerance;
 const defaults=(layer:Layer):boolean=>
-  layer.x===50&&layer.y===50&&layer.depth===0&&layer.scale===100&&layer.rotation===0&&layer.opacity===100&&
+  layer.x===50&&layer.y===50&&layer.depth===0&&layer.scale===100&&layer.scaleX===100&&layer.scaleY===100&&layer.rotation===0&&layer.opacity===100&&
   layer.anchorX===50&&layer.anchorY===50&&layer.cropX===0&&layer.cropY===0&&!layer.flipX&&!layer.flipY&&
   layer.blend==='normal'&&layer.filter==='none'&&!layer.mask&&layer.maskMode==='none'&&!layer.parentId&&
   layer.transitionIn==='none'&&layer.transitionOut==='none'&&!layer.reverse&&layer.speed===1&&!layer.keyframes.length&&
   Object.entries(EFFECT_DEFAULTS).every(([key,value])=>layer.effects[key]===value);
 
 const visualDefaults=(layer:Layer):boolean=>
-  layer.x===50&&layer.y===50&&layer.depth===0&&layer.scale===100&&layer.rotation===0&&layer.opacity===100&&
+  layer.x===50&&layer.y===50&&layer.depth===0&&layer.scale===100&&layer.scaleX===100&&layer.scaleY===100&&layer.rotation===0&&layer.opacity===100&&
   layer.anchorX===50&&layer.anchorY===50&&layer.cropX===0&&layer.cropY===0&&!layer.flipX&&!layer.flipY&&
   layer.blend==='normal'&&layer.filter==='none'&&!layer.mask&&layer.maskMode==='none'&&!layer.parentId&&
   layer.transitionIn==='none'&&layer.transitionOut==='none'&&!layer.reverse&&!layer.keyframes.length&&

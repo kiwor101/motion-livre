@@ -43,8 +43,8 @@ defineEmits<{
   padding: 0 8px;
   gap: 2px;
   overflow: hidden;
-  border-right: 1px solid #27272a;
-  background: var(--bg);
+  border-right: 1px solid var(--panel-border);
+  background: var(--panel-background);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -62,10 +62,10 @@ button {
   font-size: 10px;
   border: 0;
   background: transparent;
-  color: #77777d;
+  color: var(--muted-foreground);
 }
-button:hover{background:#242426;color:#d4d4d8}
+button:hover{background:var(--panel-accent);color:var(--panel-foreground)}
 button:disabled{opacity:.35}
-.track-kind{color:#85858b}
-.track-reorder-target{background:#202a30}
+.track-kind{color:var(--muted-foreground)}
+.track-reorder-target{background:var(--panel-accent)}
 </style>

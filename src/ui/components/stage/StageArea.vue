@@ -16,13 +16,13 @@ import TransportControls from './TransportControls.vue'
 .stage-area {
   display: grid;
   grid-area: preview;
-  grid-template-rows: 56px minmax(0, 1fr) 68px;
+  grid-template-rows: 40px minmax(0, 1fr) 48px;
   min-width: 360px;
   min-height: 0;
   overflow: hidden;
-  border: 0;
-  border-radius: 0;
-  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: var(--panel-background);
 }
 
 .stage-area:fullscreen {

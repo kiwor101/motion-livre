@@ -50,7 +50,7 @@ onBeforeUnmount(() => window.removeEventListener('motion:media-library-update', 
   background: transparent !important;
 }
 
-.asset-list > .empty { grid-column: 1 / -1; margin-top: 14px; padding: 34px 12px; border: 1px dashed var(--line); border-radius: 6px; }
+.asset-list > .empty { grid-column:1 / -1; margin-top:14px; padding:34px 12px; border:1px dashed var(--panel-border); border-radius:5px; }
 
 .asset {
   display: flex;
@@ -70,15 +70,14 @@ onBeforeUnmount(() => window.removeEventListener('motion:media-library-update', 
   cursor: pointer;
 }
 
-.asset-preview { position: relative; width: 100%; aspect-ratio: 16 / 10; display: grid; place-items: center; overflow: hidden; border: 1px solid #2c2c2f; border-radius: 3px; background: #242426; }
+.asset-preview { position:relative; width:100%; aspect-ratio:16 / 10; display:grid; place-items:center; overflow:hidden; border:1px solid var(--panel-border); border-radius:4px; background:var(--panel-accent); }
 .asset-preview img, .asset-preview video { width: 100%; height: 100%; display: block; object-fit: cover; }
-.audio-placeholder { display: flex; flex-direction: column; align-items: center; color: #89898f; font-size: 25px; }
-.audio-placeholder small { font-size: 9px; }
+.audio-placeholder { display:flex; flex-direction:column; align-items:center; color:var(--muted-foreground); font-size:25px; }
+.audio-placeholder small { font-size: 11px; }
 .duration { position: absolute; right: 3px; bottom: 3px; padding: 1px 3px; border-radius: 2px; background: #000b; color: #fff; font-size: 8px; }
-.asset-name { width: 100%; padding: 5px 1px 0; overflow: hidden; color: #99999f; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.asset-name { width:100%; padding:5px 1px 0; overflow:hidden; color:var(--muted-foreground); font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
 
 .asset:hover {
-  border-color: var(--line) !important;
-  background: color-mix(in srgb, var(--accent) 10%, var(--panel2)) !important;
+  background: var(--panel-accent) !important;
 }
 </style>

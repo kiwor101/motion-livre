@@ -15,5 +15,5 @@ const presets = [
 
 <style scoped>
 .effect-list { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.effect-list button { display: block; width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); color: var(--text); text-align: center; cursor: pointer; }
+.effect-list button { display:block; width:100%; min-height:32px; padding:6px 9px; border-radius:5px; border:1px solid var(--panel-border); background:var(--panel-accent); color:var(--panel-foreground); font-size:11px; text-align:center; cursor:pointer; }
 </style>

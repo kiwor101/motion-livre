@@ -75,12 +75,12 @@ const rangeActions: Action[] = [
 </template>
 
 <style scoped>
-.timeline-controls{flex-shrink:0;height:auto;min-height:0;padding:1rem 16px;display:flex;align-items:center;overflow-x:auto;overflow-y:hidden;background:var(--panel);border:solid var(--line);border-width:0 0 1px;font-size:12px}
+.timeline-controls{flex-shrink:0;height:40px;min-height:40px;padding:4px 8px;display:flex;align-items:center;overflow-x:auto;overflow-y:hidden;background:var(--panel-background);border:solid var(--panel-border);border-width:0 0 1px;font-size:12px}
 .timeline-edit-tools{width:100%;min-height:32px;display:flex;align-items:center;flex-wrap:nowrap;gap:0}
-.timeline-tool-group{height:32px;display:flex;align-items:center;flex:0 0 auto;gap:4px;padding:0 8px;border-left:1px solid var(--line);color:var(--text)}
+.timeline-tool-group{height:32px;display:flex;align-items:center;flex:0 0 auto;gap:4px;padding:0 6px;border-left:1px solid var(--panel-border);color:var(--panel-foreground)}
 .timeline-tool-group:first-child{padding-left:0;border-left:0}.range-tools{gap:3px}.marker-tools{gap:5px}.view-tools{gap:4px}.timeline-status{margin-left:auto;padding-right:0;color:var(--muted)}
-button,.snap-toggle{width:32px;height:32px;min-width:32px;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:6px;background:transparent;color:#a4a4a8;cursor:pointer}
-button:hover,.snap-toggle:hover{background:var(--hover);color:var(--text)}button[aria-pressed=true],.snap-toggle:has(input:checked){background:#143c43;border-color:#08dfdc;color:#37d3eb}
+button,.snap-toggle{width:32px;height:32px;min-width:32px;display:grid;place-items:center;padding:0;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--muted-foreground);cursor:pointer}
+button:hover,.snap-toggle:hover{background:var(--panel-accent);color:var(--accent-foreground)}button[aria-pressed=true],.snap-toggle:has(input:checked){background:var(--secondary);border-color:transparent;color:var(--secondary-foreground)}
 .snap-toggle{position:relative}.snap-toggle input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
 .zoom-control{display:flex;align-items:center}.zoom-control span{font-size:0}.zoom-control input{width:80px;height:3px;accent-color:#77777d}
 output{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px;color:var(--muted);font-weight:500}.render-range-status{color:var(--muted)}#timelinePosition{min-width:142px;text-align:right}

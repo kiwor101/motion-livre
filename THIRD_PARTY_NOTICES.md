@@ -2,7 +2,8 @@
 
 ## Interface
 
-- O sistema visual do editor reutiliza e adapta tokens de cor, proporções e padrões de painéis do OpenCut clássico. Copyright 2025-2026 OpenCut, licença MIT. Fonte: https://github.com/opencut-app/opencut-classic.
+- O layout visual do editor reutiliza diretamente os tokens de cor, proporções e padrões de painéis do OpenCut clássico. Copyright 2025-2026 OpenCut, licença MIT. Fonte: https://github.com/OpenCut-app/opencut-classic.
+- Fonte Inter Variable (subconjunto Latin), licença SIL Open Font License 1.1. Arquivo local em `assets/fonts/Inter-Variable-Latin.woff2`. Fonte: https://fonts.google.com/specimen/Inter.
 - Ícones Lucide 0.468.0, licença ISC. Arquivos SVG locais em `assets/icons/`; licença completa em `assets/icons/LICENSE`. Fonte: https://github.com/lucide-icons/lucide/tree/0.468.0.
 - Fonte Noto Sans Variable, licença SIL Open Font License 1.1. Arquivo local em `assets/fonts/NotoSans-Variable.ttf`; licença completa em `assets/fonts/NotoSans-OFL.txt`.
 - Ícones Material Symbols Rounded, licença Apache 2.0. Fonte local em `assets/fonts/MaterialSymbolsRounded.woff2`; licença completa em `assets/fonts/MaterialSymbols-LICENSE.txt`.

@@ -42,13 +42,14 @@ defineEmits<{
 <style scoped>
 .clip {
   position: absolute;
-  top: 3px;
+  top: 0;
   height: var(--clip-height);
   margin: 0;
-  padding: 0 6px;
+  padding: 0;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 3px;
+  border-radius: 5px;
+  background-clip: padding-box;
   box-shadow: none;
   cursor: grab;
   touch-action: none;
@@ -59,30 +60,28 @@ defineEmits<{
 }
 
 .clip[data-kind='video'] {
-  background: #29292c;
+  background: var(--muted-surface);
   color: #fff;
 }
 
 .clip[data-kind='image'] {
-  background: #dd735f;
+  background: var(--muted-surface);
   color: #fff;
 }
 
 .clip[data-kind='audio'] {
-  background: #9457bf;
+  background: #8f5dba;
   color: #fff;
 }
 
 .clip[data-kind='text'] {
-  border-color: #4e168f;
-  background: #7927db;
-  color: #d9bdf9;
+  background: #5dbaa0;
+  color: #0b241d;
 }
 
 .clip:is([data-kind='rect'], [data-kind='circle'], [data-kind='drawing'], [data-kind='path']) {
-  border-color: #268b91;
-  background: #5ad9dc;
-  color: #17535a;
+  background: #ba5d7a;
+  color: #fff;
 }
 
 .clip:is([data-kind='null'], [data-kind='camera']) {
@@ -91,14 +90,9 @@ defineEmits<{
   color: #702c21;
 }
 
-.clip:not([data-kind='video'], [data-kind='image']) {
-  background-image: repeating-linear-gradient(90deg, #ffffff21 0 1px, transparent 1px 72px);
-  background-position-x: var(--timeline-grid-offset, 0px);
-}
-
 .selected-clip {
-  border: 1px solid #f0f0f0 !important;
-  box-shadow: 0 0 0 1px #0b0b0c, 0 0 0 2px #f0f0f080 !important;
+  border-color: transparent;
+  box-shadow: 0 0 0 1.5px var(--primary);
 }
 
 .dragging {
@@ -129,8 +123,8 @@ defineEmits<{
 .filmstrip :deep(img) {
   position: absolute;
   top: 0;
-  width: 96px;
-  min-width: 96px;
+  width: calc(var(--clip-height) * 1.7777778);
+  min-width: calc(var(--clip-height) * 1.7777778);
   max-width: none;
   height: 100%;
   margin: 0;
@@ -139,19 +133,10 @@ defineEmits<{
   pointer-events: none;
 }
 
-.clip[data-kind='image'] .filmstrip :deep(img) {
-  top: 50%;
-  width: 42px;
-  min-width: 42px;
-  height: 28px;
-  object-fit: contain;
-  transform: translateY(-50%);
-}
-
 .clip-label {
   position: absolute;
   left: var(--clip-label-offset, 0px);
-  top: 2px;
+  top: 3px;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -164,7 +149,7 @@ defineEmits<{
   overflow: hidden;
   background: transparent;
   color: #fff;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 550;
   line-height: 16px;
   text-shadow: 0 1px 2px #000,0 0 4px #000a;
@@ -183,6 +168,8 @@ defineEmits<{
   box-shadow: none;
   color: #fff;
 }
+
+.clip[data-kind='text'] .clip-label { top:0; height:25px; color:#0b241d; text-shadow:none; }
 
 .clip-kind-icon {
   display:none;
@@ -241,9 +228,9 @@ defineEmits<{
 }
 
 .clip[data-kind='audio'] :deep(.clip-waveform) {
-  inset: 18px 0 0;
+  inset: 16px 0 0;
   width: 100%;
-  height: calc(100% - 18px);
-  opacity: .82;
+  height: calc(100% - 16px);
+  opacity: 1;
 }
 </style>

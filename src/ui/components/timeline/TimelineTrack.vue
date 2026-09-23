@@ -80,8 +80,8 @@ defineEmits<{
 </template>
 
 <style scoped>
-.track{position:relative;display:grid;height:var(--lane-height);margin-bottom:6px;background:var(--bg)}
-.track[data-kind='video']{--lane-height:68px;--clip-height:64px}.track:is([data-kind='audio'],[data-kind='text']){--lane-height:58px;--clip-height:54px}
-.track-lane{position:relative;height:var(--lane-height);background:var(--bg);transition:background-color .14s ease}
-:global(.timeline .drop-target) .track-lane{background:#254c56}
+.track{position:relative;display:grid;height:var(--lane-height);margin-bottom:6px;background:var(--panel-background)}
+.track[data-kind='video']{--lane-height:65px;--clip-height:65px}.track[data-kind='audio']{--lane-height:50px;--clip-height:50px}.track[data-kind='text']{--lane-height:25px;--clip-height:25px}
+.track-lane{position:relative;height:var(--lane-height);background:var(--panel-background);transition:background-color .14s ease}
+:global(.timeline .drop-target) .track-lane{background:color-mix(in srgb,var(--primary) 14%,var(--panel-background))}
 </style>

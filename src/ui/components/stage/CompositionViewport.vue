@@ -21,6 +21,7 @@ import StageVectorOverlays from './StageVectorOverlays.vue'
   min-height: 0;
   padding: 0;
   overflow: hidden;
+  background-color: var(--panel-background);
   background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
   background-size: 12px 12px;
 }

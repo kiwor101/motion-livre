@@ -29,5 +29,5 @@ const maskOptions = [{value:'none',label:'Nenhuma'},{value:'inset',label:'Retang
 </template>
 
 <style scoped>
-.text-content{display:block}.text-content textarea{width:100%;margin-top:5px;padding:9px;border:1px solid var(--line);border-radius:7px;background:#242426;color:var(--text);resize:vertical}h3{margin:16px -14px 8px;padding:12px 14px 0;border-top:1px solid var(--line);font-size:11px}
+.text-content{display:block}.text-content textarea{width:100%;margin-top:6px;padding:9px;border:1px solid var(--panel-border);border-radius:5px;background:var(--panel-accent);color:var(--panel-foreground);resize:vertical;box-shadow:0 1px 2px #0003}.text-content textarea:focus{border-color:var(--primary);outline:0}h3{margin:16px -16px 8px;padding:12px 16px 0;border-top:1px solid var(--panel-border);font-size:11px}
 </style>

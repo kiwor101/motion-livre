@@ -26,7 +26,7 @@ defineEmits<{
 </template>
 
 <style scoped>
-.timeline-range-marker{position:absolute;top:21px;width:13px;height:16px;margin-left:-6px;z-index:10;cursor:ew-resize;touch-action:none}
+.timeline-range-marker{position:absolute;top:7px;width:13px;height:15px;margin-left:-6px;z-index:10;cursor:ew-resize;touch-action:none}
 .timeline-range-marker::before{content:'';position:absolute;left:1px;top:0;width:11px;height:12px;background:currentColor;clip-path:polygon(0 0,100% 0,50% 100%)}
 .range-start{color:#69b9ff}.range-end{color:#ef7d68}.timeline-range-marker:hover{filter:brightness(1.25)}
 </style>

@@ -31,16 +31,17 @@ assert.equal(estimateBeatGrid(Array(500).fill(.2), { duration: 10 }), null, 'Fla
 const snapState = Editor.create({ duration: 12, markers: [3], beatMarkers: [6] })
 snapState.layers = [
   Project.normalizeLayer({ id: 1, type: 'text', start: 1, end: 2 }, 12),
-  Project.normalizeLayer({ id: 2, type: 'video', start: 7, end: 9 }, 12),
+  Project.normalizeLayer({ id: 2, type: 'video', start: 7, end: 9, keyframes: [{ time: 8.5, values: { scale: 120 } }] }, 12),
   Project.normalizeLayer({ id: 3, type: 'audio', start: 9.5, end: 11 }, 12),
 ]
-assert.equal(snapTimelineTime({ state: snapState, time: 3.4, pixelsPerSecond: 40 }), 3, 'Manual marker did not use the larger magnetic radius')
-assert.equal(snapTimelineTime({ state: snapState, time: 6.4, pixelsPerSecond: 40 }), 6, 'Beat marker did not use the larger magnetic radius')
+assert.equal(snapTimelineTime({ state: snapState, time: 3.2, pixelsPerSecond: 40 }), 3, 'Manual marker did not use the OpenCut 10px magnetic radius')
+assert.equal(snapTimelineTime({ state: snapState, time: 6.2, pixelsPerSecond: 40 }), 6, 'Beat marker did not use the OpenCut 10px magnetic radius')
 assert.equal(snapTimelineTime({ state: snapState, time: 7.2, pixelsPerSecond: 40 }), 7, 'Video edge did not attract a clip')
 assert.equal(snapTimelineTime({ state: snapState, time: 9.7, pixelsPerSecond: 40 }), 9.5, 'Audio edge did not attract a clip')
+assert.equal(snapTimelineTime({ state: snapState, time: 8.7, pixelsPerSecond: 40 }), 8.5, 'Keyframe did not attract a clip edge')
 assert.equal(snapTimelineTime({ state: snapState, time: 1.2, pixelsPerSecond: 40, exclude: new Set([1]) }), 1.2, 'Moving clip snapped to its own edge')
 assert.equal(snapTimelineTime({ state: snapState, time: 6.1, pixelsPerSecond: 40, markersOnly: true }), 6, 'Nearby beat marker did not attract the playhead')
 assert.equal(snapTimelineTime({ state: snapState, time: 3.1, pixelsPerSecond: 40, markersOnly: true }), 3, 'Nearby manual marker did not attract the playhead')
 assert.equal(snapTimelineTime({ state: snapState, time: 6.4, pixelsPerSecond: 40, markersOnly: true }), 6.4, 'Playhead magnetism blocked navigation between markers')
 
-console.log('PASS: beat detection preserves tempo/phase and timeline snapping favors markers')
+console.log('PASS: beat detection preserves tempo/phase and OpenCut-style snapping covers markers, edges and keyframes')

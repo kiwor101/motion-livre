@@ -11,3 +11,7 @@ import TopbarActions from './TopbarActions.vue'
     <TopbarActions />
   </header>
 </template>
+
+<style scoped>
+.topbar { height:54px; padding:2px 12px 0; display:flex; align-items:center; gap:4px; background:var(--background); }
+</style>

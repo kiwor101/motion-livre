@@ -36,9 +36,10 @@ defineProps<{
   max-height: 82vh;
   padding: 24px;
   overflow: auto;
-  border: 1px solid #3c4350;
-  border-radius: 14px;
-  background: #1b1f27;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--popover);
+  box-shadow: 0 18px 50px #000b;
 }
 
 .modal-close {

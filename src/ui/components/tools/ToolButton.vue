@@ -21,7 +21,7 @@ const emit = defineEmits<{ select: [panel: string] }>()
     :aria-label="label"
     @click="emit('select', panel)"
   >
-    <AppIcon :name="icon" :size="16" :filled="active" />
+    <AppIcon :name="icon" :size="18" :filled="active" />
     <span class="tool-label">{{ label }}</span>
   </button>
 </template>

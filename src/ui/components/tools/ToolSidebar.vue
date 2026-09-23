@@ -37,19 +37,19 @@ onBeforeUnmount(() => window.removeEventListener('motion:panel-change', syncPane
 .tools {
   display: flex;
   flex-direction: column;
-  flex: 0 0 44px;
+  flex: 0 0 42px;
   align-items: center;
   justify-content: flex-start;
   min-width: 0;
   min-height: 0;
-  width: 44px;
+  width: 42px;
   height: 100%;
   gap: 2px;
-  padding: 5px;
+  padding: 4px;
   overflow-x: hidden;
   overflow-y: auto;
   border-right: 1px solid var(--line);
-  background: var(--bg);
+  background: var(--panel-background);
   scrollbar-width: none;
 }
 

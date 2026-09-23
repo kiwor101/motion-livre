@@ -8,6 +8,7 @@ interface TimelineMediaPreviewContext {
 }
 
 const clamp=(value:number,min:number,max:number):number=>Math.max(min,Math.min(max,value));
+const MEDIA_TRACK_HEIGHT=65,THUMBNAIL_ASPECT_RATIO=16/9,TILE_WIDTH=MEDIA_TRACK_HEIGHT*THUMBNAIL_ASPECT_RATIO;
 
 function mediaEvent(video:HTMLVideoElement,event:'loadeddata'|'seeked',action:()=>void):Promise<void> {
   return new Promise((resolve,reject)=>{
@@ -62,19 +63,25 @@ export function createTimelineMediaPreview(context:TimelineMediaPreviewContext):
   const preview=(layer:Layer,element:HTMLElement)=>{
     if(layer.type!=='video'&&layer.type!=='image')return;const source=context.resolveLayerContent(layer);if(!source)return;
     if(layer.type==='image'){
-      let image=element.querySelector<HTMLImageElement>('img[data-slot="image"]');
-      if(!image){element.replaceChildren();image=document.createElement('img');image.dataset.slot='image';image.draggable=false;element.append(image)}
-      image.style.left='4px';image.dataset.key=source;if(image.src!==source)image.src=source;return;
+      const width=Number.parseFloat(element.closest<HTMLElement>('[data-clip]')?.style.width||'')||element.getBoundingClientRect().width||TILE_WIDTH;
+      const count=Math.max(1,Math.min(64,Math.ceil(width/TILE_WIDTH)));
+      for(let slot=0;slot<count;slot++){
+        const slotId=`image-${slot}`;let image=element.querySelector<HTMLImageElement>(`img[data-slot="${slotId}"]`);
+        if(!image){image=document.createElement('img');image.dataset.slot=slotId;image.draggable=false;element.append(image)}
+        image.style.left=`${slot*TILE_WIDTH}px`;image.dataset.key=source;if(image.src!==source)image.src=source;
+      }
+      for(const image of element.querySelectorAll<HTMLImageElement>('img[data-slot]')){const slot=Number((image.dataset.slot||'').replace('image-',''));if(!Number.isInteger(slot)||slot>=count)image.remove()}
+      return;
     }
     const width=Number.parseFloat(element.closest<HTMLElement>('[data-clip]')?.style.width||'')||element.getBoundingClientRect().width||56;
-    const pixelsPerSecond=width/Math.max(.001,layer.end-layer.start),first=Math.floor(layer.start*pixelsPerSecond/72),last=Math.ceil(layer.end*pixelsPerSecond/72)-1;
+    const pixelsPerSecond=width/Math.max(.001,layer.end-layer.start),first=Math.floor(layer.start*pixelsPerSecond/TILE_WIDTH),last=Math.ceil(layer.end*pixelsPerSecond/TILE_WIDTH)-1;
     const wanted=new Set<string>();
     for(let slot=first;slot<=Math.min(last,first+63);slot++){
-      const position=slot*72,slotId=String(slot);wanted.add(slotId);
+      const position=slot*TILE_WIDTH,slotId=String(slot);wanted.add(slotId);
       let image=element.querySelector<HTMLImageElement>(`img[data-slot="${slotId}"]`);
       if(!image){image=document.createElement('img');image.dataset.slot=slotId;image.draggable=false;element.append(image)}
       image.style.left=`${position-layer.start*pixelsPerSecond}px`;
-      const time=clamp((position+36)/pixelsPerSecond,layer.start,layer.end);
+      const time=clamp((position+TILE_WIDTH/2)/pixelsPerSecond,layer.start,layer.end);
       const sourceTime=context.sourceTimeForLayer(layer,time,layer.mediaDuration);
       const key=JSON.stringify([source,Math.round(sourceTime*100)/100]);
       if(image.dataset.key===key)continue;image.dataset.key=key;image.removeAttribute('src');

@@ -8,6 +8,9 @@ const allowedProperties = new Set([
   'depth',
   'perspective',
   'scale',
+  'scaleX',
+  'scaleY',
+  'scaleLinked',
   'rotation',
   'opacity',
   'color',
@@ -55,6 +58,8 @@ const keyframeProperties = new Set([
   'y',
   'depth',
   'scale',
+  'scaleX',
+  'scaleY',
   'rotation',
   'opacity',
 ]);

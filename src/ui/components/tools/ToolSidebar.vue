@@ -8,9 +8,6 @@ const tools = [
   { panel: 'shape', icon: 'shapes', label: 'Forma' },
   { panel: 'draw', icon: 'draw', label: 'Desenho' },
   { panel: 'effects', icon: 'auto_awesome', label: 'Efeitos' },
-  { panel: 'cut', icon: 'content_cut', label: 'Corte' },
-  { panel: 'audio', icon: 'music_note', label: 'Áudio' },
-  { panel: 'animation', icon: 'animation', label: 'Animação' },
   { panel: 'project', icon: 'tune', label: 'Projeto' },
 ]
 const activePanel = ref('media')
@@ -35,3 +32,28 @@ onBeforeUnmount(() => window.removeEventListener('motion:panel-change', syncPane
     />
   </aside>
 </template>
+
+<style scoped>
+.tools {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: 0;
+  width: 42px;
+  height: 100%;
+  gap: 2px;
+  padding: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--panel-background);
+  scrollbar-width: none;
+}
+
+.tools::-webkit-scrollbar {
+  display: none;
+}
+</style>

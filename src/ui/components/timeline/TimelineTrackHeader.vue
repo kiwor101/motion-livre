@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import AppIcon from '../base/AppIcon.vue'
+
 defineProps<{
+  kind: 'video' | 'audio' | 'text'
   title: string
   locked: boolean
   visible: boolean
@@ -9,6 +12,8 @@ defineProps<{
 }>()
 
 defineEmits<{
+  select: []
+  rename: [title: string]
   toggleLock: []
   toggleVisibility: []
   toggleMute: []
@@ -17,12 +22,11 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="track-name">
-    <span class="layer-title">{{ title }}</span>
-    <button type="button" data-lock title="Bloquear faixa" @click.stop="$emit('toggleLock')">{{ locked ? '🔒' : '🔓' }}</button>
-    <button type="button" data-vis title="Ocultar faixa" @click.stop="$emit('toggleVisibility')">{{ visible ? '●' : '○' }}</button>
-    <button type="button" data-mute title="Silenciar faixa" :disabled="!hasAudio" @click.stop="$emit('toggleMute')">{{ hasAudio && muted ? '🔇' : '🔊' }}</button>
-    <button type="button" data-multi title="Marcar clipes para precomposição" @click.stop="$emit('toggleMulti')">{{ multiSelected ? '☑' : '☐' }}</button>
+  <div class="track-name" :title="title" @click.self="$emit('select')">
+    <button type="button" data-mute :aria-label="muted ? 'Ativar áudio da faixa' : 'Silenciar faixa'" :title="muted ? 'Ativar áudio da faixa' : 'Silenciar faixa'" :disabled="!hasAudio" @click.stop="$emit('toggleMute')"><AppIcon :name="hasAudio && muted ? 'volume-off' : 'volume-up'" :size="16" /></button>
+    <button type="button" data-vis :aria-label="visible ? 'Ocultar faixa' : 'Mostrar faixa'" :title="visible ? 'Ocultar faixa' : 'Mostrar faixa'" @click.stop="$emit('toggleVisibility')"><AppIcon :name="visible ? 'visibility' : 'visibility-off'" :size="16" /></button>
+    <button v-if="locked" type="button" data-lock aria-label="Desbloquear faixa" title="Desbloquear faixa" @click.stop="$emit('toggleLock')"><AppIcon name="lock" :size="16" /></button>
+    <button v-else type="button" class="track-kind" aria-label="Selecionar faixa" :title="title" @click.stop="$emit('select')"><AppIcon :name="kind === 'audio' ? 'music-note' : kind === 'video' ? 'videocam' : 'title'" :size="16" /></button>
   </div>
 </template>
 
@@ -35,11 +39,12 @@ defineEmits<{
   align-items: center;
   height: var(--lane-height);
   margin-right: 0;
-  padding: 0 11px 0 16px;
-  gap: 4px;
+  justify-content: center;
+  padding: 0 8px;
+  gap: 2px;
   overflow: hidden;
-  border-right: 1px solid var(--line);
-  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  background: var(--panel-background);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -48,30 +53,19 @@ defineEmits<{
   cursor: grab;
 }
 
-.layer-title {
-  order: 0;
-  flex: 1;
-  min-width: 0;
-  margin-right: 7px;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 450;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 button {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
   font-size: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
 }
-
-:deep(.track-rename) {
-  order: 0;
-  flex: 1;
-  min-width: 0;
-  margin-right: 4px;
-  padding: 3px 5px;
-  border-color: var(--accent);
-  background: var(--bg);
-}
+button:hover{background:var(--panel-accent);color:var(--panel-foreground)}
+button:disabled{opacity:.35}
+.track-kind{color:var(--muted-foreground)}
+.track-reorder-target{background:var(--panel-accent)}
 </style>

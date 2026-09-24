@@ -1,7 +1,7 @@
 import type {Layer,LayerId} from './project-model';
 
-export type TransformProperty='x'|'y'|'depth'|'scale'|'rotation'|'opacity';
-export const TRANSFORM_PROPERTIES:readonly TransformProperty[]=['x','y','depth','scale','rotation','opacity'];
+export type TransformProperty='x'|'y'|'depth'|'scale'|'scaleX'|'scaleY'|'rotation'|'opacity';
+export const TRANSFORM_PROPERTIES:readonly TransformProperty[]=['x','y','depth','scale','scaleX','scaleY','rotation','opacity'];
 
 const clamp01=(value:unknown)=>Math.max(0,Math.min(1,Number(value)||0));
 
@@ -41,12 +41,13 @@ export function interpolateProperty(layer:Partial<Layer>,property:TransformPrope
 export function evaluateLocalLayer(source:Partial<Layer>,time:number,duration:number):Partial<Layer> {
   const layer={...source};
   for(const property of TRANSFORM_PROPERTIES){const value=interpolateProperty(source,property,time);if(Number.isFinite(value))layer[property]=value}
+  layer.scaleX=Number.isFinite(layer.scaleX)?layer.scaleX:layer.scale;layer.scaleY=Number.isFinite(layer.scaleY)?layer.scaleY:layer.scale;
   const start=Number(layer.start)||0,end=Number.isFinite(layer.end)?layer.end as number:duration;
   const transitionDuration=Math.max(.01,Math.min(Number(layer.transitionDuration)||.5,Math.max(.01,(end-start)/2)));
   const intro=clamp01((time-start)/transitionDuration),outro=clamp01((end-time)/transitionDuration);
   const transition=(kind:unknown,progress:number,isIn:boolean)=>{
     if(kind==='fade')layer.opacity=(layer.opacity??100)*progress;
-    if(kind==='zoom')layer.scale=(layer.scale??100)*(.65+.35*progress);
+    if(kind==='zoom'){layer.scaleX=(layer.scaleX??layer.scale??100)*(.65+.35*progress);layer.scaleY=(layer.scaleY??layer.scale??100)*(.65+.35*progress)}
     if(kind==='slide-left')layer.x=(layer.x??50)+(isIn?-1:1)*(1-progress)*35;
     if(kind==='slide-right')layer.x=(layer.x??50)+(isIn?1:-1)*(1-progress)*35;
   };
@@ -66,6 +67,8 @@ export function evaluateLayer(source:Partial<Layer>,time:number,{layers=[],durat
       layer.x=(value.x??50)+((layer.x??50)-50)*(value.scale??100)/100;
       layer.y=(value.y??50)+((layer.y??50)-50)*(value.scale??100)/100;
       layer.scale=(layer.scale??100)*(value.scale??100)/100;
+      layer.scaleX=(layer.scaleX??layer.scale??100)*(value.scaleX??value.scale??100)/100;
+      layer.scaleY=(layer.scaleY??layer.scale??100)*(value.scaleY??value.scale??100)/100;
       layer.rotation=(layer.rotation||0)+(value.rotation||0);
       layer.opacity=(layer.opacity??100)*(value.opacity??100)/100;
     }
@@ -77,6 +80,8 @@ export function evaluateLayer(source:Partial<Layer>,time:number,{layers=[],durat
       layer.x=50+((layer.x??50)-(value.x??50))*zoom;
       layer.y=50+((layer.y??50)-(value.y??50))*zoom;
       layer.scale=(layer.scale??100)*zoom*depthScale;
+      layer.scaleX=(layer.scaleX??layer.scale??100)*zoom*depthScale;
+      layer.scaleY=(layer.scaleY??layer.scale??100)*zoom*depthScale;
       layer.rotation=(layer.rotation||0)-(value.rotation||0);
     }
   }

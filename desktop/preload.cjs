@@ -1,7 +1,7 @@
 const {contextBridge,ipcRenderer,webUtils}=require('electron');
 function localFileUrl(filePath){const normalized=String(filePath||'').replace(/\\/g,'/');const url=new URL('file:///');url.pathname=normalized;return url.href}
 contextBridge.exposeInMainWorld('motionDesktop',{
-  saveProject:(data,suggestedName)=>ipcRenderer.invoke('project:save',{data,suggestedName}),
+  saveProject:(data,suggestedName,filePath)=>ipcRenderer.invoke('project:save',{data,suggestedName,filePath}),
   openProject:()=>ipcRenderer.invoke('project:open'),
   saveEffect:(data,suggestedName)=>ipcRenderer.invoke('effect:save',{data,suggestedName}),
   openEffect:()=>ipcRenderer.invoke('effect:open'),

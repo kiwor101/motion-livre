@@ -20,19 +20,12 @@ import * as compositionModule from '../renderer/composition-engine';
 import * as exportControllerModule from '../renderer/export-controller';
 import * as projectModelModule from '../core/project-model';
 import {createApp} from 'vue';
-import AppTopBar from './components/app/AppTopBar.vue';
-import LibraryPanels from './components/library/LibraryPanels.vue';
-import StageArea from './components/stage/StageArea.vue';
-import InspectorPanel from './components/inspector/InspectorPanel.vue';
-import TimelineSection from './components/timeline/TimelineSection.vue';
-import AppOverlays from './components/overlays/AppOverlays.vue';
+import AppRoot from './components/app/AppRoot.vue';
+import {setUiAppContext} from './vue-app-context';
 
-createApp(AppTopBar).mount('#vueTopbar');
-createApp(LibraryPanels).mount('#vueLibrary');
-createApp(StageArea).mount('#vueStage');
-createApp(InspectorPanel).mount('#vueInspector');
-createApp(TimelineSection).mount('#vueTimeline');
-createApp(AppOverlays).mount('#vueOverlays');
+const uiApp=createApp(AppRoot);
+setUiAppContext(uiApp._context);
+uiApp.mount('#vueTopbar');
 
 const ready=(async()=>{
   const legacy=createAppController();
@@ -79,7 +72,7 @@ const ready=(async()=>{
     state:legacy.state as import('../core/editor-state').EditorState,
     selected:legacy.selected as ()=>import('../core/project-model').Layer|null,
     syncProps:legacy.syncProps as ()=>void,replaceSyncProps:callback=>{legacy.syncProps=callback},
-    updateSelected:legacy.updateSelected as ()=>void,renderLayers:legacy.renderLayers as ()=>void,renderTimeline:legacy.renderTimeline as ()=>void,selectLayer:legacy.selectLayer as (id:number)=>void,
+    updateSelected:legacy.updateSelected as ()=>void,renderLayers:legacy.renderLayers as ()=>void,renderTimeline:()=>{(legacy.renderTimeline as ()=>void)()},selectLayer:legacy.selectLayer as (id:number)=>void,setTime:legacy.setTime as (time:number)=>void,
     renderEffectStack:professionalEffects.renderEffectStack,bindHistoryGesture:legacy.bindHistoryGesture as (element:HTMLElement)=>void,pushHistory:legacy.pushHistory as ()=>void,markDirty:legacy.markDirty as ()=>void,toast:legacy.toast as (message:string)=>void
   });
   installProfessionalMediaController({

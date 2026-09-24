@@ -63,6 +63,9 @@ export interface Layer extends Record<string,unknown> {
   y:number;
   depth:number;
   scale:number;
+  scaleX:number;
+  scaleY:number;
+  scaleLinked:boolean;
   rotation:number;
   opacity:number;
   color:string;
@@ -147,14 +150,24 @@ export const EFFECT_DEFAULTS:Readonly<LayerEffects>=Object.freeze({brightness:10
 export const EFFECT_ORDER:readonly string[]=Object.freeze(['rgb','brightness','contrast','saturation','hue','blur','grayscale','sepia','invert','sharpen','motionBlur','glow']);
 
 export function defaults(duration=10):Layer {
-  return{type:'rect',content:'',name:'Camada',x:50,y:50,depth:0,scale:100,rotation:0,opacity:100,color:'#ffffff',filter:'none',start:0,end:duration,sourceIn:0,sourceOut:duration,mediaDuration:0,speed:1,volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false,fadeIn:0,fadeOut:0,visible:true,locked:false,anchorX:50,anchorY:50,cropX:0,cropY:0,flipX:false,flipY:false,blend:'normal',radius:0,stroke:0,strokeColor:'#000000',font:'Segoe UI',fontSize:42,mask:false,maskMode:'none',maskPoints:[],fillType:'solid',gradientColor:'#7758ff',gradientAngle:0,easing:'linear',keyframes:[],group:null,parentId:null,perspective:1200,transitionIn:'none',transitionOut:'none',transitionDuration:.5,reverse:false,effectOrder:[...EFFECT_ORDER],effects:{...EFFECT_DEFAULTS}};
+  return{type:'rect',content:'',name:'Camada',x:50,y:50,depth:0,scale:100,scaleX:100,scaleY:100,scaleLinked:true,rotation:0,opacity:100,color:'#ffffff',filter:'none',start:0,end:duration,sourceIn:0,sourceOut:duration,mediaDuration:0,speed:1,volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false,fadeIn:0,fadeOut:0,visible:true,locked:false,anchorX:50,anchorY:50,cropX:0,cropY:0,flipX:false,flipY:false,blend:'normal',radius:0,stroke:0,strokeColor:'#000000',font:'Segoe UI',fontSize:42,mask:false,maskMode:'none',maskPoints:[],fillType:'solid',gradientColor:'#7758ff',gradientAngle:0,easing:'linear',keyframes:[],group:null,parentId:null,perspective:1200,transitionIn:'none',transitionOut:'none',transitionDuration:.5,reverse:false,effectOrder:[...EFFECT_ORDER],effects:{...EFFECT_DEFAULTS}};
 }
 
 export function normalizeLayer(source:Partial<Layer>={},duration=10):Layer {
   const layer={...defaults(duration),...source} as Layer;
+  const legacyScale=Number.isFinite(source.scale)?Number(source.scale):100;
+  layer.scaleX=Number.isFinite(source.scaleX)?Number(source.scaleX):legacyScale;
+  layer.scaleY=Number.isFinite(source.scaleY)?Number(source.scaleY):legacyScale;
+  layer.scaleLinked=source.scaleLinked!==false;
   layer.effects={...EFFECT_DEFAULTS,...(source.effects||{})};
   layer.effectOrder=Array.isArray(source.effectOrder)?[...source.effectOrder]:[...EFFECT_ORDER];
   layer.keyframes=Array.isArray(source.keyframes)?structuredClone(source.keyframes.slice(0,10000)):[];
+  for(const frame of layer.keyframes){
+    if(Number.isFinite(frame.values?.scale)){
+      if(!Number.isFinite(frame.values.scaleX))frame.values.scaleX=frame.values.scale;
+      if(!Number.isFinite(frame.values.scaleY))frame.values.scaleY=frame.values.scale;
+    }
+  }
   layer.maskPoints=Array.isArray(source.maskPoints)?structuredClone(source.maskPoints.slice(0,1000)):[];
   layer.visible=source.visible!==false;
   layer.locked=Boolean(source.locked);
@@ -165,10 +178,17 @@ export function normalizeLayer(source:Partial<Layer>={},duration=10):Layer {
 }
 
 export function applyLayerDefaults(layer:Partial<Layer>,duration=10):Layer {
-  const base=defaults(duration),target=layer as Layer;
+  const base=defaults(duration),target=layer as Layer,legacyScale=Number.isFinite(layer.scale)?Number(layer.scale):100;
+  if(target.scaleX===undefined)target.scaleX=legacyScale;if(target.scaleY===undefined)target.scaleY=legacyScale;if(target.scaleLinked===undefined)target.scaleLinked=true;
   for(const key of Object.keys(base))if(target[key]===undefined)target[key]=structuredClone(base[key]);
   if(!Array.isArray(target.effectOrder))target.effectOrder=[...EFFECT_ORDER];
   if(!Array.isArray(target.keyframes))target.keyframes=[];
+  for(const frame of target.keyframes){
+    if(Number.isFinite(frame.values?.scale)){
+      if(!Number.isFinite(frame.values.scaleX))frame.values.scaleX=frame.values.scale;
+      if(!Number.isFinite(frame.values.scaleY))frame.values.scaleY=frame.values.scale;
+    }
+  }
   if(!Array.isArray(target.maskPoints))target.maskPoints=[];
   if(!target.effects||typeof target.effects!=='object')target.effects={...EFFECT_DEFAULTS};
   else for(const [key,value] of Object.entries(EFFECT_DEFAULTS))if(target.effects[key]===undefined)target.effects[key]=value;

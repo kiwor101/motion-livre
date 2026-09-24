@@ -15,6 +15,7 @@ const {spawn}=require('node:child_process');
 const {pathToFileURL}=require('node:url');
 const {createFrameExport}=require('./frame-export.cjs');
 const {selectVideoEncoder}=require('./video-encoder.cjs');
+const {preferredFrameRate}=require('../.build/core/frame-rate.js');
 const ProxyCache=require('./proxy-cache.cjs');
 // Keep development caches inside the workspace so a restricted Windows profile
 // cannot prevent Chromium from creating its cache directories.
@@ -56,7 +57,7 @@ async function probeMediaFile(filePath){
   return await new Promise((resolve,reject)=>{
     const process=spawn(bundledTool('ffprobe'),['-v','error','-show_streams','-show_format','-of','json',filePath],{windowsHide:true});let stdout='',stderr='';
     process.stdout.on('data',chunk=>{stdout+=chunk;if(stdout.length>4*1024*1024)process.kill()});process.stderr.on('data',chunk=>stderr+=chunk);
-    process.on('error',reject);process.on('close',code=>{if(code!==0)return reject(new Error(stderr.trim()||`FFprobe finalizou com código ${code}`));try{const data=JSON.parse(stdout),video=(data.streams||[]).find(stream=>stream.codec_type==='video'),audio=(data.streams||[]).find(stream=>stream.codec_type==='audio'),rotation=Number(video?.tags?.rotate??video?.side_data_list?.find(item=>Number.isFinite(Number(item.rotation)))?.rotation??0),rate=String(video?.avg_frame_rate||video?.r_frame_rate||'0/1').split('/').map(Number),fps=rate[1]?rate[0]/rate[1]:0;resolve({duration:Number(data.format?.duration||video?.duration||0)||0,width:Number(video?.width||0)||0,height:Number(video?.height||0)||0,rotation:Number.isFinite(rotation)?rotation:0,fps:Number.isFinite(fps)?fps:0,hasAudio:Boolean(audio),audioCodec:audio?.codec_name||''})}catch(error){reject(new Error(`Metadados de mídia inválidos: ${error.message}`))}});
+    process.on('error',reject);process.on('close',code=>{if(code!==0)return reject(new Error(stderr.trim()||`FFprobe finalizou com código ${code}`));try{const data=JSON.parse(stdout),video=(data.streams||[]).find(stream=>stream.codec_type==='video'),audio=(data.streams||[]).find(stream=>stream.codec_type==='audio'),rotation=Number(video?.tags?.rotate??video?.side_data_list?.find(item=>Number.isFinite(Number(item.rotation)))?.rotation??0),fps=preferredFrameRate(video?.r_frame_rate,video?.avg_frame_rate);resolve({duration:Number(data.format?.duration||video?.duration||0)||0,width:Number(video?.width||0)||0,height:Number(video?.height||0)||0,rotation:Number.isFinite(rotation)?rotation:0,fps,hasAudio:Boolean(audio),audioCodec:audio?.codec_name||''})}catch(error){reject(new Error(`Metadados de mídia inválidos: ${error.message}`))}});
   });
 }
 
@@ -77,6 +78,7 @@ function buildMenu(){
       {label:'Novo projeto',accelerator:'CmdOrCtrl+N',click:()=>mainWindow.webContents.send('menu:new')},
       {label:'Abrir projeto…',accelerator:'CmdOrCtrl+O',click:()=>mainWindow.webContents.send('menu:open')},
       {label:'Salvar projeto',accelerator:'CmdOrCtrl+S',click:()=>mainWindow.webContents.send('menu:save')},
+      {label:'Salvar projeto como…',accelerator:'CmdOrCtrl+Shift+S',click:()=>mainWindow.webContents.send('menu:save-as')},
       {type:'separator'},{label:'Importar cena Alight XML…',click:()=>mainWindow.webContents.send('menu:alight-open')},
       {label:'Exportar cena Alight XML…',click:()=>mainWindow.webContents.send('menu:alight-save')},
       {type:'separator'},{label:'Sair',role:'quit'}
@@ -87,8 +89,12 @@ function buildMenu(){
   ]));
 }
 
-secureHandle('project:save',async(_event,{data,suggestedName})=>{
+secureHandle('project:save',async(_event,{data,suggestedName,filePath})=>{
   ensureText(data,MAX_PROJECT_BYTES,'Projeto');
+  if(filePath){
+    if(typeof filePath!=='string'||!path.isAbsolute(filePath)||!/\.(motion\.json|json)$/i.test(filePath))throw new Error('Caminho do projeto inválido');
+    await fs.writeFile(filePath,data,'utf8');return filePath;
+  }
   const result=await dialog.showSaveDialog(mainWindow,{title:'Salvar projeto',defaultPath:`${suggestedName||'projeto'}.motion.json`,filters:projectFilter});
   if(result.canceled||!result.filePath)return null;
   await fs.writeFile(result.filePath,data,'utf8');return result.filePath;

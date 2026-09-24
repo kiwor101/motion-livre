@@ -1,16 +1,24 @@
 <script setup lang="ts">
-import RangeField from '../base/RangeField.vue'
-import TextField from '../base/TextField.vue'
-
-const fields = [
-  ['Posição X', 'propX', 'outX', 0, 100], ['Posição Y', 'propY', 'outY', 0, 100],
-  ['Escala', 'propScale', 'outScale', 10, 200], ['Rotação', 'propRotation', 'outRotation', -180, 180],
-  ['Profundidade Z', 'propDepth', 'outDepth', -1000, 1000], ['Perspectiva da câmera', 'propPerspective', 'outPerspective', 300, 3000],
-  ['Opacidade', 'propOpacity', 'outOpacity', 0, 100], ['Âncora X', 'propAnchorX', 'outAnchorX', 0, 100], ['Âncora Y', 'propAnchorY', 'outAnchorY', 0, 100],
-] as const
+import AppIcon from '../base/AppIcon.vue'
 </script>
 
 <template>
-  <TextField label="Nome" input-id="propName" />
-  <RangeField v-for="field in fields" :key="field[1]" :label="field[0]" :input-id="field[1]" :output-id="field[2]" :min="field[3]" :max="field[4]" />
+  <label class="full">Nome<input id="propName" type="text"></label>
+  <div class="transform-grid">
+    <label><span class="property-label"><button type="button" class="keyframe-toggle" data-keyframe-property="scaleX" title="Adicionar keyframe de largura" aria-label="Adicionar keyframe de largura" aria-pressed="false"></button>Largura</span><div class="unit-input"><span>W</span><input id="propWidth" type="number" min="1" max="1000" step="1"><button id="resetWidth" type="button" class="reset-value" title="Restaurar largura" aria-label="Restaurar largura">↩</button></div><output id="outWidth"></output></label>
+    <label><span class="property-label"><button type="button" class="keyframe-toggle" data-keyframe-property="scaleY" title="Adicionar keyframe de altura" aria-label="Adicionar keyframe de altura" aria-pressed="false"></button>Altura</span><div class="unit-input"><span>H</span><input id="propHeight" type="number" min="1" max="1000" step="1"><button id="resetHeight" type="button" class="reset-value" title="Restaurar altura" aria-label="Restaurar altura">↩</button></div><output id="outHeight"></output></label>
+    <button id="scaleLink" type="button" class="scale-link" title="Vincular largura e altura" aria-label="Vincular largura e altura" aria-pressed="true"><AppIcon name="link" :size="16" /></button>
+    <label><span class="property-label"><button type="button" class="keyframe-toggle" data-keyframe-property="x" title="Adicionar keyframe de X" aria-label="Adicionar keyframe de X" aria-pressed="false"></button>X</span><div class="unit-input"><span>X</span><input id="propX" type="number" min="0" step="1"></div><output id="outX"></output></label>
+    <label><span class="property-label"><button type="button" class="keyframe-toggle" data-keyframe-property="y" title="Adicionar keyframe de Y" aria-label="Adicionar keyframe de Y" aria-pressed="false"></button>Y</span><div class="unit-input"><span>Y</span><input id="propY" type="number" min="0" step="1"></div><output id="outY"></output></label>
+    <label class="rotation-field"><span class="property-label"><button type="button" class="keyframe-toggle" data-keyframe-property="rotation" title="Adicionar keyframe de rotação" aria-label="Adicionar keyframe de rotação" aria-pressed="false"></button>Rotação</span><div class="unit-input"><span>°</span><input id="propRotation" type="number" min="-180" max="180" step="1"></div><output id="outRotation"></output></label>
+    <label><span class="property-label"><button type="button" class="keyframe-toggle" data-keyframe-property="depth" title="Adicionar keyframe de profundidade" aria-label="Adicionar keyframe de profundidade" aria-pressed="false"></button>Profundidade Z</span><div class="unit-input"><span>Z</span><input id="propDepth" type="number" min="-1000" max="1000" step="1"></div><output id="outDepth"></output></label>
+    <label>Perspectiva<div class="unit-input"><span>P</span><input id="propPerspective" type="number" min="300" max="3000" step="1"></div><output id="outPerspective"></output></label>
+    <label><span class="property-label"><button type="button" class="keyframe-toggle" data-keyframe-property="opacity" title="Adicionar keyframe de opacidade" aria-label="Adicionar keyframe de opacidade" aria-pressed="false"></button>Opacidade</span><div class="unit-input"><span>%</span><input id="propOpacity" type="number" min="0" max="100" step="1"></div><output id="outOpacity"></output></label>
+    <label>Âncora X<div class="unit-input"><span>X</span><input id="propAnchorX" type="number" min="0" max="100" step="1"></div><output id="outAnchorX"></output></label>
+    <label>Âncora Y<div class="unit-input"><span>Y</span><input id="propAnchorY" type="number" min="0" max="100" step="1"></div><output id="outAnchorY"></output></label>
+  </div>
 </template>
+
+<style scoped>
+.full{display:block}.transform-grid{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px}.transform-grid label{min-width:0}.property-label{display:flex;align-items:center;justify-content:flex-start;gap:5px}.keyframe-toggle{flex:0 0 14px;width:14px;height:14px;padding:0;border:0;background:transparent;color:var(--muted-foreground);font-size:12px;line-height:1;cursor:pointer}.keyframe-toggle::before{content:'◇'}.keyframe-toggle:hover{color:var(--panel-foreground)}.keyframe-toggle[aria-pressed='true']{color:var(--primary);text-shadow:0 0 7px color-mix(in srgb,var(--primary) 70%,transparent)}.keyframe-toggle[aria-pressed='true']::before{content:'◆'}.unit-input{height:28px;margin-top:6px;display:flex;align-items:center;border:1px solid var(--panel-border);border-radius:5px;background:var(--panel-accent);overflow:hidden;box-shadow:0 1px 2px #0003}.unit-input:focus-within{border-color:var(--primary)}.unit-input span{padding-left:9px;color:var(--muted-foreground);font-size:11px}.unit-input input{width:100%;min-width:0;height:26px;padding:0 8px;border:0!important;background:transparent!important;color:var(--panel-foreground);outline:0}.reset-value{width:25px;height:26px;padding:0;border:0;background:transparent;color:var(--muted-foreground);font-size:13px}.scale-link{position:absolute;top:35px;left:50%;z-index:2;width:26px;height:26px;padding:0;display:grid;place-items:center;border:0;border-radius:5px;background:var(--panel-background);color:var(--muted-foreground);transform:translateX(-50%)}.scale-link[aria-pressed='true']{background:var(--secondary);color:var(--secondary-foreground)}.rotation-field{grid-column:1 / -1}.full input{width:100%;height:28px;margin-top:6px;padding:0 9px;border:1px solid var(--panel-border);border-radius:5px;background:var(--panel-accent);color:var(--panel-foreground);box-shadow:0 1px 2px #0003}.full input:focus{border-color:var(--primary);outline:0}output{display:none}
+</style>

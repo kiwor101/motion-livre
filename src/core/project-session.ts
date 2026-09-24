@@ -1,5 +1,6 @@
 import {create,type EditorState,type MediaLibraryEntry} from './editor-state';
 import {normalizeLayer,type Layer,type LayerId} from './project-model';
+import {canonicalFrameRate,projectFrameRate} from './frame-rate';
 
 type DataRecord=Record<string,unknown>;
 
@@ -46,7 +47,7 @@ export function decode(data:unknown):ProjectDocument {
     const id=raw.id;
     if(typeof id!=='number'||!Number.isSafeInteger(id)||id<1||ids.has(id))throw new Error('ID de camada inválido ou duplicado');
     ids.add(id);
-    return normalizeLayer(portable(raw) as Partial<Layer>,duration);
+    const layer=normalizeLayer(portable(raw) as Partial<Layer>,duration);if(layer.mediaFps)layer.mediaFps=canonicalFrameRate(layer.mediaFps);return layer;
   });
   for(const layer of layers)if(layer.parentId!==null&&!ids.has(layer.parentId))layer.parentId=null;
   const library=new Map<string,DataRecord>();
@@ -57,7 +58,7 @@ export function decode(data:unknown):ProjectDocument {
     if(key&&!library.has(key))library.set(key,portable(entry));
   }
   const rawComposition=isRecord(data.composition)?data.composition:{};
-  const composition={width:Math.round(finite(rawComposition.width,1920,16,8192)),height:Math.round(finite(rawComposition.height,1080,16,8192)),fps:finite(rawComposition.fps,30,1,120),background:typeof rawComposition.background==='string'&&/^#[0-9a-f]{6}$/i.test(rawComposition.background)?rawComposition.background:'#08090b'};
+  const composition={width:Math.round(finite(rawComposition.width,1920,16,8192)),height:Math.round(finite(rawComposition.height,1080,16,8192)),fps:projectFrameRate(finite(rawComposition.fps,30,1,120)),background:typeof rawComposition.background==='string'&&/^#[0-9a-f]{6}$/i.test(rawComposition.background)?rawComposition.background:'#08090b'};
   const rawBeatSync=isRecord(data.beatSync)?data.beatSync:{};
   const beatSync={bpm:finite(rawBeatSync.bpm,120,30,300),offset:finite(rawBeatSync.offset,0,0,duration)};
   const rawRange=isRecord(data.renderRange)?data.renderRange:{};

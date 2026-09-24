@@ -1,5 +1,5 @@
 import {easeValue,TRANSFORM_PROPERTIES,type TransformProperty} from '../../core/animation';
-import {setKeyframe,setProperties} from '../../core/project-commands';
+import {setAnimatedProperties,setKeyframe,setLayerEasing,setProperties} from '../../core/project-commands';
 import {applyLayerDefaults,type Layer} from '../../core/project-model';
 import type {EditorState} from '../../core/editor-state';
 import {uiState} from '../ui-state';
@@ -14,6 +14,7 @@ interface ProfessionalPropertiesContext {
   updateSelected():void;
   renderLayers():void;
   renderTimeline():void;
+  setTime(time:number):void;
   selectLayer(id:number):void;
   renderEffectStack():void;
   bindHistoryGesture(element:HTMLElement):void;
@@ -28,7 +29,7 @@ const byId=<T extends HTMLElement>(id:string):T=>{
   return element as T;
 };
 
-const setValue=(id:string,value:string|number):void=>{byId<HTMLInputElement|HTMLOutputElement>(id).value=String(value)};
+const setValue=(id:string,value:string|number):void=>{const element=byId<HTMLInputElement|HTMLOutputElement>(id);element.value=String(value);if(element instanceof HTMLInputElement&&element.type==='range'){const min=Number(element.min),max=Number(element.max),progress=max===min?0:(Number(element.value)-min)/(max-min)*100;element.style.setProperty('--range-progress',`${Math.max(0,Math.min(100,progress))}%`)}};
 
 function drawEasing(layer:Layer|null):void {
   const canvas=byId<HTMLCanvasElement>('easingGraph'),drawing=canvas.getContext('2d');
@@ -44,14 +45,24 @@ function drawEasing(layer:Layer|null):void {
 }
 
 function renderMotionPath(layer:Layer|null):void {
-  document.querySelector('.motion-path')?.remove();
-  if(!layer||!uiState.showMotionPath)return;
+  const show=(points:Array<[number,number]>|null)=>window.dispatchEvent(new CustomEvent('motion:stage-motion-path',{detail:points}));
+  if(!layer||!uiState.showMotionPath){show(null);return}
   const points=layer.keyframes.filter(frame=>Number.isFinite(frame.values.x)&&Number.isFinite(frame.values.y)).slice().sort((left,right)=>left.time-right.time);
-  if(points.length<2)return;
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('motion-path');svg.setAttribute('viewBox','0 0 100 100');
-  const polyline=document.createElementNS(svg.namespaceURI,'polyline');polyline.setAttribute('points',points.map(frame=>`${frame.values.x},${frame.values.y}`).join(' '));svg.append(polyline);
-  for(const frame of points){const dot=document.createElementNS(svg.namespaceURI,'circle');dot.setAttribute('cx',String(frame.values.x));dot.setAttribute('cy',String(frame.values.y));dot.setAttribute('r','1.4');svg.append(dot)}
-  byId('stage').append(svg);
+  show(points.length<2?null:points.map(frame=>[frame.values.x,frame.values.y]));
+}
+
+function renderKeyframeList(layer:Layer|null):void {
+  const grouped=new Map<number,Set<string>>();
+  for(const frame of layer?.keyframes||[]){const time=Math.round(frame.time*1000)/1000,properties=grouped.get(time)||new Set<string>();Object.keys(frame.values).forEach(key=>properties.add(key));grouped.set(time,properties)}
+  window.dispatchEvent(new CustomEvent('motion:keyframes',{detail:[...grouped].sort(([left],[right])=>left-right).map(([time,properties])=>({time,properties:[...properties].join(', ')}))}));
+}
+
+function syncInlineKeyframes(layer:Layer|null,time:number):void {
+  document.querySelectorAll<HTMLButtonElement>('[data-keyframe-property]').forEach(button=>{
+    const property=button.dataset.keyframeProperty;
+    const active=Boolean(layer&&property&&layer.keyframes.some(frame=>Math.abs(frame.time-time)<.001&&Number.isFinite(frame.values[property])));
+    button.setAttribute('aria-pressed',String(active));
+  });
 }
 
 export function installProfessionalPropertiesController(context:ProfessionalPropertiesContext):void {
@@ -64,9 +75,9 @@ export function installProfessionalPropertiesController(context:ProfessionalProp
     byId<HTMLInputElement>('propReverse').checked=layer.reverse;setValue('propFillType',layer.fillType);setValue('propGradientColor',layer.gradientColor);setValue('propGradientAngle',layer.gradientAngle);setValue('outGradientAngle',`${layer.gradientAngle}°`);setValue('propMaskMode',layer.maskMode);
     setValue('fxGlowColor',typeof layer.glowColor==='string'?layer.glowColor:'#ffffff');setValue('fxChromaColor',typeof layer.chromaColor==='string'?layer.chromaColor:'#00ff00');
     for(const [id,key] of Object.entries(effectFields)){const value=layer.effects[key]??(key.endsWith('Gain')?100:0);setValue(`fx${id}`,value);setValue(`out${id}`,`${value}${key==='motionBlur'?'px':'%'}`)}
-    const parent=byId<HTMLSelectElement>('propParent'),current=String(layer.parentId||'');parent.replaceChildren(new Option('Nenhuma',''));
-    for(const candidate of context.state.layers)if(candidate.id!==layer.id)parent.append(new Option(candidate.name,String(candidate.id)));
-    parent.value=current;drawEasing(layer);context.renderEffectStack();renderMotionPath(layer);
+    const parentOptions=[{value:'',label:'Nenhuma'},...context.state.layers.filter(candidate=>candidate.id!==layer.id&&candidate.id!==undefined).map(candidate=>({value:String(candidate.id),label:candidate.name}))];
+    window.dispatchEvent(new CustomEvent('motion:parent-options',{detail:{options:parentOptions,value:String(layer.parentId||'')}}));
+    drawEasing(layer);context.renderEffectStack();renderMotionPath(layer);renderKeyframeList(layer);syncInlineKeyframes(layer,context.state.playback.time);
   };
   const originalSync=context.syncProps;context.replaceSyncProps(()=>{originalSync();syncProfessionalProperties()});
 
@@ -76,17 +87,23 @@ export function installProfessionalPropertiesController(context:ProfessionalProp
   for(const [id,key,mode] of properties){
     const input=byId<HTMLInputElement|HTMLSelectElement>(id);
     input.oninput=()=>{const layer=context.selected();if(!layer?.id)return;const value=mode==='checked'?(input as HTMLInputElement).checked:mode==='number'?Number(input.value):mode==='parent'?(Number(input.value)||null):input.value;
-      try{if(!setProperties(context.state,{id:layer.id,values:{[key]:value}}))return}catch(error){syncProfessionalProperties();context.toast(error instanceof Error?error.message:String(error));return}
-      context.updateSelected();syncProfessionalProperties();context.renderLayers();context.selectLayer(layer.id);context.markDirty();
+      try{if(!(key==='depth'?setAnimatedProperties(context.state,{id:layer.id,time:context.state.playback.time,values:{[key]:value}}):key==='easing'?setLayerEasing(context.state,{id:layer.id,easing:String(value)}):setProperties(context.state,{id:layer.id,values:{[key]:value}})))return}catch(error){syncProfessionalProperties();context.toast(error instanceof Error?error.message:String(error));return}
+      context.updateSelected();syncProfessionalProperties();context.renderLayers();context.renderTimeline();context.selectLayer(layer.id);context.markDirty();
     };
     context.bindHistoryGesture(input);
   }
 
-  byId<HTMLButtonElement>('addKeyframe').onclick=()=>{const layer=context.selected();if(!layer?.id)return;const property=byId<HTMLSelectElement>('keyframeProperty').value,keys:TransformProperty[]=property==='all'?[...TRANSFORM_PROPERTIES]:[property as TransformProperty],values:Record<string,number>={};
+  const addKeyframe=(requestedProperty?:TransformProperty)=>{let layer=context.selected();if(!layer?.id)return;const time=context.state.playback.time;
+    if(time<layer.start-.0001||time>layer.end+.0001){const sameTrack=context.state.layers.filter(candidate=>candidate.id!==undefined&&candidate.trackId===layer!.trackId&&time>=candidate.start-.0001&&time<=candidate.end+.0001).sort((left,right)=>Math.abs(left.start-time)-Math.abs(right.start-time))[0];if(sameTrack?.id===undefined)return context.toast('Posicione o cursor dentro de um clipe da track selecionada');layer=sameTrack;context.selectLayer(sameTrack.id);context.syncProps()}
+    const layerId=layer.id;if(layerId===undefined)return;
+    const property=requestedProperty||(byId<HTMLSelectElement>('keyframeProperty').value||'all'),keys:TransformProperty[]=property==='all'?[...TRANSFORM_PROPERTIES]:[property as TransformProperty],values:Record<string,number>={};
     for(const key of keys)values[key]=layer[key];
-    if(!setKeyframe(context.state,{id:layer.id,time:context.state.playback.time,values,easing:layer.easing}))return;
-    context.renderTimeline();renderMotionPath(layer);context.pushHistory();context.markDirty();context.toast(`Keyframe de ${property==='all'?'transformação':property} criado`);
+    if(!setKeyframe(context.state,{id:layerId,time,values,easing:layer.easing}))return;
+    context.renderTimeline();renderMotionPath(layer);renderKeyframeList(layer);syncInlineKeyframes(layer,time);context.pushHistory();context.markDirty();context.toast(`Keyframe de ${property==='all'?'transformação':property} criado`);
   };
+  byId<HTMLButtonElement>('addKeyframe').onclick=()=>addKeyframe();
+  document.querySelectorAll<HTMLButtonElement>('[data-keyframe-property]').forEach(button=>button.onclick=event=>{event.preventDefault();event.stopPropagation();addKeyframe(button.dataset.keyframeProperty as TransformProperty)});
   byId<HTMLButtonElement>('showMotionPath').onclick=()=>{uiState.showMotionPath=!uiState.showMotionPath;renderMotionPath(context.selected());byId('showMotionPath').textContent=uiState.showMotionPath?'Ocultar caminho de movimento':'Exibir caminho de movimento'};
+  window.addEventListener('motion:keyframe-seek',event=>context.setTime((event as CustomEvent<number>).detail));
   syncProfessionalProperties();
 }

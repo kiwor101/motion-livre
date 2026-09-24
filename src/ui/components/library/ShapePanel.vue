@@ -5,7 +5,12 @@ import BaseButton from '../base/BaseButton.vue'
 <template>
   <div id="panel-shape" class="panel">
     <h2>Formas</h2><p>Elementos vetoriais básicos.</p>
-    <div class="shape-grid"><button data-shape="rect">▰ Retângulo</button><button data-shape="circle">● Círculo</button></div>
+    <div class="shape-grid"><button type="button" data-shape="rect">▰ Retângulo</button><button type="button" data-shape="circle">● Círculo</button></div>
     <BaseButton id="startBezierPath" class="wide">Caneta Bézier</BaseButton>
   </div>
 </template>
+
+<style scoped>
+.shape-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.shape-grid button { display:block; width:100%; min-height:32px; padding:6px 9px; border-radius:5px; border:1px solid var(--panel-border); background:var(--panel-accent); color:var(--panel-foreground); font-size:11px; text-align:center; cursor:pointer; }
+</style>

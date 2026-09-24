@@ -45,7 +45,7 @@ export function installExportSettingsController(context:ExportSettingsContext):v
       pendingFormat=format;
       byId('exportMenu').hidden=true;
       input('exportFormatLabel').value=formatNames[pendingFormat];
-      const fps=byId<HTMLSelectElement>('exportFps'),fpsValue=String(Number(state.composition.fps.toFixed(3)));if(![...fps.options].some(option=>option.value===fpsValue))fps.add(new Option(fpsValue,fpsValue));fps.value=fpsValue;
+      const fps=byId<HTMLSelectElement>('exportFps'),hasAnimatedTransform=state.layers.some(layer=>layer.keyframes.length>1),recommendedFps=hasAnimatedTransform&&state.composition.fps<50?60:state.composition.fps,fpsValue=String(Number(recommendedFps.toFixed(3)));if(![...fps.options].some(option=>option.value===fpsValue))fps.add(new Option(fpsValue,fpsValue));fps.value=fpsValue;
       input('exportStart').value=String(state.renderRange.start||0);
       input('exportEnd').value=String(state.renderRange.end??state.duration);
       applyPreset(input('exportPreset').value);

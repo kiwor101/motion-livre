@@ -16,6 +16,11 @@ defineProps<{
 input {
   display: block;
   width: 100%;
-  margin-top: 5px;
+  height: 28px;
+  margin-top: 6px;
+  padding: 3px;
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  background: var(--panel-accent);
 }
 </style>

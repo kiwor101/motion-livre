@@ -279,6 +279,8 @@ Sequência restante:
 
 ### Progresso da substituição por TypeScript
 
+A manutenção estrutural posterior à migração segue o [plano de refatoração TypeScript](PLANO_REFATORACAO_TYPESCRIPT.md), com foco em responsabilidades menores, baixo acoplamento, legibilidade e remoção de remendos sem alterar os contratos descritos nesta arquitetura.
+
 - [x] Histórico: interfaces explícitas, transações, validação de limite, reset inválido sem perda de dados e disponibilidade correta de undo/redo durante uma edição.
 - [x] Mapeamento de tempo: contratos de clipe/intervalo compartilhados por preview e seleção do áudio exportado.
 - [x] Comandos de clipe: mover, dividir e recortar em TS, usados também pelo arraste da timeline; implementações antigas removidas.

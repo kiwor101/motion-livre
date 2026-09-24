@@ -1,18 +1,49 @@
 <script setup lang="ts">
 import {computed} from 'vue'
-import AppIcon from '../base/AppIcon.vue'
+import TimelineMarkers from './TimelineMarkers.vue'
+import TimelineRenderRange from './TimelineRenderRange.vue'
 
 const props = defineProps<{
   duration: number
   headerWidth: number
   pixelsPerSecond: number
+  fps: number
+  manualMarkers: number[]
+  beatMarkers: number[]
+  rangeStart: number
+  rangeEnd: number
+  timeLabel: (time: number) => string
 }>()
 
-const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) => ({
-  time,
-  major: time % 5 === 0,
-  label: time === 0 ? '0s' : time % 60 === 0 ? `${time / 60}m` : String(time % 60).padStart(2, '0'),
-})))
+defineEmits<{
+  dragMarker: [event: PointerEvent, kind: 'manual' | 'beat', index: number]
+  menuMarker: [event: MouseEvent, kind: 'manual' | 'beat', index: number]
+  dragRange: [event: PointerEvent, kind: 'start' | 'end']
+}>()
+
+const frameIntervals = [1, 2, 3, 5, 10, 15]
+const labelFrameIntervals = [2, 3, 5, 10, 15]
+const secondIntervals = [1, 2, 3, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600]
+function optimal(minimum: number, frames: number[]) {
+  const pixelsPerFrame = props.pixelsPerSecond / Math.max(1, props.fps)
+  return frames.find(value => value * pixelsPerFrame >= minimum)! / props.fps || secondIntervals.find(value => value * props.pixelsPerSecond >= minimum) || 60
+}
+const labelEvery = computed(() => optimal(120, labelFrameIntervals))
+const tickEvery = computed(() => {
+  const raw = optimal(18, frameIntervals)
+  const labelFrames = Math.round(labelEvery.value * props.fps)
+  const candidates = frameIntervals.filter(value => labelFrames % value === 0 && value / props.fps * props.pixelsPerSecond >= 18)
+  if (candidates.length) return candidates[0] / props.fps
+  return Math.abs(labelEvery.value / raw - Math.round(labelEvery.value / raw)) < .0001 ? raw : labelEvery.value
+})
+const ticks = computed(() => Array.from({length: Math.floor(props.duration / tickEvery.value) + 1}, (_, index) => {
+  const time = index * tickEvery.value
+  const major = Math.abs(time / labelEvery.value - Math.round(time / labelEvery.value)) < .001
+  const minutes = Math.floor(time / 60)
+  const seconds = Math.floor(time % 60)
+  const frame = Math.round((time % 1) * props.fps)
+  return {time, major, label: frame ? `${frame}f` : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`}
+}))
 </script>
 
 <template>
@@ -23,10 +54,24 @@ const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) 
     :data-second="tick.time"
     :style="{left: `${headerWidth + tick.time * pixelsPerSecond}px`}"
   >{{ tick.major ? tick.label : '' }}</span>
-  <div class="ruler-corner" @pointerdown.stop>
-    <AppIcon name="layers" class="ruler-icon" :size="15" />
-    <span>Camadas</span>
-  </div>
+  <div class="ruler-corner" aria-hidden="true" @pointerdown.stop></div>
+  <TimelineMarkers
+    :manual="manualMarkers"
+    :beats="beatMarkers"
+    :header-width="headerWidth"
+    :pixels-per-second="pixelsPerSecond"
+    :time-label="timeLabel"
+    @drag="(...args) => $emit('dragMarker', ...args)"
+    @menu="(...args) => $emit('menuMarker', ...args)"
+  />
+  <TimelineRenderRange
+    :start="rangeStart"
+    :end="rangeEnd"
+    :header-width="headerWidth"
+    :pixels-per-second="pixelsPerSecond"
+    :time-label="timeLabel"
+    @drag="(...args) => $emit('dragRange', ...args)"
+  />
 </template>
 
 <style scoped>
@@ -34,10 +79,9 @@ const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) 
   position: sticky;
   top: 0;
   z-index: 15;
-  height: 40px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: 0 1px 0 var(--bg);
+  height: 22px;
+  border-bottom: 1px solid var(--panel-border);
+  background: #181818;
   cursor: ew-resize;
 }
 
@@ -49,38 +93,24 @@ const ticks = computed(() => Array.from({length: props.duration + 1}, (_, time) 
   display: flex;
   align-items: center;
   width: var(--timeline-header-width);
-  height: 40px;
-  padding: 0 16px;
-  gap: 9px;
-  border-right: 1px solid var(--line);
-  background: var(--panel);
+  height: 22px;
+  padding: 0;
+  border-right: 1px solid var(--panel-border);
+  background: #181818;
   color: var(--muted);
   font-size: 12px;
   pointer-events: auto;
   will-change: transform;
 }
 
-.ruler-icon {
-  flex: 0 0 15px;
-}
-
-.ruler-corner span {
-  position: static;
-  height: auto;
-  padding: 0;
-  border: 0;
-  color: inherit;
-  font-size: inherit;
-}
-
 span[data-second] {
   position: absolute;
-  top: 32px;
-  height: 5px;
+  top: 6px;
+  height: 6px;
   padding: 0;
-  border-left: 1px solid #4a4a4d;
-  color: #747478;
-  font-size: 9px;
+  border-left: 1px solid color-mix(in srgb,var(--muted-foreground) 25%,transparent);
+  color: color-mix(in srgb,var(--muted-foreground) 85%,transparent);
+  font-size: 10px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -88,22 +118,12 @@ span[data-second] {
 
 .major-tick {
   top: 0;
-  width: 30px;
-  height: 40px;
-  padding: 6px 0 0;
+  width: max-content;
+  height: 22px;
+  padding: 4px 0 0 0;
   border-left: 0;
-  color: #77777b;
-  text-align: center;
-  transform: translateX(-50%);
+  color: color-mix(in srgb,var(--muted-foreground) 85%,transparent);
 }
 
-.major-tick::after {
-  content: '';
-  position: absolute;
-  bottom: 3px;
-  left: 50%;
-  width: 1px;
-  height: 8px;
-  background: #5b5b5e;
-}
+.major-tick::after { display:none; }
 </style>

@@ -1,0 +1,92 @@
+/* OpenCut Classic design tokens and editor shell, reused under the MIT license.
+   Component styling lives in the corresponding Vue single-file component.
+   Copyright 2025-2026 OpenCut. See THIRD_PARTY_NOTICES.md. */
+@font-face {
+  font-family: 'Motion Inter';
+  src: url('assets/fonts/Inter-Variable-Latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --background: hsl(0 0% 5%);
+  --foreground: hsl(0 0% 87%);
+  --card: hsl(0 0% 5%);
+  --card-foreground: hsl(0 0% 87%);
+  --popover: hsl(0 0% 5%);
+  --popover-hover: hsl(0 0% 13%);
+  --popover-foreground: hsl(0 0% 95%);
+  --primary: hsl(200 90% 52%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(204 100% 12%);
+  --secondary-border: hsl(204 100% 15%);
+  --secondary-foreground: hsl(200 98% 61%);
+  --muted-surface: hsl(0 0% 20%);
+  --muted-foreground: hsl(0 0% 50%);
+  --accent-bg: hsl(0 0% 14%);
+  --accent-foreground: hsl(0 0% 95%);
+  --destructive: hsl(0 83% 50%);
+  --border: hsl(0 0% 16%);
+  --input: hsl(0 0% 5%);
+  --ring: hsl(0 0% 50%);
+  --panel-background: hsl(0 0% 10%);
+  --panel-foreground: hsl(0 0% 85%);
+  --panel-muted: hsl(0 0% 22%);
+  --panel-accent: hsl(0 0% 15%);
+  --panel-border: hsl(0 0% 18%);
+  --panel-input: hsl(0 0% 22%);
+  --panel-ring: hsl(0 0% 52%);
+  --bg: var(--background);
+  --panel: var(--panel-background);
+  --panel2: var(--panel-input);
+  --hover: var(--panel-accent);
+  --line: var(--panel-border);
+  --text: var(--panel-foreground);
+  --muted: var(--muted-foreground);
+  --accent: var(--primary);
+  --accent2: var(--secondary-foreground);
+  --danger: var(--destructive);
+  --radius: 6px;
+  color-scheme: dark;
+  font-family: 'Motion Inter', 'Segoe UI', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; border-color: var(--border); }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  margin: 0;
+  display: grid;
+  grid-template-rows: 54px minmax(240px, 1fr) minmax(260px, 46%);
+  background: var(--background);
+  color: var(--foreground);
+  font: 400 13px/1.45 'Motion Inter', 'Segoe UI', sans-serif;
+  overscroll-behavior-x: contain;
+}
+button, input, select, textarea { font: inherit; }
+button { transition: background-color .12s, border-color .12s, color .12s; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+::selection { background: color-mix(in srgb, var(--primary) 35%, transparent); color: var(--primary-foreground); }
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border-radius: 4px; background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+.workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(230px, 23%) minmax(420px, 1fr) minmax(230px, 23%);
+  grid-template-areas: 'tools-panel preview inspector-panel';
+  gap: 3px;
+  padding: 0 12px;
+  background: var(--background);
+}
+#vueLibrary, #vueStage, #vueInspector { min-width: 0; min-height: 0; }
+#vueLibrary { grid-area: tools-panel; }
+#vueStage { grid-area: preview; }
+#vueInspector { grid-area: inspector-panel; }
+#vueTimeline { min-height: 0; padding: 3px 12px 12px; background: var(--background); }
+
+@media (max-width: 1100px) {
+  .workspace { grid-template-columns: minmax(230px, 25%) minmax(330px, 1fr) minmax(230px, 25%); }
+}

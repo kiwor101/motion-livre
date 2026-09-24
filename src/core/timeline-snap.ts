@@ -10,21 +10,25 @@ interface SnapOptions {
   markersOnly?: boolean
 }
 
-interface SnapCandidate { time: number; radius: number }
+export type TimelineSnapType='element-start'|'element-end'|'playhead'|'marker'|'beat'|'keyframe'
+interface SnapCandidate { time: number; type: TimelineSnapType }
 
 export function snapTimelineTime(options: SnapOptions): number {
   const { state, time, pixelsPerSecond } = options
-  const markerRadius = 18 / Math.max(.001, pixelsPerSecond)
-  const edgeRadius = 10 / Math.max(.001, pixelsPerSecond)
+  // OpenCut uses a screen-space threshold: magnetism feels identical at every zoom.
+  // Clips keep the broader 10 px magnet. The playhead uses 6 px so users can
+  // still choose a free time between nearby manual/beat markers.
+  const radius = (options.markersOnly ? 6 : 10) / Math.max(.001, pixelsPerSecond)
   const candidates: SnapCandidate[] = [
-    ...state.markers.map(value => ({ time: value, radius: markerRadius })),
-    ...state.beatMarkers.map(value => ({ time: value, radius: markerRadius })),
+    ...state.markers.map(value => ({ time: value, type:'marker' as const })),
+    ...state.beatMarkers.map(value => ({ time: value, type:'beat' as const })),
   ]
   if (!options.markersOnly) {
-    candidates.push({ time: 0, radius: edgeRadius }, { time: state.playback.time, radius: edgeRadius }, { time: state.duration, radius: edgeRadius })
+    candidates.unshift({ time: 0, type:'element-start' }, { time: state.duration, type:'element-end' }, { time: state.playback.time, type:'playhead' })
     for (const layer of state.layers) {
       if (layer.id !== undefined && options.exclude?.has(layer.id)) continue
-      candidates.push(...([layer.start, layer.end] as const).map(value => ({ time: value, radius: edgeRadius })))
+      candidates.push({time:layer.start,type:'element-start'},{time:layer.end,type:'element-end'})
+      for(const keyframe of layer.keyframes)candidates.push({time:keyframe.time,type:'keyframe'})
     }
   }
   let result = time
@@ -32,7 +36,7 @@ export function snapTimelineTime(options: SnapOptions): number {
   for (const candidate of candidates) {
     for (const offset of options.offsets ?? [0]) {
       const distance = Math.abs(time + offset - candidate.time)
-      if (distance <= candidate.radius && distance < bestDistance) {
+      if (distance <= radius && distance < bestDistance) {
         bestDistance = distance
         result = candidate.time - offset
       }

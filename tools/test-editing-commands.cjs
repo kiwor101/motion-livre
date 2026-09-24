@@ -16,6 +16,18 @@ app.whenReady().then(async()=>{
       layer.keyframes=[{time:0,values:{x:10,y:20},easing:'linear'}];layer.x=35;selectLayer(layer.id);
       document.querySelector('#keyframeProperty').value='x';document.querySelector('#addKeyframe').click();
       check(layer.keyframes.some(key=>key.values.y===20),'Keyframe lost Y');
+      for(const time of [1,2,3]){motionEditor.setTime(time);document.querySelector('#addKeyframe').click();await Promise.resolve()}
+      await Promise.resolve();
+      check(layer.keyframes.filter(key=>key.values.x!==undefined).length===4,'Manual keyframes were not stored at four times');
+      document.querySelector('#propEasing').value='ease-in-out';document.querySelector('#propEasing').dispatchEvent(new Event('input',{bubbles:true}));check(layer.keyframes.every(key=>key.easing==='ease-in-out'),'Changing the graph did not update existing keyframes');
+      check(document.querySelectorAll('[data-clip="'+layer.id+'"] .key-dot').length===4,'Timeline did not render the four manual keyframes');
+      for(const type of ['video','image','audio','text']){
+        const tracked=addLayer(type,'','Track '+type);
+        for(const time of [.5,1.5,2.5,3.5]){motionEditor.setTime(time);document.querySelector('#addKeyframe').click();await Promise.resolve()}
+        check(tracked.keyframes.length===4,'Button did not store four keyframes for '+type);
+        check(document.querySelectorAll('[data-clip="'+tracked.id+'"] .key-dot').length===4,'Timeline did not render keyframes for '+type);
+      }
+      const sequenceA=addLayer('video','','Sequência A'),sequenceB=addLayer('video','','Sequência B');Object.assign(sequenceA,{trackId:'sequence',start:0,end:1});Object.assign(sequenceB,{trackId:'sequence',start:1,end:2});selectLayer(sequenceA.id);motionEditor.setTime(1.5);document.querySelector('#addKeyframe').click();await Promise.resolve();check(state.selection.selected===sequenceB.id&&sequenceB.keyframes.some(key=>key.time===1.5),'Manual keyframe did not follow the selected track to the clip under the playhead');
       const beforeX=layer.x,beforeY=layer.y;motionEditor.pushHistory();
       const bounds=document.querySelector('#stage').getBoundingClientRect();
       beginDrag({button:0},layer);

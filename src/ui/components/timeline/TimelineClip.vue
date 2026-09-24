@@ -13,6 +13,7 @@ defineProps<{
 defineEmits<{
   edit: [event: PointerEvent]
   menu: [event: MouseEvent]
+  keyframe: [event: PointerEvent, index: number]
 }>()
 </script>
 
@@ -34,21 +35,22 @@ defineEmits<{
     </span>
     <i class="clip-handle left"></i>
     <i class="clip-handle right"></i>
-    <i v-for="position in keyframes" :key="position" class="key-dot" :style="{left: `${position}%`}"></i>
+    <i v-for="(position, index) in keyframes" :key="`${index}-${position}`" class="key-dot" :style="{left: `${position}%`}" title="Arraste para mover o keyframe" @pointerdown.stop="$emit('keyframe', $event, index)"></i>
   </div>
 </template>
 
 <style scoped>
 .clip {
   position: absolute;
-  top: 3px;
+  top: 0;
   height: var(--clip-height);
   margin: 0;
-  padding: 0 6px;
+  padding: 0;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 5px;
-  box-shadow: inset 0 0 0 1px #ffffff16;
+  background-clip: padding-box;
+  box-shadow: none;
   cursor: grab;
   touch-action: none;
 }
@@ -58,32 +60,28 @@ defineEmits<{
 }
 
 .clip[data-kind='video'] {
-  border-color: #28538f;
-  background: #477fd1;
-  color: #102f58;
+  background: var(--muted-surface);
+  color: #fff;
 }
 
 .clip[data-kind='image'] {
-  border-color: #8e4033;
-  background: #df745d;
-  color: #63281e;
+  background: var(--muted-surface);
+  color: #fff;
 }
 
 .clip[data-kind='audio'] {
-  border-color: #37423e;
-  background: #18201e;
+  background: #8f5dba;
+  color: #fff;
 }
 
 .clip[data-kind='text'] {
-  border-color: #4e168f;
-  background: #7927db;
-  color: #d9bdf9;
+  background: #5dbaa0;
+  color: #0b241d;
 }
 
 .clip:is([data-kind='rect'], [data-kind='circle'], [data-kind='drawing'], [data-kind='path']) {
-  border-color: #268b91;
-  background: #5ad9dc;
-  color: #17535a;
+  background: #ba5d7a;
+  color: #fff;
 }
 
 .clip:is([data-kind='null'], [data-kind='camera']) {
@@ -92,14 +90,9 @@ defineEmits<{
   color: #702c21;
 }
 
-.clip:not([data-kind='video'], [data-kind='image']) {
-  background-image: repeating-linear-gradient(90deg, #ffffff21 0 1px, transparent 1px 72px);
-  background-position-x: var(--timeline-grid-offset, 0px);
-}
-
 .selected-clip {
-  border: 1px solid #f0f0f0 !important;
-  box-shadow: 0 0 0 1px #0b0b0c, 0 0 0 2px #f0f0f080 !important;
+  border-color: transparent;
+  box-shadow: 0 0 0 1.5px var(--primary);
 }
 
 .dragging {
@@ -130,8 +123,8 @@ defineEmits<{
 .filmstrip :deep(img) {
   position: absolute;
   top: 0;
-  width: 72px;
-  min-width: 72px;
+  width: calc(var(--clip-height) * 1.7777778);
+  min-width: calc(var(--clip-height) * 1.7777778);
   max-width: none;
   height: 100%;
   margin: 0;
@@ -142,47 +135,55 @@ defineEmits<{
 
 .clip-label {
   position: absolute;
-  left: calc(6px + var(--clip-label-offset, 0px));
-  top: 0;
+  left: var(--clip-label-offset, 0px);
+  top: 3px;
   z-index: 2;
   display: flex;
   align-items: center;
-  max-width: 100%;
-  height: 100%;
-  padding: 0;
-  gap: 6px;
+  width: max-content;
+  max-width: 120px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  gap: 3px;
   overflow: hidden;
   background: transparent;
-  color: inherit;
-  font-size: 9px;
-  font-weight: 500;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 550;
+  line-height: 16px;
+  text-shadow: 0 1px 2px #000,0 0 4px #000a;
   white-space: nowrap;
   pointer-events: none;
 }
 
-.clip:is([data-kind='video'], [data-kind='image']) .clip-label {
-  display: none;
-}
-
 .clip[data-kind='audio'] .clip-label {
+  left: calc(var(--clip-label-offset, 0px) + 2px);
   z-index: 3;
   display: inline-flex;
-  max-width: min(120px, 55%);
-  height: 100%;
-  padding: 0;
+  max-width: min(230px, calc(100% - 6px));
+  height: 16px;
+  padding: 0 4px;
   background: transparent;
-  color: #d8dedb;
+  box-shadow: none;
+  color: #fff;
 }
 
+.clip:not([data-kind='video'], [data-kind='image']) {
+  background-image: repeating-linear-gradient(90deg, #ffffff21 0 1px, transparent 1px 72px);
+  background-position-x: var(--timeline-grid-offset, 0px);
+}
+
+.clip[data-kind='text'] .clip-label { top:0; height:25px; color:#0b241d; text-shadow:none; }
+
 .clip-kind-icon {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
+  display:none;
   background: currentColor;
   mask: var(--clip-icon) center / contain no-repeat;
 }
 
 .clip-title {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -205,13 +206,21 @@ defineEmits<{
 
 .key-dot {
   position: absolute;
-  top: 7px;
-  width: 9px;
-  height: 9px;
-  border: 1px solid #6650c9;
-  background: #fff;
-  transform: rotate(45deg);
+  top: 6px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  background: #7b5cff;
+  transform: translateX(-50%) rotate(45deg);
+  z-index: 5;
+  cursor: ew-resize;
+  box-shadow: 0 0 0 2px #241661, 0 2px 5px #000;
+  transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
 }
+
+.key-dot:hover { background: #d9d0ff; transform: translateX(-50%) rotate(45deg) scale(1.35); box-shadow: 0 0 0 2px #8f78ff; }
+.key-dot.dragging-keyframe { background: #9d7cff; transform: translateX(-50%) rotate(45deg) scale(1.45); box-shadow: 0 0 0 3px #fff; }
 
 :deep(.clip-waveform) {
   position: absolute;
@@ -224,9 +233,9 @@ defineEmits<{
 }
 
 .clip[data-kind='audio'] :deep(.clip-waveform) {
-  inset: 0;
+  inset: 20px 0 0;
   width: 100%;
-  height: 100%;
-  opacity: .9;
+  height: calc(100% - 20px);
+  opacity: 1;
 }
 </style>

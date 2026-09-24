@@ -21,10 +21,12 @@ app.whenReady().then(async()=>{
       observer.observe(document.getElementById('timeline'),{subtree:true,attributes:true,attributeFilter:['src']});motionEditor.renderLayers();
       const wait=async predicate=>{for(let i=0;i<120;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,100))}throw Error('Tempo esgotado aguardando miniaturas')};
       await wait(()=>document.querySelectorAll('[data-clip="'+layer.id+'"] img[src]').length>=3);
-      observer.disconnect();if(order[0]!=='1')throw Error('O quadro perto do playhead não recebeu prioridade: '+order.join(','));
+      observer.disconnect();if(order[0]!=='0')throw Error('O quadro perto do playhead não recebeu prioridade: '+order.join(','));
       const before=document.querySelector('[data-clip="'+layer.id+'"] img[data-slot="1"]').src;
       layer.sourceIn=1;layer.sourceOut=5;layer.end=4;motionEditor.renderLayers();
       await wait(()=>{const tile=document.querySelector('[data-clip="'+layer.id+'"] img[data-slot="1"]');return tile?.src&&tile.src!==before});
+      const still=motionEditor.addLayer('image','data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="white"/%3E%3C/svg%3E','Foto');Object.assign(still,{start:0,end:6});motionEditor.renderLayers();await wait(()=>document.querySelector('[data-clip="'+still.id+'"] img[data-slot="image-0"]')?.complete);
+      const stillClip=document.querySelector('[data-clip="'+still.id+'"]'),stillImages=stillClip.querySelectorAll('.filmstrip img'),stillBox=stillImages[0].getBoundingClientRect();if(stillImages.length<2||Math.abs(stillBox.width-65*16/9)>1||Math.abs(stillBox.height-63)>1)throw Error('Miniatura de foto não repetiu os tiles 16:9: '+JSON.stringify({count:stillImages.length,width:stillBox.width,height:stillBox.height}));
     })()`);
     console.log('PASS: miniaturas progressivas, prioridade ao playhead e tempo após corte');app.quit();
   }catch(error){console.error(error);app.exit(1)}finally{if(directory)await fs.rm(directory,{recursive:true,force:true})}

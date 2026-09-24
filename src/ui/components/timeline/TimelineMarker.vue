@@ -29,7 +29,7 @@ defineEmits<{
 <style scoped>
 .timeline-marker {
   position: absolute;
-  top: 9px;
+  top: 2px;
   z-index: 9;
   width: 11px;
   height: 20px;

@@ -4,7 +4,7 @@ import PopupMenu from '../base/PopupMenu.vue'
 
 <template>
   <PopupMenu id="projectMenu" hidden>
-    <button id="menuExport" type="button">Exportar JSON</button>
+    <button id="menuExport" type="button">Salvar projeto como…</button>
     <button id="menuImport" type="button">Importar JSON</button>
     <button id="menuExportAlight" type="button">Exportar Alight XML</button>
     <button id="menuImportAlight" type="button">Importar Alight XML</button>

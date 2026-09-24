@@ -77,11 +77,11 @@ Um setor é considerado migrado quando:
 7. Existe validação para os contratos que podem quebrar.
 8. `pnpm check:ui`, verificações de sintaxe relevantes e `git diff --check` passam.
 
-Build e testes executáveis visuais devem ser feitos quando o pacote for autorizado para entrega. Enquanto houver orientação para trabalhar somente localmente, não executar build, commit, push, release ou alterações no GitHub.
+Build dos executáveis e publicação devem ocorrer somente quando o pacote for autorizado para entrega. A compilação da interface e os testes locais podem validar o trabalho sem gerar Setup ou Portable. Commit, push, release e alterações no GitHub permanecem suspensos nesta etapa.
 
 ## Estado atual
 
-Progresso estimado: **76% da componentização planejada**.
+Progresso estimado: **100% da componentização planejada no código**. A entrega do aplicativo ainda depende da rodada autorizada de executáveis e publicação.
 
 ### Concluído ou consolidado
 
@@ -99,6 +99,32 @@ Progresso estimado: **76% da componentização planejada**.
 - Clipes com filmstrip, waveform, handles, seleção, tipos de mídia e keyframes encapsulados.
 - Montagens Vue dinâmicas da timeline são desmontadas antes de cada renderização.
 - Testes adicionados para geometria, contratos DOM e segurança de textos externos.
+- Barra de ferramentas com CSS scoped e ícones declarativos via `AppIcon`, sem decoração visual pelo controlador.
+- Controles de fim, guias, proporção das guias e tela cheia do preview declarados em Vue, sem `createElement`, `innerHTML` ou movimentação posterior dos componentes.
+- Painel de camadas, pilha de efeitos e menu de contexto da timeline renderizados por componentes Vue com dados externos interpolados como texto e CSS scoped.
+- Mixer de áudio dividido em lista e canal Vue, preservando gestos de histórico e propriedades de volume, pan, fonte, mute e solo sem montagem por HTML.
+- Lista de mídia declarativa em Vue e renderização de caminhos vetoriais por nós SVG reutilizáveis; não restam atribuições a `innerHTML` em `src/ui`.
+- Guias de alinhamento e ferramentas auxiliares do preview com CSS scoped, sem regras equivalentes nas folhas globais.
+- Estrutura e CSS de stage, viewport, resolução e transporte encapsulados nos componentes responsáveis; as únicas regras globais de `.stage` preservadas pertencem ao renderer de mídia.
+- Barra da timeline declarada integralmente por `TimelineToolbar`, com grupos, ações, zoom, encaixe e status estáticos; o controlador apenas consulta os contratos e associa regras de edição.
+- Delegação das ações da timeline resolve o botão ancestral, permitindo clicar com segurança nos ícones internos renderizados por Vue.
+- Limites de entrada e saída da renderização declarados por `TimelineRenderRange` dentro de `TimelineRuler`; régua, marcadores e limites compartilham uma única montagem Vue.
+- Cada faixa agora é uma árvore `TimelineTrack` única, contendo cabeçalho, lane e clipes; foram eliminadas a criação manual de linhas/lanes e as aplicações Vue independentes por cabeçalho e clipe.
+- Geometria, waveform e filmstrip continuam acoplados após a montagem por serem integrações de canvas e mídia, sem assumir a estrutura visual da faixa.
+- Controles do cabeçalho da faixa usam `AppIcon` diretamente; foi removido o observador que reescrevia botões depois de cada renderização.
+- Cabeçalho dos clipes de áudio possui margem inicial e fundo opaco sobre a waveform; sua âncora permanece estável quando uma borda cortada é restaurada.
+- Tooltip global implementado como overlay Vue com `Teleport`, incluindo posicionamento, acessibilidade, foco, ponteiro e suporte à tela cheia sem criação ou movimentação manual pelo controller.
+- Painel de Beat Sync incorporado à árvore de overlays, removendo sua aplicação Vue e host criados isoladamente.
+- Renomeação de faixa renderiza o campo pelo próprio `TimelineTrackHeader`; o controller não substitui mais o título por um input imperativo.
+- Campos de desenho e composição reutilizam os componentes-base de cor, range, número e select, preservando IDs e valores iniciais usados pelos controladores.
+- Campos de corte, animação e texto também reutilizam os componentes-base; a seleção de camada pai recebe opções e valor por evento tipado e é renderizada pelo Vue.
+- As seis áreas estáticas da interface compartilham uma única aplicação `AppRoot`, com `Teleport` para preservar seus hosts e contratos de layout.
+- Marquee, guia de movimento e indicador de destino da timeline são overlays Vue com estilos scoped; os controladores emitem somente sua geometria e texto.
+- Caminhos de movimento e máscaras selecionadas usam SVG declarativo em `StageVectorOverlays`; os controladores enviam pontos calculados.
+- Faixas e régua da timeline usam montagens síncronas de nós Vue ligadas ao contexto da única aplicação principal; cada host é desmontado antes do redesenho.
+- Camadas, paths Bézier e handles do stage possuem estrutura Vue. O runtime continua anexando mídias, calculando estilo e executando gestos nos hosts declarativos.
+- Formas, presets, separadores, gráfico de easing, imports e estilos das camadas foram retirados das folhas globais e colocados nos componentes responsáveis.
+- A opção de proporção personalizada é declarada em `CompositionAspectSelect`; o controlador envia apenas o valor por evento.
 
 ### Auditoria já realizada
 
@@ -107,31 +133,22 @@ Progresso estimado: **76% da componentização planejada**.
 - Componentes-base: revisados; seis campos compartilham `BaseField`.
 - `TimelineMarker` e `BeatSyncPanel`: corrigidos retroativamente para CSS scoped.
 
-### Auditoria ainda pendente
+### Fronteiras mantidas no runtime
 
-- `ToolSidebar` e `ToolButton`.
-- Barra superior e ações antigas.
-- Preview e componentes de stage.
-- Painéis da biblioteca.
-- Painel de camadas criado por `timeline-tracks-controller.ts`.
-- Pilha de efeitos criada por `professional-effects-controller.ts`.
-- Menu de contexto da timeline.
-- Regras globais relacionadas a esses setores.
+- Waveform usa canvas no host de clipe; o callback de desenho ignora clipes já desconectados.
+- Filmstrip usa imagens no host `.filmstrip`; tiles desconectados são descartados antes da captura e os slots fora da faixa são removidos.
+- Captura de quadros, probes de mídia e filtros SVG usam nós do navegador como parte do processamento de mídia/efeitos.
+- Estilos globais restantes de `.path-layer` e `.stage.unified-renderer > .layer` pertencem aos contêineres do renderer, não aos painéis da interface.
 
 ## Ponto de atenção principal
 
-`ToolSidebar` agora é filho de `AppTopBar`; `studio-controller.ts` não move mais sua raiz nem substitui seus filhos. A seleção e os ícones passaram para os componentes Vue, preservando `data-panel`. Falta migrar as regras globais da barra para CSS scoped e conferir a responsividade visual antes de considerar o setor concluído.
+`ToolSidebar` é filho de `AppTopBar`; `studio-controller.ts` não move sua raiz nem substitui seus filhos. Seleção, ícones, responsividade e CSS pertencem aos componentes Vue, preservando `data-panel` e `data-material-icon`. Os contratos Electron, o smoke do renderer e uma captura visual local passaram após compilar somente a interface. QA interativo com mídias reais continua necessário para a entrega do aplicativo.
 
-## Ordem recomendada para retomada
+## Depois da componentização
 
-1. Terminar a auditoria dos componentes antigos antes de criar novos setores.
-2. Concluir o CSS scoped e a revisão visual de `ToolSidebar`/`ToolButton`.
-3. Revisar preview e stage, identificando CSS global duplicado.
-4. Revisar os painéis da biblioteca e consolidar padrões repetidos.
-5. Migrar o painel de camadas e a pilha de efeitos ainda montados com `innerHTML`.
-6. Migrar lane, waveform e limites de renderização restantes da timeline.
-7. Reduzir handlers baseados em IDs em favor de props, emits e estado reativo.
-8. Unificar aplicações Vue independentes sob uma única raiz quando os contratos restantes permitirem.
+1. Fazer QA interativo com vídeos e áudios reais, incluindo cortes, zoom, waveform, filmstrip, tela cheia, salvar/reabrir e desfazer/refazer.
+2. Reduzir gradualmente os handlers por ID em pacotes independentes, preservando os contratos legados enquanto existirem.
+3. Quando a entrega for autorizada, executar o fluxo de Setup, Portable, smoke isolado e pré-release da própria branch.
 
 ## Validação mínima durante o trabalho local
 
@@ -144,7 +161,7 @@ node --check tools/test-timeline-layout.cjs
 git diff --check
 ```
 
-Não declarar validação visual ou build como concluída se ela não foi executada. As alterações atuais permanecem locais e ainda precisam de uma futura rodada autorizada de build e teste visual antes de qualquer entrega.
+Não declarar validação visual interativa ou build dos executáveis como concluída se elas não foram executadas. As alterações atuais permanecem locais; `pnpm build:ui`, os contratos Electron e o smoke do renderer passaram sem gerar Setup ou Portable.
 
 ## Documento de acompanhamento
 

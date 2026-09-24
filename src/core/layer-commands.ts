@@ -5,6 +5,17 @@ import {sourceTimeForLayer} from './time-mapping';
 import {audioSegmentForRange} from './time-mapping';
 import {createLayer,type Layer,type LayerId,type TrackId} from './project-model';
 
+export {
+  canPlaceClipOnTrack,
+  moveClipToTrack,
+  reorderTrack,
+  setTrackProperty,
+  trackIdFor,
+  trackRows,
+  type ClipTrackPlacement,
+  type TrackRow,
+} from './layer-track-commands';
+
 export interface ExportAudioTrack {
   path:string;
   start:number;
@@ -21,60 +32,6 @@ export interface ExportAudioTrack {
   fadeOffset:number;
   clipDuration:number;
   trackId:TrackId;
-}
-
-export interface TrackRow {id:TrackId;layers:Layer[]}
-export type ClipTrackPlacement=
-  |{destinationTrackId:TrackId;newTrack?:never}
-  |{destinationTrackId?:never;newTrack:{id:TrackId;name:string;targetTrackId:TrackId;before:boolean}};
-
-function validTrackId(value:TrackId):boolean {
-  return typeof value==='number'?Number.isSafeInteger(value):typeof value==='string'&&Boolean(value.trim());
-}
-
-export function trackIdFor(layer:Layer):TrackId|null {
-  return layer.trackId??(layer.id===undefined?null:`track-${layer.id}`);
-}
-
-export function trackRows(state:ProjectState):TrackRow[] {
-  const rows:TrackRow[]=[];
-  for(const layer of [...state.layers].reverse()){
-    const id=trackIdFor(layer);if(id===null)continue;
-    let row=rows.find(item=>item.id===id);
-    if(!row){row={id,layers:[]};rows.push(row)}
-    row.layers.push(layer);
-  }
-  return rows;
-}
-
-export function canPlaceClipOnTrack(state:ProjectState,{id,trackId,start,end}:{id:LayerId;trackId:TrackId;start:number;end:number}):boolean {
-  const source=state.layers.find(layer=>layer.id===id),targetExists=state.layers.some(layer=>trackIdFor(layer)===trackId),members=state.layers.filter(layer=>trackIdFor(layer)===trackId&&layer!==source);
-  if(!source||source.locked||!validTrackId(trackId)||!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||!targetExists)return false;
-  return !members.some(layer=>layer.locked||start<layer.end-.00001&&end>layer.start+.00001);
-}
-
-export function moveClipToTrack(state:EditorState,{id,placement}:{id:LayerId;placement:ClipTrackPlacement}):boolean {
-  const source=state.layers.find(layer=>layer.id===id);
-  if(!source||source.locked||!Number.isFinite(source.start)||!Number.isFinite(source.end)||source.start<0||source.end<=source.start)return false;
-  const rows=trackRows(state),currentTrackId=trackIdFor(source);
-  let destinationId:TrackId,name:string,targetMembers:Layer[],before=false;
-  if(placement.newTrack){
-    const request=placement.newTrack,target=rows.find(row=>row.id===request.targetTrackId);
-    if(!validTrackId(request.id)||rows.some(row=>row.id===request.id)||!request.name.trim()||!target)return false;
-    destinationId=request.id;name=request.name.trim();targetMembers=target.layers.filter(layer=>layer!==source);before=request.before;
-  }else{
-    const target=rows.find(row=>row.id===placement.destinationTrackId);
-    if(!target||placement.destinationTrackId===currentTrackId||!canPlaceClipOnTrack(state,{id,trackId:placement.destinationTrackId,start:source.start,end:source.end}))return false;
-    destinationId=placement.destinationTrackId;name=target.layers[0].trackName||target.layers.at(-1)?.name||source.name;targetMembers=target.layers;
-  }
-  const originalIndex=state.layers.indexOf(source),next=state.layers.filter(layer=>layer!==source),moved=structuredClone(source);
-  moved.trackId=destinationId;moved.trackName=name;
-  const indices=targetMembers.map(layer=>next.indexOf(layer)).filter(index=>index>=0);
-  let insertion:number;
-  if(placement.newTrack)insertion=indices.length?(before?Math.max(...indices)+1:Math.min(...indices)):Math.min(originalIndex,next.length);
-  else insertion=indices.length?Math.min(...indices)+1:next.length;
-  next.splice(insertion,0,moved);state.layers=next;
-  return true;
 }
 
 export function add(state:EditorState,layer:Layer):Layer {
@@ -115,27 +72,6 @@ export function split(state:EditorState,id:LayerId,time:number,nextId:LayerId):L
   state.layers.splice(state.layers.indexOf(source),1,result.left,result.right);
   state.selection.selected=nextId;state.selection.selectedIds.clear();
   return result.right;
-}
-export function reorderTrack(state:EditorState,source:TrackId,target:TrackId,before:boolean):boolean {
-  const rows=trackRows(state);
-  const index=rows.findIndex(row=>row.id===source),destination=rows.findIndex(row=>row.id===target);
-  if(index<0||destination<0||index===destination||rows[index].layers.some(layer=>layer.locked))return false;
-  const [row]=rows.splice(index,1);
-  rows.splice(rows.findIndex(item=>item.id===target)+(before?0:1),0,row);
-  state.layers=rows.reverse().flatMap(item=>item.layers.reverse());
-  return true;
-}
-export function setTrackProperty(state:EditorState,{ids,key,value}:{ids:LayerId[];key:'trackName'|'visible'|'locked'|'muted';value:string|boolean}):boolean {
-  const members=state.layers.filter(layer=>layer.id!==undefined&&ids.includes(layer.id));
-  if(!members.length)return false;
-  if(key==='trackName'){
-    if(typeof value!=='string'||!value.trim()||members.some(layer=>layer.locked))return false;
-    for(const layer of members)layer.trackName=value.trim();
-  }else{
-    if(typeof value!=='boolean')throw new Error('Valor de faixa inválido');
-    for(const layer of members)layer[key]=value;
-  }
-  return true;
 }
 export function move(state:EditorState,id:LayerId,direction:number):boolean {
   const index=state.layers.findIndex(layer=>layer.id===id),target=index+Math.sign(direction);
@@ -190,5 +126,6 @@ export function freezeFrame(state:EditorState,{id,time,content,stillId,rightId,h
   const shifted=state.layers.map(layer=>{if(layer===source||layer.trackId!==track||layer.start<time)return layer;const copy=structuredClone(layer);copy.start+=hold;copy.end+=hold;copy.keyframes=copy.keyframes.map(frame=>({...frame,time:frame.time+hold}));return copy});
   Object.assign(right,{id:rightId,start:time+hold,end:source.end+hold,keyframes:source.keyframes.map(frame=>({...structuredClone(frame),time:frame.time+hold}))});
   const left=structuredClone(source);left.end=time;if(source.reverse){right.sourceOut=cut;left.sourceIn=cut}else{right.sourceIn=cut;left.sourceOut=cut}
-  shifted.splice(sourceIndex,1,...(time>source.start?[left,still,right]:[still,right]));state.layers=shifted;state.duration=Math.max(state.duration,...state.layers.map(layer=>layer.end));state.selection.selected=stillId;state.selection.selectedIds.clear();return still;
+  const previousDuration=state.duration,renderRangeEndedWithProject=state.renderRange.end>=previousDuration-.001;
+  shifted.splice(sourceIndex,1,...(time>source.start?[left,still,right]:[still,right]));state.layers=shifted;state.duration=Math.max(state.duration,...state.layers.map(layer=>layer.end));if(renderRangeEndedWithProject)state.renderRange.end=state.duration;state.selection.selected=stillId;state.selection.selectedIds.clear();return still;
 }

@@ -6,7 +6,7 @@
 .playhead {
   position: absolute;
   top: 0;
-  left: 260px;
+  left: 108px;
   z-index: 16;
   width: 14px;
   margin-left: -7px;

@@ -1,5 +1,6 @@
 import type {EditorState,MediaLibraryEntry} from './editor-state';
 import type {Layer,LayerId} from './project-model';
+import {projectFrameRate} from './frame-rate';
 
 export interface MediaDescriptor extends MediaLibraryEntry {
   duration:number;
@@ -35,8 +36,42 @@ export function configureLayer(state:EditorState,{id,source}:{id:LayerId;source:
   if(!layer||layer.locked)return null;
   const descriptor=normalizeDescriptor(source),previousDuration=state.duration,mediaDuration=descriptor.duration,fitMode=descriptor.type==='video'?'cover':'contain';
   const untouchedComposition=state.layers.length===1&&state.composition.width===1920&&state.composition.height===1080&&state.composition.fps===30;
-  if(descriptor.type==='video'&&untouchedComposition&&descriptor.width&&descriptor.height){const rotated=Math.abs(descriptor.rotation)%180===90;state.composition.width=Math.round(rotated?descriptor.height:descriptor.width);state.composition.height=Math.round(rotated?descriptor.width:descriptor.height);if(descriptor.fps)state.composition.fps=descriptor.fps}
-  Object.assign(layer,{content:descriptor.url,waveform:descriptor.waveform,sourcePath:descriptor.sourcePath,mediaDuration,mediaWidth:descriptor.width,mediaHeight:descriptor.height,mediaRotation:descriptor.rotation,mediaFps:descriptor.fps,hasAudio:descriptor.hasAudio,fitMode,x:50,y:50,anchorX:50,anchorY:50,scale:100,rotation:0,cropX:0,cropY:0,sourceIn:0,sourceOut:mediaDuration||state.duration,end:Math.min(mediaDuration||state.duration,state.duration),speed:1,volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false,fadeIn:0,fadeOut:0});
+  if(descriptor.type==='video'&&untouchedComposition&&descriptor.width&&descriptor.height){const rotated=Math.abs(descriptor.rotation)%180===90;state.composition.width=Math.round(rotated?descriptor.height:descriptor.width);state.composition.height=Math.round(rotated?descriptor.width:descriptor.height);if(descriptor.fps)state.composition.fps=projectFrameRate(descriptor.fps)}
+  Object.assign(layer,{content:descriptor.url,waveform:descriptor.waveform,sourcePath:descriptor.sourcePath,mediaDuration,mediaWidth:descriptor.width,mediaHeight:descriptor.height,mediaRotation:descriptor.rotation,mediaFps:descriptor.fps,hasAudio:descriptor.hasAudio,fitMode,x:50,y:50,anchorX:50,anchorY:50,scale:100,scaleX:100,scaleY:100,scaleLinked:true,rotation:0,cropX:0,cropY:0,sourceIn:0,sourceOut:mediaDuration||state.duration,end:Math.min(mediaDuration||state.duration,state.duration),speed:1,volume:100,pan:0,audioChannel:'stereo',muted:false,solo:false,fadeIn:0,fadeOut:0});
   if(mediaDuration>state.duration){state.duration=Math.min(mediaDuration,600);layer.end=state.duration;if(state.renderRange.end>=previousDuration-.001)state.renderRange.end=state.duration}
   return layer;
+}
+
+export function setLayerWaveform(
+  state: EditorState,
+  {
+    id,
+    points,
+    hasAudio,
+  }: { id: LayerId; points: number[]; hasAudio?: boolean },
+): boolean {
+  const layer = state.layers.find((item) => item.id === id);
+  if (!layer || !['video', 'audio'].includes(layer.type)) return false;
+  if (!Array.isArray(points) || points.length > 10_000) {
+    throw new RangeError('Waveform inválida');
+  }
+
+  const waveform = points.map((point) => {
+    if (
+      typeof point !== 'number' ||
+      !Number.isFinite(point) ||
+      point < 0 ||
+      point > 1
+    ) {
+      throw new RangeError('Amostra da waveform inválido');
+    }
+    return +point.toFixed(6);
+  });
+  if (hasAudio !== undefined && typeof hasAudio !== 'boolean') {
+    throw new Error('Metadado de áudio inválido');
+  }
+
+  layer.waveform = waveform;
+  if (hasAudio !== undefined) layer.hasAudio = hasAudio;
+  return true;
 }
